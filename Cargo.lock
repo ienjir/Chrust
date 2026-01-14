@@ -7,6 +7,10 @@ name = "chrust_core"
 version = "0.1.0"
 
 [[package]]
+name = "chrust_core_simple"
+version = "0.1.0"
+
+[[package]]
 name = "chrust_ui"
 version = "0.1.0"
 dependencies = [
