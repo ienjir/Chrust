@@ -25,3 +25,15 @@ pub struct Position {
     pub en_passent: Option<Square>,
 }
 
+pub fn file(square: Square) -> u8 {
+    square % 8
+}
+
+pub fn rank(square: Square) -> u8 {
+    square / 8
+}
+
+pub fn square(file: u8, rank: u8) -> Square {
+    rank * 8 + file
+}
+
