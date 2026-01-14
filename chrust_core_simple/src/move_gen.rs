@@ -3,7 +3,7 @@ use crate::{Square, file, rank};
 const KNIGHT_OFFSET: [i8; 8] = [-17, -15, -10, -6, 6, 10, 15, 17];
 const KING_OFFSET: [i8; 8] = [-9, -8, -7, -1, 1, 7, 8, 9];
 
-pub fn king_offset(current_square: Square) -> Vec<Square> {
+pub fn king_targets(current_square: Square) -> Vec<Square> {
     let mut target_squares = Vec::new();
 
     let current_file = file(current_square) as i8;
@@ -51,4 +51,57 @@ pub fn knight_targets(current_square: Square) -> Vec<Square> {
     }
 
     target_squares
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn knight_c7() {
+        let moves = knight_targets(50);
+
+        assert_eq!(moves.len(), 6);
+
+        let expected = [33, 35, 40, 44, 56, 60];
+        for square in expected {
+            assert!(moves.contains(&square));
+        }
+    }
+
+    #[test]
+    fn knight_h8() {
+        let moves = knight_targets(7);
+
+        assert_eq!(moves.len(), 2);
+
+        let expected = [22, 13];
+        for square in expected {
+            assert!(moves.contains(&square));
+        }
+    }
+
+    #[test]
+    fn king_d4() {
+        let moves = king_targets(27);
+
+        assert_eq!(moves.len(), 8);
+    
+        let expected = [18, 19, 20, 26, 28, 34, 35, 36];
+        for square in expected {
+            assert!(moves.contains(&square));
+        }
+    }
+
+    #[test]
+    fn king_h8() {
+        let moves = king_targets(63);
+
+        assert_eq!(moves.len(), 3);
+    
+        let expected = [62, 54, 55];
+        for square in expected {
+            assert!(moves.contains(&square));
+        }
+    }
 }
