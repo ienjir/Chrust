@@ -1,9 +1,4 @@
-fn main() {
-    println!("Hello, world!");
-    print_bitboard(0);
-}
-
-fn print_bitboard(bitboard: u64) {
+pub fn print_bitboard(bitboard: u64) {
     const LAST_BIT: u64 = 63;
     for rank in 0..8 {
         for file in (0..8).rev() {
