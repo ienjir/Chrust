@@ -16,3 +16,10 @@ version = "0.1.0"
 dependencies = [
  "chrust_core",
 ]
+
+[[package]]
+name = "chrust_ui_simple"
+version = "0.1.0"
+dependencies = [
+ "chrust_core_simple",
+]

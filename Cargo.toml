@@ -4,4 +4,5 @@ members = [
     "chrust_core_simple",
     "chrust_core",
     "chrust_ui",
+    "chrust_ui_simple"
 ]
