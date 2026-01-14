@@ -1,3 +1,5 @@
+pub mod move_gen;
+
 pub enum Side { White, Black }
 
 pub enum Piece {

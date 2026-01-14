@@ -1,14 +1,12 @@
-use chrust_core_simple::file;
-use chrust_core_simple::Square;
-use chrust_core_simple::rank;
-use chrust_core_simple::square;
+use chrust_core_simple::{Square, move_gen::knight_targets};
 
 fn main() {
-   let test_square: Square = 63;
-   let file = file(test_square);
-   let rank = rank(test_square);
-   println!("File: {file}, Rank: {rank}");
+   let test_square: Square = 36;
+    
+   let knight_squares = knight_targets(test_square);
 
-   let square = square(7, 7);
-   println!("Square: {square}")
+   for knight_square in knight_squares {
+        println!("Square: {knight_square}")
+   }
+    
 }
