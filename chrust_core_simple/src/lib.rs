@@ -1,7 +1,9 @@
 pub mod move_gen;
 
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum Side { White, Black }
 
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum Piece {
     King,
     Queen,
@@ -11,6 +13,7 @@ pub enum Piece {
     Pawn,
 }
 
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct ColoredPiece {
     pub piece: Piece,
     pub side: Side,
