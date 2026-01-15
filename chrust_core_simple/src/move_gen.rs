@@ -109,8 +109,19 @@ pub fn knight_targets(inital_square: Square) -> Vec<Square> {
 }
 
 
+fn empty_position() -> Position {
+    Position {
+        board: [None; 64],
+        side_to_move: crate::Side::White,
+        castle: [false; 4],
+        en_passent: None,
+    }
+}
+
 #[cfg(test)]
 mod tests {
+    use crate::ColoredPiece;
+
     use super::*;
 
     #[test]
@@ -159,5 +170,87 @@ mod tests {
         for square in expected {
             assert!(moves.contains(&square));
         }
+    }
+
+
+    #[test]
+    fn rook_h8_empty_board() {
+        let mut pos = empty_position();
+
+        pos.board[63] = Some(ColoredPiece {
+            piece: crate::Piece::Rook,
+            side: crate::Side::White,
+        });
+
+        let moves = pos.rook_targets(63);
+
+        assert_eq!(moves.len(), 14);
+
+        assert!(moves.contains(&62)); 
+        assert!(moves.contains(&56)); 
+        assert!(moves.contains(&55)); 
+        assert!(moves.contains(&7)); 
+    }
+    
+    #[test]
+    fn rook_d4_empty_board() {
+        let mut pos = empty_position();
+
+        pos.board[27] = Some(ColoredPiece {
+            piece: crate::Piece::Rook,
+            side: crate::Side::White,
+        });
+
+        let moves = pos.rook_targets(27);
+
+        assert_eq!(moves.len(), 14);
+
+        assert!(moves.contains(&24)); 
+        assert!(moves.contains(&31));
+        assert!(moves.contains(&3));  
+        assert!(moves.contains(&26));
+    }
+
+    #[test]
+    fn rook_d4_blocked_by_friendly_piece_f4() {
+        let mut pos = empty_position();
+
+        pos.board[27] = Some(ColoredPiece {
+            piece: crate::Piece::Rook,
+            side: crate::Side::White,
+        });
+
+        pos.board[29] = Some(ColoredPiece {
+            piece: crate::Piece::Knight,
+            side: crate::Side::White,
+        });
+
+        let moves = pos.rook_targets(27);
+
+        assert!(moves.contains(&28)); 
+        assert!(!moves.contains(&29)); 
+        assert!(!moves.contains(&30));
+    }
+    
+    #[test]
+    fn rook_d4_captures_enemy_f4_and_stops() {
+        let mut pos = empty_position();
+
+        pos.board[27] = Some(ColoredPiece {
+            piece: crate::Piece::Rook,
+            side: crate::Side::White,
+        });
+
+        // enemy piece on f4
+        pos.board[29] = Some(ColoredPiece {
+            piece: crate::Piece::Knight,
+            side: crate::Side::Black,
+        });
+
+        let moves = pos.rook_targets(27);
+
+        assert!(moves.contains(&28)); 
+        assert!(moves.contains(&29)); 
+        assert!(!moves.contains(&30)); 
     }
 }
