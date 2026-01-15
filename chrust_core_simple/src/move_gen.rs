@@ -4,14 +4,14 @@ const KNIGHT_OFFSET: [i8; 8] = [-17, -15, -10, -6, 6, 10, 15, 17];
 const KING_OFFSET: [i8; 8] = [-9, -8, -7, -1, 1, 7, 8, 9];
 
 // For emtpy board
-pub fn king_targets(current_square: Square) -> Vec<Square> {
+pub fn king_targets(inital_square: Square) -> Vec<Square> {
     let mut target_squares = Vec::new();
 
-    let current_file = file(current_square) as i8;
-    let current_rank = rank(current_square) as i8;
+    let current_file = file(inital_square) as i8;
+    let current_rank = rank(inital_square) as i8;
 
     for offset in KING_OFFSET {
-        let candidate_square_i = current_square as i16 + offset as i16;
+        let candidate_square_i = inital_square as i16 + offset as i16;
         if !(0..=63).contains(&candidate_square_i) {
             continue;
         }
@@ -30,14 +30,14 @@ pub fn king_targets(current_square: Square) -> Vec<Square> {
 }
 
 // For emtpy board
-pub fn knight_targets(current_square: Square) -> Vec<Square> {
+pub fn knight_targets(inital_square: Square) -> Vec<Square> {
     let mut target_squares = Vec::new();
     
-    let current_file = file(current_square) as i8;
-    let current_rank = rank(current_square) as i8;
+    let current_file = file(inital_square) as i8;
+    let current_rank = rank(inital_square) as i8;
 
     for offset in KNIGHT_OFFSET {
-        let candidate_square_i = current_square as i16 + offset as i16;
+        let candidate_square_i = inital_square as i16 + offset as i16;
         if !(0..=63).contains(&candidate_square_i) {
             continue;
         }

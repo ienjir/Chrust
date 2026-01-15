@@ -1,10 +1,5 @@
----
-title: Untitled
-author: RandomAdmin
-date: 2026-01-14T21:18:10Z
----
-
 # Chrust
+## Chrust is a simple 2 player chess game and later (hopefully) a chess engine
 
 ## Information
 ### Chessboard with intager positions
