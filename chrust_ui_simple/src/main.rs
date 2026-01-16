@@ -1,4 +1,4 @@
-use chrust_core_simple::{ColoredPiece, load_position_from_fen};
+use chrust_core_simple::{ColoredPiece, position::load_position_from_fen, };
 
 fn main() {
    let default_fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
