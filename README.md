@@ -45,8 +45,5 @@
 
 
 ## ToDo
-1. Tests for rook
-2. Basic FEN parser
-3. Chessboard printer
 4. Implement basics moving without validation
 5. Basic macroquad UI

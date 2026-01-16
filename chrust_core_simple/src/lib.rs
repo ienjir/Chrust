@@ -1,5 +1,3 @@
-use std::{usize};
-
 pub mod move_gen;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
@@ -99,4 +97,44 @@ pub fn load_position_from_fen(fen: String) -> Result<Position, FenError> {
     }
 
     Ok(position)
+}
+
+impl ColoredPiece {
+    pub fn to_char(&self) -> char {
+        let mut piece_char = match self.piece {
+            Piece::Pawn => 'p',
+            Piece::Knight => 'n',
+            Piece::Bishop => 'b',
+            Piece::Rook => 'r',
+            Piece::Queen => 'q',
+            Piece::King => 'k',
+        };
+
+        if self.side == Side::White {
+            piece_char = piece_char.to_ascii_uppercase();
+        }
+
+        piece_char
+    }
+}
+
+impl Position {
+    pub fn print_board(&self) {
+        for rank in (0..8).rev() {
+            for file in 0..8 {
+                let square = square(file, rank);
+                let test = self.board[square as usize];
+
+                match test {
+                    Some(piece) => {
+                        print!(" {}", piece.to_char());
+                    }
+                    None => {
+                        print!("  ")
+                    }
+                }
+            }
+            print!("\n");
+        } 
+    }
 }
