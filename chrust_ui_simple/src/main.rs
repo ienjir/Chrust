@@ -1,25 +1,14 @@
-use chrust_core_simple::{ColoredPiece, Piece, Position, Side, Square};
+use chrust_core_simple::{load_position_from_fen};
 
 fn main() {
-   let test_square: Square = 63;
-   let mut test_board: [Option<ColoredPiece>; 64] = [None; 64];
+   let default_fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
-   test_board[63] = Some(ColoredPiece {
-       piece: Piece::Rook,
-       side: Side::White,
-   });
-
-
-   let test_position = Position {
-       board: test_board,
-       castle: [false, false, false, false],
-       side_to_move: Side::White,
-       en_passent: None,
-   };
-
-   let rook_squares = test_position.rook_targets(test_square);
-
-   for rook_square in rook_squares {
-       println!("Square: {rook_square}")
+   let position = load_position_from_fen(default_fen.to_string()); 
+   match position {
+       Ok(pos) => {
+            pos.print_board();
+       }
+       Err(_x) => println!("Erorr")
    }
 }
+

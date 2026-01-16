@@ -109,20 +109,21 @@ pub fn knight_targets(inital_square: Square) -> Vec<Square> {
 }
 
 
-fn empty_position() -> Position {
-    Position {
-        board: [None; 64],
-        side_to_move: crate::Side::White,
-        castle: [false; 4],
-        en_passent: None,
-    }
-}
 
 #[cfg(test)]
 mod tests {
     use crate::ColoredPiece;
 
     use super::*;
+
+    fn empty_position() -> Position {
+        Position {
+            board: [None; 64],
+            side_to_move: crate::Side::White,
+            castle: [false; 4],
+            en_passent: None,
+        }
+    }
 
     #[test]
     fn knight_c7() {
@@ -191,7 +192,7 @@ mod tests {
         assert!(moves.contains(&55)); 
         assert!(moves.contains(&7)); 
     }
-    
+
     #[test]
     fn rook_d4_empty_board() {
         let mut pos = empty_position();
@@ -231,7 +232,7 @@ mod tests {
         assert!(!moves.contains(&29)); 
         assert!(!moves.contains(&30));
     }
-    
+
     #[test]
     fn rook_d4_captures_enemy_f4_and_stops() {
         let mut pos = empty_position();
