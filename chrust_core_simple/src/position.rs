@@ -1,5 +1,6 @@
 use crate::{ColoredPiece, Piece, square, Side, Square};
 
+#[derive(Clone, Debug)]
 pub struct Position {
     pub board: [Option<ColoredPiece>; 64],
     pub side_to_move: Side,
