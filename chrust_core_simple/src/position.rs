@@ -34,7 +34,7 @@ pub enum FenError {
     InvalidPieceChar(char),
 }
 
-pub fn load_position_from_fen(fen: String) -> Result<Position, FenError> {
+pub fn load_position_from_fen(fen: &str) -> Result<Position, FenError> {
     let mut position = Position {
         board: [None; 64],
         castle: [false; 4],
