@@ -2,6 +2,9 @@
 ## Chrust is a simple 2 player chess game and later (hopefully) a chess engine
 
 ## Information
+### Assets
+The chess piece assets were not created by me. They were created by Uray M. János and are published on <a href="https://greenchess.net/info.php?item=downloads">greenchess.net</a>. The author retains the copyright. The images are licensed under the Creative Commons Attribution-ShareAlike 3.0 (CC BY-SA 3.0) license.
+
 ### Chessboard with intager positions
 Files / X                          
 | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |  
@@ -50,3 +53,5 @@ Files / X
 ## ToDo
 4. Implement basics moving without validation
 5. Basic macroquad UI
+
+

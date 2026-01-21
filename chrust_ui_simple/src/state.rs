@@ -15,3 +15,10 @@ pub struct UiState {
     // Currently not relevant 
 }
 
+#[derive(Debug)]
+pub enum UiError {
+    CouldNotLoadTexture {
+        path: String,
+        source: macroquad::Error,
+    },
+}
