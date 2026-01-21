@@ -1,7 +1,9 @@
 use chrust_core_simple::{Square, position::Position};
+use crate::assets::Assets;
 
 pub struct GameState {
     pub position: Position,
+    pub assets: Assets, 
     pub highlighted: Option<Square>,
 }
 

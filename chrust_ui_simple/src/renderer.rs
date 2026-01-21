@@ -1,7 +1,7 @@
 use core::f32;
-use chrust_core_simple::{Piece, Side, Square, file, rank};
-use macroquad::{color::WHITE, math::{Rect, Vec2}, shapes::draw_rectangle, texture::{DrawTextureParams, Texture2D, draw_texture_ex, load_texture}};
-use crate::{assets::load_chess_piece, layout::{CELL_SIZE, GRID_ORIGIN_X, GRID_ORIGIN_Y}, state::{GameState, UiError}};
+use chrust_core_simple::{Square, file, rank};
+use macroquad::{color::WHITE, math::{Rect, Vec2}, shapes::draw_rectangle, texture::{DrawTextureParams, draw_texture_ex}};
+use crate::{layout::{CELL_SIZE, GRID_ORIGIN_X, GRID_ORIGIN_Y}, state::{GameState}};
 
 pub fn get_square_coordinates(square: Square) -> (f32, f32) {
     let file = file(square);
@@ -59,31 +59,11 @@ pub async fn render_chess_pieces(game_state: &GameState) {
         let rect = get_square_rectangle(square);
 
         let Some(piece) = game_state.position.board[square as usize] else { continue };
+        let texture = game_state.assets.pieces.get(&(piece.side, piece.piece)).expect("missing texture");
 
-        let piece_str = match piece.piece {
-            Piece::King => "king.png",
-            Piece::Rook => "rook.png",
-            Piece::Pawn => "pawn.png",
-            Piece::Queen => "queen.png",
-            Piece::Bishop => "bishop.png",
-            Piece::Knight => "knight.png",
-        };
-
-        let color_str = match piece.side {
-            Side::White => "white_pieces",
-            Side::Black => "black_pieces",
-        };
-
-        match load_chess_piece(color_str, piece_str).await {
-            Ok(texture) => {
-                draw_texture_ex(&texture, rect.x, rect.y, WHITE, DrawTextureParams {
-                    dest_size: Some(Vec2::new(rect.w, rect.h)),
-                    ..Default::default()
-                });
-            }
-            Err(e) => {
-                eprintln!("texture missing for {}/{}: {:?}", color_str, piece_str, e);
-            }
-        }
-    };
+        draw_texture_ex(&texture, rect.x, rect.y, WHITE, DrawTextureParams {
+            dest_size: Some(Vec2::new(rect.w, rect.h)),
+            ..Default::default()
+        });
+    }
 }

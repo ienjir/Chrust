@@ -1,60 +1,34 @@
+use std::collections::HashMap;
 use chrust_core_simple::{Piece, Side};
-use macroquad::prelude::*;
+use macroquad::texture::{FilterMode, Texture2D, load_texture};
 
-use crate::state::UiError;
-
-pub struct PieceTextures {
-    tex: [[Texture2D; 6]; 2],
+pub struct Assets {
+    pub pieces: HashMap<(Side, Piece), Texture2D>,
 }
 
-pub async fn load_chess_piece(color: &str, piece: &str) -> Result<Texture2D, UiError> {
-    let path = format!("{}/{}", color, piece);
+pub async fn load_assets() -> Assets {
+    let mut pieces = HashMap::new();
 
-    load_texture(&path)
-        .await
-        .map_err(|e| UiError::CouldNotLoadTexture { path, source: e })
-}
+    let defs = [
+        (Side::White, Piece::King,   "w_king.png"),
+        (Side::White, Piece::Queen,  "w_queen.png"),
+        (Side::White, Piece::Rook,   "w_rook.png"),
+        (Side::White, Piece::Bishop, "w_bishop.png"),
+        (Side::White, Piece::Knight, "w_knight.png"),
+        (Side::White, Piece::Pawn,   "w_pawn.png"),
+        (Side::Black, Piece::King,   "b_king.png"),
+        (Side::Black, Piece::Queen,  "b_queen.png"),
+        (Side::Black, Piece::Rook,   "b_rook.png"),
+        (Side::Black, Piece::Bishop, "b_bishop.png"),
+        (Side::Black, Piece::Knight, "b_knight.png"),
+        (Side::Black, Piece::Pawn,   "b_pawn.png"),
+    ];
 
-impl PieceTextures {
-    pub async fn load() -> Result<Self, UiError> {
-        async fn lt(path: String) -> Result<Texture2D, UiError> {
-            load_texture(&path)
-                .await
-                .map_err(|e| UiError::CouldNotLoadTexture { path, source: e })
-        }
-
-        let white = [
-            lt("assets/white/king.png".to_string()).await?,
-            lt("assets/white/queen.png".to_string()).await?,
-            lt("assets/white/rook.png".to_string()).await?,
-            lt("assets/white/bishop.png".to_string()).await?,
-            lt("assets/white/knight.png".to_string()).await?,
-            lt("assets/white/pawn.png".to_string()).await?,
-        ];
-
-        let black = [
-            lt("assets/black/king.png".to_string()).await?,
-            lt("assets/black/queen.png".to_string()).await?,
-            lt("assets/black/rook.png".to_string()).await?,
-            lt("assets/black/bishop.png".to_string()).await?,
-            lt("assets/black/knight.png".to_string()).await?,
-            lt("assets/black/pawn.png".to_string()).await?,
-        ];
-
-        Ok(Self { tex: [white, black] })
+    for (side, kind, path) in defs {
+        let tex = load_texture(path).await.unwrap();
+        tex.set_filter(FilterMode::Nearest);
+        pieces.insert((side, kind), tex);
     }
 
-    #[inline]
-    pub async fn get(&self, side: Side, kind: Piece) -> Texture2D {
-        let s = match side { Side::White => 0, Side::Black => 1 };
-        let k = match kind {
-            Piece::King => 0,
-            Piece::Queen => 1,
-            Piece::Rook => 2,
-            Piece::Bishop => 3,
-            Piece::Knight => 4,
-            Piece::Pawn => 5,
-        };
-        self.tex[s][k].clone()
-    }
+    Assets { pieces }
 }

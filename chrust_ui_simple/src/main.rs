@@ -6,7 +6,7 @@ mod input;
 mod controller;
 
 use chrust_core_simple::position::load_position_from_fen;
-use crate::{controller::apply_ui_event, input::route_click, layout::DEFAULT_FEN_STRING, renderer::{render_chess_pieces, render_chessboard_without_pieces}};
+use crate::{assets::load_assets, controller::apply_ui_event, input::route_click, layout::DEFAULT_FEN_STRING, renderer::{render_chess_pieces, render_chessboard_without_pieces}};
 use macroquad::prelude::*;
 use macroquad::file::set_pc_assets_folder;
 use crate::state::{GameState, InputState};
@@ -14,6 +14,8 @@ use crate::state::{GameState, InputState};
 #[macroquad::main("Chrust")]
 async fn main() {
     set_pc_assets_folder("chrust_ui_simple/assets");
+    let assets = load_assets().await;
+
     let default_position = match load_position_from_fen(DEFAULT_FEN_STRING) {
         Ok(x) => x,
         Err(_x) => panic!("Paniced while loading default position"),
@@ -21,12 +23,11 @@ async fn main() {
 
     let mut game_state = GameState {
         position: default_position,
+        assets: assets,
         highlighted: None,
     };
 
     loop {
-
-
         clear_background(LIGHTGRAY);
         let (mouse_x, mouse_y) = mouse_position();
         let input_state = InputState {
