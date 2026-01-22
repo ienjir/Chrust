@@ -1,57 +1,169 @@
-use crate::{Square, file, rank};
+use crate::{Piece, Square, file, moves::move_gen::MoveGenError, position::Position, rank};
 
-// For emtpy board
-const KING_OFFSET: [i8; 8] = [-9, -8, -7, -1, 1, 7, 8, 9];
-pub fn king_targets(inital_square: Square) -> Vec<Square> {
-    let mut target_squares = Vec::new();
+impl Position {
+    pub fn king_targets(&self, inital_square: Square) -> Result<Vec<Square>, MoveGenError> {
+        let mut target_squares = Vec::with_capacity(8);
 
-    let current_file = file(inital_square) as i8;
-    let current_rank = rank(inital_square) as i8;
+        let directions: [i16; 8] = [-9, -8, -7, -1, 1, 7, 8, 9];
+        let king = match self.board[inital_square as usize] {
+            Some(p) => p,
+            None => return Err(MoveGenError::NoPieceOnSquare { square: inital_square }),
+        };
 
-    for offset in KING_OFFSET {
-        let candidate_square_i = inital_square as i16 + offset as i16;
-        if !(0..=63).contains(&candidate_square_i) {
-            continue;
+        if king.piece != Piece::King {
+            return Err(MoveGenError::WrongPieceTypeOnSquare { expected_piece: Piece::King, found_piece: king.piece, square: inital_square})
         }
 
-        let candidate_square_u = candidate_square_i as u8;
+        let current_file = file(inital_square) as i8;
+        let current_rank = rank(inital_square) as i8;
 
-        let file_difference = (file(candidate_square_u) as i8 - current_file).abs();
-        let rank_difference = (rank(candidate_square_u) as i8 - current_rank).abs();
+        for direction in directions {
+            let candidate_square_i = inital_square as i16 + direction as i16;
+            if !(0..=63).contains(&candidate_square_i) {
+                continue;
+            }
 
-        if file_difference <= 1 && rank_difference <= 1 {
-            target_squares.push(candidate_square_u);
+            let candidate_square_u = candidate_square_i as u8;
+
+            let file_difference = (file(candidate_square_u) as i8 - current_file).abs();
+            let rank_difference = (rank(candidate_square_u) as i8 - current_rank).abs();
+
+            if !(file_difference <= 1 && rank_difference <= 1) {
+                continue;
+            }
+
+            let square_on_board = self.board[candidate_square_u as usize];
+            match square_on_board {
+                None => {
+                    target_squares.push(candidate_square_u);
+                    continue;
+                },
+                Some(colored_piece) => {
+                    if colored_piece.side != king.side {
+                        target_squares.push(candidate_square_u);
+                    }
+                    continue;
+                }
+            };
+
         }
+
+        Ok(target_squares)
     }
-
-    target_squares
 }
 
 #[cfg(test)]
 mod tests {
+    use crate::ColoredPiece;
+
     use super::*;
 
-    #[test]
-    fn king_d4() {
-        let moves = king_targets(27);
-
-        assert_eq!(moves.len(), 8);
-
-        let expected = [18, 19, 20, 26, 28, 34, 35, 36];
-        for square in expected {
-            assert!(moves.contains(&square));
+    fn empty_position() -> Position {
+        Position {
+            board: [None; 64],
+            side_to_move: crate::Side::White,
+            castle: [false; 4],
+            en_passent: None,
         }
     }
 
     #[test]
-    fn king_h8() {
-        let moves = king_targets(63);
+    fn king_c5_empty_board() {
+        let mut pos = empty_position();
+
+        pos.board[34] = Some(ColoredPiece {
+            piece: crate::Piece::King,
+            side: crate::Side::White,
+        });
+
+        let moves = pos.king_targets(34).expect("king_targets returned Err");
+
+        assert_eq!(moves.len(), 8);
+
+        assert!(moves.contains(&42));
+        assert!(moves.contains(&27));
+        assert!(moves.contains(&25));
+        assert!(moves.contains(&35));
+    }
+
+    #[test]
+    fn king_h1_corner_test() {
+        let mut pos = empty_position();
+
+        pos.board[7] = Some(ColoredPiece {
+            piece: crate::Piece::King,
+            side: crate::Side::Black,
+        });
+
+        let moves = pos.king_targets(7).expect("king_targets returned Err");
 
         assert_eq!(moves.len(), 3);
 
-        let expected = [62, 54, 55];
-        for square in expected {
-            assert!(moves.contains(&square));
-        }
+        assert!(moves.contains(&15));
+        assert!(moves.contains(&14));
+        assert!(moves.contains(&6));
+        assert!(!moves.contains(&8));
+        assert!(!moves.contains(&16));
+    }
+
+    #[test]
+    fn king_d5_enemy_e6() {
+        let mut pos = empty_position();
+
+        pos.board[35] = Some(ColoredPiece {
+            piece: crate::Piece::King,
+            side: crate::Side::White,
+        });
+
+        pos.board[44] = Some(ColoredPiece {
+            piece: crate::Piece::Pawn,
+            side: crate::Side::Black,
+        });
+
+        let moves = pos.king_targets(35).expect("king_targets returned Err");
+
+        assert_eq!(moves.len(), 8);
+
+        assert!(moves.contains(&44));  
+    }
+
+    #[test]
+    fn king_h5_friendly_g4() {
+        let mut pos = empty_position();
+
+        pos.board[39] = Some(ColoredPiece {
+            piece: crate::Piece::King,
+            side: crate::Side::Black,
+        });
+
+        pos.board[30] = Some(ColoredPiece {
+            piece: crate::Piece::Pawn,
+            side: crate::Side::Black,
+        });
+
+        let moves = pos.king_targets(39).expect("king_targets returned Err");
+
+        assert_eq!(moves.len(), 4);
+
+        assert!(!moves.contains(&30));  
+    }
+
+    #[test]
+    fn wrong_piece_e8() {
+        let mut pos = empty_position(); 
+
+        pos.board[60] = Some(ColoredPiece {
+            piece: crate::Piece::Knight,
+            side: crate::Side::White,
+        });
+
+        assert_eq!(pos.king_targets(60), Err(MoveGenError::WrongPieceTypeOnSquare { expected_piece: Piece::King, found_piece: Piece::Knight, square: 60 }));
+    }
+
+    #[test]
+    fn no_piece_d5() {
+        let pos = empty_position(); 
+
+        assert_eq!(pos.king_targets(35), Err(MoveGenError::NoPieceOnSquare { square: 35 }))
     }
 }

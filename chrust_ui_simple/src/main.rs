@@ -21,9 +21,8 @@ async fn main() {
         Err(_x) => panic!("Paniced while loading default position"),
     };
 
-    let test = default_position.bishop_targets(63 as u8);
+    let test = default_position.king_targets(63 as u8);
 
-    println!("test");
     let test2: Vec<u8> = match test {
         Ok(x) => x,
         Err(_x) => {
@@ -31,11 +30,9 @@ async fn main() {
             return;
         } 
     };
-    println!("test");
     for test in test2 {
         println!("Squre: {test}");
     };
-    println!("test");
 
     let mut game_state = GameState {
         position: default_position,
