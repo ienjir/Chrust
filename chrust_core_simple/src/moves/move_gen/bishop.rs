@@ -67,7 +67,7 @@ mod tests {
     }
 
     #[test]
-    fn bishop_g7_empty_board() {
+    fn bishop_g7_empty_boad() {
         let mut pos = empty_position();
 
         pos.board[54] = Some(ColoredPiece {
@@ -84,6 +84,26 @@ mod tests {
         assert!(moves.contains(&47));
         assert!(moves.contains(&27));
         assert!(moves.contains(&0));
+    }
+
+    #[test]
+    fn bishop_h7_corner_test() {
+        let mut pos = empty_position();
+
+        pos.board[7] = Some(ColoredPiece {
+            piece: crate::Piece::Bishop,
+            side: crate::Side::White,
+        });
+
+        let moves = pos.bishop_targets(7).expect("bishop_targets returned Err");
+
+        assert_eq!(moves.len(), 7);
+
+        assert!(moves.contains(&14));
+        assert!(moves.contains(&56));
+        assert!(!moves.contains(&8));
+        assert!(!moves.contains(&16));
+        assert!(!moves.contains(&0));
     }
 
     #[test]
@@ -133,20 +153,20 @@ mod tests {
 
     #[test]
     fn wrong_piece_e8() {
-       let mut pos = empty_position(); 
+        let mut pos = empty_position(); 
 
-       pos.board[60] = Some(ColoredPiece {
-           piece: crate::Piece::Knight,
-           side: crate::Side::White,
-       });
+        pos.board[60] = Some(ColoredPiece {
+            piece: crate::Piece::Knight,
+            side: crate::Side::White,
+        });
 
-       assert_eq!(pos.bishop_targets(60), Err(MoveGenError::WrongPieceTypeOnSquare { expected_piece: Piece::Bishop, found_piece: Piece::Knight, square: 60 }));
+        assert_eq!(pos.bishop_targets(60), Err(MoveGenError::WrongPieceTypeOnSquare { expected_piece: Piece::Bishop, found_piece: Piece::Knight, square: 60 }));
     }
 
     #[test]
     fn no_piece_d5() {
-       let pos = empty_position(); 
+        let pos = empty_position(); 
 
-       assert_eq!(pos.bishop_targets(35), Err(MoveGenError::NoPieceOnSquare { square: 35 }))
+        assert_eq!(pos.bishop_targets(35), Err(MoveGenError::NoPieceOnSquare { square: 35 }))
     }
 }
