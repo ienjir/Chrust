@@ -5,8 +5,8 @@ mod layout;
 mod input;
 mod controller;
 
-use chrust_core_simple::position::load_position_from_fen;
-use crate::{assets::load_assets, controller::apply_ui_event, input::route_click, layout::DEFAULT_FEN_STRING, renderer::{render_chess_pieces, render_chessboard_without_pieces}};
+use chrust_core_simple::{position::load_position_from_fen};
+use crate::{assets::load_assets, controller::apply_ui_event, input::route_click, layout::{DEFAULT_FEN_STRING, EMPTY_FEN_STRING, TEST_FEN_STRING}, renderer::{render_chess_pieces, render_chessboard_without_pieces}};
 use macroquad::prelude::*;
 use macroquad::file::set_pc_assets_folder;
 use crate::state::{GameState, InputState};
@@ -16,10 +16,26 @@ async fn main() {
     set_pc_assets_folder("chrust_ui_simple/assets");
     let assets = load_assets().await;
 
-    let default_position = match load_position_from_fen(DEFAULT_FEN_STRING) {
+    let default_position = match load_position_from_fen(TEST_FEN_STRING) {
         Ok(x) => x,
         Err(_x) => panic!("Paniced while loading default position"),
     };
+
+    let test = default_position.bishop_targets(63 as u8);
+
+    println!("test");
+    let test2: Vec<u8> = match test {
+        Ok(x) => x,
+        Err(_x) => {
+            println!("Error");
+            return;
+        } 
+    };
+    println!("test");
+    for test in test2 {
+        println!("Squre: {test}");
+    };
+    println!("test");
 
     let mut game_state = GameState {
         position: default_position,
