@@ -179,6 +179,73 @@ mod tests {
     }
 
     #[test]
+    fn w_pawn_d2_blocked_on_double_move() {
+        let mut pos = empty_position();
+
+        pos.board[11] = Some(ColoredPiece {
+            piece: crate::Piece::Pawn,
+            side: crate::Side::White,
+        });
+
+        pos.board[27] = Some(ColoredPiece {
+            piece: crate::Piece::Knight,
+            side: crate::Side::Black,
+        });
+
+        let moves = pos.pawn_targets(11).expect("pawn_targets returned Err");
+
+        assert_eq!(moves.len(), 1);
+        assert!(moves.contains(&19));
+        assert!(!moves.contains(&27));
+    }
+
+    #[test]
+    fn w_pawn_a2_edge_capture_b3() {
+        let mut pos = empty_position();
+
+        pos.board[8] = Some(ColoredPiece {
+            piece: crate::Piece::Pawn,
+            side: crate::Side::White,
+        });
+
+        pos.board[17] = Some(ColoredPiece {
+            piece: crate::Piece::Knight,
+            side: crate::Side::Black,
+        });
+
+        let moves = pos.pawn_targets(8).expect("pawn_targets returned Err");
+
+        assert_eq!(moves.len(), 3);
+        assert!(moves.contains(&16));
+        assert!(moves.contains(&24));
+        assert!(moves.contains(&17));
+        assert!(!moves.contains(&15));
+    }
+
+    #[test]
+    fn b_pawn_h7_edge_capture_g6() {
+        let mut pos = empty_position();
+
+        pos.board[55] = Some(ColoredPiece {
+            piece: crate::Piece::Pawn,
+            side: crate::Side::Black,
+        });
+
+        pos.board[46] = Some(ColoredPiece {
+            piece: crate::Piece::Knight,
+            side: crate::Side::White,
+        });
+
+        let moves = pos.pawn_targets(55).expect("pawn_targets returned Err");
+
+        assert_eq!(moves.len(), 3);
+        assert!(moves.contains(&47));
+        assert!(moves.contains(&39));
+        assert!(moves.contains(&46));
+        assert!(!moves.contains(&48));
+    }
+
+    #[test]
     fn wrong_piece_e2() {
         let mut pos = empty_position(); 
 
