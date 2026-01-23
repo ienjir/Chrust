@@ -2,20 +2,20 @@ use crate::{Piece, Side, Square, file, moves::move_gen::MoveGenError, position::
 
 impl Position {
     // Without en passant / promotion
-    pub fn pawn_targets(&self, initial_square: Square)  -> Result<Vec<Square>, MoveGenError> {
+    pub fn pawn_targets(&self, from_square: Square)  -> Result<Vec<Square>, MoveGenError> {
         let mut target_squares = Vec::with_capacity(4);
 
-        if !(0..=63).contains(&initial_square) {
-            return Err(MoveGenError::NotASquareOnBoard {square: initial_square})
+        if !(0..=63).contains(&from_square) {
+            return Err(MoveGenError::NotASquareOnBoard {square: from_square})
         }
 
-        let pawn = match self.board[initial_square as usize]  {
+        let pawn = match self.board[from_square as usize]  {
             Some(p) => p,
-            None => return Err(MoveGenError::NoPieceOnSquare { square: initial_square })
+            None => return Err(MoveGenError::NoPieceOnSquare { square: from_square })
         };
 
         if pawn.piece != Piece::Pawn {
-            return Err(MoveGenError::WrongPieceTypeOnSquare { expected_piece: Piece::Pawn, found_piece: pawn.piece, square: initial_square})
+            return Err(MoveGenError::WrongPieceTypeOnSquare { expected_piece: Piece::Pawn, found_piece: pawn.piece, square: from_square})
         }
 
         let (forward, start_rank, capture_offsets): (i16, i16, [i16; 2]) = match pawn.side {
@@ -23,43 +23,44 @@ impl Position {
             Side::Black => (-8, 6, [-7, -9]),
         };
 
-        let current_file = file(initial_square) as i16;
-        let current_rank = rank(initial_square) as i16;
+        let from_file_i = file(from_square) as i16;
+        let from_rank_i = rank(from_square) as i16;
 
         let mut forward_1_is_empty = false;
-        let forward_1_candidate = initial_square as i16 + forward; 
+        let forward_1_candidate_i = from_square as i16 + forward; 
 
-        if (0..=63).contains(&forward_1_candidate) {
-            let file_difference = (file(forward_1_candidate as u8) as i16 - current_file).abs();
-            if file_difference == 0 {
-                if self.board[forward_1_candidate as usize].is_none() {
-                    target_squares.push(forward_1_candidate as u8);
+        if (0..=63).contains(&forward_1_candidate_i) {
+            let file_difference_i = (file(forward_1_candidate_i as u8) as i16 - from_file_i).abs();
+
+            if file_difference_i == 0 {
+                if self.board[forward_1_candidate_i as usize].is_none() {
+                    target_squares.push(forward_1_candidate_i as u8);
                     forward_1_is_empty = true;
                 }
             }
         }
 
-        if current_rank == start_rank && forward_1_is_empty {
-            let forward_2_candidate = initial_square as i16 + (forward * 2);
-            if (0..=63).contains(&forward_2_candidate) {
-                let file_difference = (file(forward_2_candidate as u8) as i16 - current_file).abs();
-                if file_difference == 0 {
-                    if self.board[forward_2_candidate as usize].is_none() {
-                        target_squares.push(forward_2_candidate as u8);
+        if from_rank_i == start_rank && forward_1_is_empty {
+            let forward_2_candidate_i = from_square as i16 + (forward * 2);
+            if (0..=63).contains(&forward_2_candidate_i) {
+                let file_difference_i = (file(forward_2_candidate_i as u8) as i16 - from_file_i).abs();
+                if file_difference_i == 0 {
+                    if self.board[forward_2_candidate_i as usize].is_none() {
+                        target_squares.push(forward_2_candidate_i as u8);
                     }
                 }
             }
         }
 
-        for caputure_offest in capture_offsets {
-            let capture_candidate = initial_square as i16 + caputure_offest;
+        for capture_offset in capture_offsets {
+            let capture_candidate = from_square as i16 + capture_offset;
 
             if !(0..=63).contains(&capture_candidate) {
                 continue;
             }
 
-            let file_difference = (file(capture_candidate as u8) as i16 - current_file).abs();
-            if file_difference != 1 {
+            let file_difference_i = (file(capture_candidate as u8) as i16 - from_file_i).abs();
+            if file_difference_i != 1 {
                 continue;
             }
 
