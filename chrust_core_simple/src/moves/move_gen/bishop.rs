@@ -1,46 +1,51 @@
 use crate::{Piece, Square, file, moves::move_gen::MoveGenError, position::Position, rank};
 
 impl Position {
-    pub fn bishop_targets(&self, inital_square: Square) -> Result<Vec<Square>, MoveGenError>  {
+    pub fn bishop_targets(&self, from_square: Square) -> Result<Vec<Square>, MoveGenError>  {
         let mut target_squares = Vec::with_capacity(13);
 
-        let directions: [i16; 4] = [-7, 7, -9, 9];
-        let bishop = match self.board[inital_square as usize] {
+        if !(0..=63).contains(&from_square) {
+            return Err(MoveGenError::NotASquareOnBoard { square: from_square })
+        }
+
+        let bishop = match self.board[from_square as usize] {
             Some(p) => p,
-            None => return Err(MoveGenError::NoPieceOnSquare { square: inital_square }),
+            None => return Err(MoveGenError::NoPieceOnSquare { square: from_square }),
         };
 
         if bishop.piece != Piece::Bishop {
-            return Err(MoveGenError::WrongPieceTypeOnSquare { expected_piece: Piece::Bishop, found_piece: bishop.piece, square: inital_square})
+            return Err(MoveGenError::WrongPieceTypeOnSquare { expected_piece: Piece::Bishop, found_piece: bishop.piece, square: from_square})
         }
 
-        for direction_increment in directions {
-            let mut current_square: i16 = inital_square as i16;
+        let directions: [i16; 4] = [-7, 7, -9, 9];
+
+        for direction in directions {
+            let mut step_from_i: i16 = from_square as i16;
             loop {
-                let next = current_square + direction_increment;
+                let step_to_i = step_from_i + direction;
 
-                if !(0..=63).contains(&next) {
+                if !(0..=63).contains(&step_to_i) {
                     break;
                 }
 
-                let file_difference = (file(next as u8) as i8 - file(current_square as u8) as i8).abs(); 
-                let rank_difference = (rank(next as u8) as i8 - rank(current_square as u8) as i8).abs();
+                let file_difference_i = (file(step_to_i as u8) as i16 - file(step_from_i as u8) as i16).abs();
+                let rank_difference_i = (rank(step_to_i as u8) as i16 - rank(step_from_i as u8) as i16).abs();
 
-                if rank_difference != 1 || file_difference != 1 {
+                if rank_difference_i != 1 || file_difference_i != 1 {
                     break;
                 }
 
-                let square_on_board = self.board[next as usize];
+                let square_on_board = self.board[step_to_i as usize];
                 match square_on_board {
                     None => {
-                        target_squares.push(next as u8);
-                        current_square = next;
-                        continue;
+                        target_squares.push(step_to_i as u8);
+                        step_from_i = step_to_i;
                     },
                     Some(colored_piece) => {
                         if colored_piece.side != bishop.side {
-                            target_squares.push(next as u8);
+                            target_squares.push(step_to_i as u8);
                         }
+
                         break;
                     }
                 }
@@ -169,4 +174,11 @@ mod tests {
 
         assert_eq!(pos.bishop_targets(35), Err(MoveGenError::NoPieceOnSquare { square: 35 }))
     }
+
+    #[test]
+    fn try_move_on_non_existing_square() {
+        let pos = empty_position();
+
+        assert_eq!(pos.pawn_targets(65), Err(MoveGenError::NotASquareOnBoard {square: 65}))
+    } 
 }

@@ -21,7 +21,7 @@ async fn main() {
         Err(_x) => panic!("Paniced while loading default position"),
     };
 
-    let test = default_position.pawn_targets(48 as u8);
+    let test = default_position.pawn_targets(65 as u8);
 
     let test2: Vec<u8> = match test {
         Ok(x) => x,
