@@ -35,8 +35,8 @@ impl Position {
                     break;
                 }
 
-                let square_on_board = self.board[step_to_i as usize];
-                match square_on_board {
+                let candidate_occupant = self.board[step_to_i as usize];
+                match candidate_occupant {
                     None => {
                         target_squares.push(step_to_i as u8);
                         step_from_i = step_to_i;
@@ -45,7 +45,6 @@ impl Position {
                         if colored_piece.side != bishop.side {
                             target_squares.push(step_to_i as u8);
                         }
-
                         break;
                     }
                 }
@@ -179,6 +178,6 @@ mod tests {
     fn try_move_on_non_existing_square() {
         let pos = empty_position();
 
-        assert_eq!(pos.pawn_targets(65), Err(MoveGenError::NotASquareOnBoard {square: 65}))
+        assert_eq!(pos.bishop_targets(65), Err(MoveGenError::NotASquareOnBoard {square: 65}))
     } 
 }

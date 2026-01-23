@@ -47,6 +47,7 @@ impl Position {
                     if colored_piece.side != knight.side {
                         target_squares.push(candidate_square_i as u8);
                     }
+                    continue;
                 }
             };
         }
@@ -173,6 +174,6 @@ mod tests {
     fn try_move_on_non_existing_square() {
         let pos = empty_position();
 
-        assert_eq!(pos.pawn_targets(65), Err(MoveGenError::NotASquareOnBoard {square: 65}))
+        assert_eq!(pos.knight_targets(65), Err(MoveGenError::NotASquareOnBoard {square: 65}))
     } 
 }

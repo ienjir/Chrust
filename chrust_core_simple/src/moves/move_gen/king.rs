@@ -41,11 +41,13 @@ impl Position {
             match candidate_occupant {
                 None => {
                     target_squares.push(candidate_square_i as u8);
+                    continue;
                 },
                 Some(colored_piece) => {
                     if colored_piece.side != king.side {
                         target_squares.push(candidate_square_i as u8);
                     }
+                    continue;
                 }
             };
 
@@ -174,6 +176,6 @@ mod tests {
     fn try_move_on_non_existing_square() {
         let pos = empty_position();
 
-        assert_eq!(pos.pawn_targets(65), Err(MoveGenError::NotASquareOnBoard {square: 65}))
+        assert_eq!(pos.king_targets(65), Err(MoveGenError::NotASquareOnBoard {square: 65}))
     } 
 }
