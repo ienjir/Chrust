@@ -1,48 +1,51 @@
 use crate::{Piece, Square, file, moves::move_gen::MoveGenError, position::Position, rank};
 
 impl Position {
-    pub fn knight_targets(&self, inital_square: Square) -> Result<Vec<Square>, MoveGenError> {
+    pub fn knight_targets(&self, from_square: Square) -> Result<Vec<Square>, MoveGenError> {
         let mut target_squares = Vec::with_capacity(8);
 
-        let directions: [i16; 8] = [-17, -15, -10, -6, 6, 10, 15, 17];
-        let knight = match self.board[inital_square as usize] {
+        if !(0..=63).contains(&from_square) {
+            return Err(MoveGenError::NotASquareOnBoard { square: from_square })
+        }
+
+        let knight = match self.board[from_square as usize] {
             Some(p) => p,
-            None => return Err(MoveGenError::NoPieceOnSquare { square: inital_square }),
+            None => return Err(MoveGenError::NoPieceOnSquare { square: from_square }),
         };
 
         if knight.piece != Piece::Knight {
-            return Err(MoveGenError::WrongPieceTypeOnSquare { expected_piece: Piece::Knight, found_piece: knight.piece, square: inital_square})
+            return Err(MoveGenError::WrongPieceTypeOnSquare { expected_piece: Piece::Knight, found_piece: knight.piece, square: from_square})
         }
 
-        let current_file = file(inital_square) as i8;
-        let current_rank = rank(inital_square) as i8;
+        let from_file_i = file(from_square) as i16;
+        let from_rank_i = rank(from_square) as i16;
+
+        let directions: [i16; 8] = [-17, -15, -10, -6, 6, 10, 15, 17];
 
         for direction in directions {
-            let candidate_square_i = inital_square as i16 + direction as i16;
+            let candidate_square_i = from_square as i16 + direction;
+
             if !(0..=63).contains(&candidate_square_i) {
                 continue;
             }
 
-            let candidate_square_u = candidate_square_i as u8;
+            let file_difference_i = (file(candidate_square_i as u8) as i16 - from_file_i).abs();
+            let rank_difference_i = (rank(candidate_square_i as u8) as i16 - from_rank_i).abs();
 
-            let file_difference = (file(candidate_square_u) as i8 - current_file).abs();
-            let rank_difference = (rank(candidate_square_u) as i8 - current_rank).abs();
-
-            let is_allowed_jump = (file_difference == 2 && rank_difference == 1) || (file_difference == 1 && rank_difference == 2);
+            let is_allowed_jump = (file_difference_i == 2 && rank_difference_i == 1) || (file_difference_i == 1 && rank_difference_i == 2);
 
             if !is_allowed_jump {
                 continue;
             }
 
-            let square_on_board = self.board[candidate_square_u as usize];
-            match square_on_board {
+            let candidate_occupant = self.board[candidate_square_i as usize];
+            match candidate_occupant {
                 None => {
-                    target_squares.push(candidate_square_u);
-                    continue;
+                    target_squares.push(candidate_square_i as u8);
                 },
                 Some(colored_piece) => {
                     if colored_piece.side != knight.side {
-                        target_squares.push(candidate_square_u);
+                        target_squares.push(candidate_square_i as u8);
                     }
                 }
             };
@@ -165,4 +168,11 @@ mod tests {
 
         assert_eq!(pos.knight_targets(35), Err(MoveGenError::NoPieceOnSquare { square: 35 }))
     }
+
+    #[test]
+    fn try_move_on_non_existing_square() {
+        let pos = empty_position();
+
+        assert_eq!(pos.pawn_targets(65), Err(MoveGenError::NotASquareOnBoard {square: 65}))
+    } 
 }
