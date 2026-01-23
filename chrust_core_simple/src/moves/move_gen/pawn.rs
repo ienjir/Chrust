@@ -5,6 +5,10 @@ impl Position {
     pub fn pawn_targets(&self, initial_square: Square)  -> Result<Vec<Square>, MoveGenError> {
         let mut target_squares = Vec::with_capacity(4);
 
+        if !(0..=63).contains(&initial_square) {
+            return Err(MoveGenError::NotASquareOnBoard {square: initial_square})
+        }
+
         let pawn = match self.board[initial_square as usize]  {
             Some(p) => p,
             None => return Err(MoveGenError::NoPieceOnSquare { square: initial_square })
@@ -24,41 +28,44 @@ impl Position {
 
         let mut forward_1_is_empty = false;
         let forward_1_candidate = initial_square as i16 + forward; 
-        let forward_1_square = self.board[forward_1_candidate as usize]; 
-        if forward_1_square.is_none() {
-            let file_difference = (file(forward_1_candidate as u8) as i16 - current_file).abs();
-            let rank_difference = (rank(forward_1_candidate as u8) as i16 - current_rank).abs();
 
-            if rank_difference == 1 && file_difference == 0 {
-                target_squares.push(forward_1_candidate as u8);
-                forward_1_is_empty = true;
+        if (0..=63).contains(&forward_1_candidate) {
+            let file_difference = (file(forward_1_candidate as u8) as i16 - current_file).abs();
+            if file_difference == 0 {
+                if self.board[forward_1_candidate as usize].is_none() {
+                    target_squares.push(forward_1_candidate as u8);
+                    forward_1_is_empty = true;
+                }
             }
         }
 
         if current_rank == start_rank && forward_1_is_empty {
             let forward_2_candidate = initial_square as i16 + (forward * 2);
-            let forward_2_square = self.board[forward_2_candidate as usize]; 
-            if forward_2_square.is_none() {
+            if (0..=63).contains(&forward_2_candidate) {
                 let file_difference = (file(forward_2_candidate as u8) as i16 - current_file).abs();
-                let rank_difference = (rank(forward_2_candidate as u8) as i16 - current_rank).abs();
-
-                if rank_difference == 2 && file_difference == 0 {
-                    target_squares.push(forward_2_candidate as u8);
+                if file_difference == 0 {
+                    if self.board[forward_2_candidate as usize].is_none() {
+                        target_squares.push(forward_2_candidate as u8);
+                    }
                 }
             }
         }
 
         for caputure_offest in capture_offsets {
             let capture_candidate = initial_square as i16 + caputure_offest;
-            let capture_candidate_square = self.board[capture_candidate as usize];
-            if let Some(piece) = capture_candidate_square {
-                if piece.side != pawn.side {
-                    let file_difference = (file(capture_candidate as u8) as i16 - current_file).abs();
-                    let rank_difference = (rank(capture_candidate as u8) as i16 - current_rank).abs();
 
-                    if rank_difference == 1 && file_difference == 1 {
-                        target_squares.push(capture_candidate as u8);
-                    }
+            if !(0..=63).contains(&capture_candidate) {
+                continue;
+            }
+
+            let file_difference = (file(capture_candidate as u8) as i16 - current_file).abs();
+            if file_difference != 1 {
+                continue;
+            }
+
+            if let Some(piece) = self.board[capture_candidate as usize] {
+                if piece.side != pawn.side {
+                    target_squares.push(capture_candidate as u8);
                 }
             }
         }
@@ -188,4 +195,11 @@ mod tests {
 
         assert_eq!(pos.pawn_targets(12), Err(MoveGenError::NoPieceOnSquare { square: 12 }))
     }
+
+    #[test]
+    fn try_move_on_non_existing_square() {
+        let pos = empty_position();
+
+        assert_eq!(pos.pawn_targets(65), Err(MoveGenError::NotASquareOnBoard { square: 65 }))
+    } 
 }
