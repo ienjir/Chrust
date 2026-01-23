@@ -1,0 +1,191 @@
+use crate::{Piece, Side, Square, file, moves::move_gen::MoveGenError, position::Position, rank};
+
+impl Position {
+    // Without en passant / promotion
+    pub fn pawn_targets(&self, initial_square: Square)  -> Result<Vec<Square>, MoveGenError> {
+        let mut target_squares = Vec::with_capacity(4);
+
+        let pawn = match self.board[initial_square as usize]  {
+            Some(p) => p,
+            None => return Err(MoveGenError::NoPieceOnSquare { square: initial_square })
+        };
+
+        if pawn.piece != Piece::Pawn {
+            return Err(MoveGenError::WrongPieceTypeOnSquare { expected_piece: Piece::Pawn, found_piece: pawn.piece, square: initial_square})
+        }
+
+        let (forward, start_rank, capture_offsets): (i16, i16, [i16; 2]) = match pawn.side {
+            Side::White => (8, 1, [7, 9]),
+            Side::Black => (-8, 6, [-7, -9]),
+        };
+
+        let current_file = file(initial_square) as i16;
+        let current_rank = rank(initial_square) as i16;
+
+        let mut forward_1_is_empty = false;
+        let forward_1_candidate = initial_square as i16 + forward; 
+        let forward_1_square = self.board[forward_1_candidate as usize]; 
+        if forward_1_square.is_none() {
+            let file_difference = (file(forward_1_candidate as u8) as i16 - current_file).abs();
+            let rank_difference = (rank(forward_1_candidate as u8) as i16 - current_rank).abs();
+
+            if rank_difference == 1 && file_difference == 0 {
+                target_squares.push(forward_1_candidate as u8);
+                forward_1_is_empty = true;
+            }
+        }
+
+        if current_rank == start_rank && forward_1_is_empty {
+            let forward_2_candidate = initial_square as i16 + (forward * 2);
+            let forward_2_square = self.board[forward_2_candidate as usize]; 
+            if forward_2_square.is_none() {
+                let file_difference = (file(forward_2_candidate as u8) as i16 - current_file).abs();
+                let rank_difference = (rank(forward_2_candidate as u8) as i16 - current_rank).abs();
+
+                if rank_difference == 2 && file_difference == 0 {
+                    target_squares.push(forward_2_candidate as u8);
+                }
+            }
+        }
+
+        for caputure_offest in capture_offsets {
+            let capture_candidate = initial_square as i16 + caputure_offest;
+            let capture_candidate_square = self.board[capture_candidate as usize];
+            if let Some(piece) = capture_candidate_square {
+                if piece.side != pawn.side {
+                    let file_difference = (file(capture_candidate as u8) as i16 - current_file).abs();
+                    let rank_difference = (rank(capture_candidate as u8) as i16 - current_rank).abs();
+
+                    if rank_difference == 1 && file_difference == 1 {
+                        target_squares.push(capture_candidate as u8);
+                    }
+                }
+            }
+        }
+
+        // Check for en passent 
+
+        Ok(target_squares)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::ColoredPiece;
+
+    use super::*;
+
+    fn empty_position() -> Position {
+        Position {
+            board: [None; 64],
+            side_to_move: crate::Side::White,
+            castle: [false; 4],
+            en_passent: None,
+        }
+    }
+
+
+    #[test]
+    fn w_pawn_c2() {
+        let mut pos = empty_position();
+
+        pos.board[10] = Some(ColoredPiece {
+            piece: crate::Piece::Pawn,
+            side: crate::Side::White,
+        });
+
+        let moves = pos.pawn_targets(10).expect("pawn_targets returned Err");
+
+        assert_eq!(moves.len(), 2);
+
+        assert!(moves.contains(&18));
+        assert!(moves.contains(&26));
+        assert!(!moves.contains(&17));
+        assert!(!moves.contains(&19));
+    }
+
+    #[test]
+    fn b_pawn_c7() {
+        let mut pos = empty_position();
+
+        pos.board[50] = Some(ColoredPiece {
+            piece: crate::Piece::Pawn,
+            side: crate::Side::Black,
+        });
+
+        let moves = pos.pawn_targets(50).expect("pawn_targets returned Err");
+
+        assert_eq!(moves.len(), 2);
+
+        assert!(moves.contains(&42));
+        assert!(moves.contains(&34));
+        assert!(!moves.contains(&41));
+        assert!(!moves.contains(&43));
+    }
+
+    #[test]
+    fn w_pawn_e4_enemy_f5_friendly_d5() {
+        let mut pos = empty_position();
+
+        pos.board[28] = Some(ColoredPiece {
+            piece: crate::Piece::Pawn,
+            side: crate::Side::White,
+        });
+
+        pos.board[37] = Some(ColoredPiece {
+            piece: crate::Piece::Knight,
+            side: crate::Side::Black,
+        });
+
+        pos.board[35] = Some(ColoredPiece {
+            piece: crate::Piece::Knight,
+            side: crate::Side::White,
+        });
+
+        let moves = pos.pawn_targets(28).expect("pawn_targets returned Err");
+
+        assert_eq!(moves.len(), 2);
+
+        assert!(moves.contains(&36));
+        assert!(moves.contains(&37));
+        assert!(!moves.contains(&35));
+    }
+
+    #[test]
+    fn w_pawn_d2_blocked_by_piece_d3() {
+        let mut pos = empty_position();
+
+        pos.board[11] = Some(ColoredPiece {
+            piece: crate::Piece::Pawn,
+            side: crate::Side::White,
+        });
+
+        pos.board[19] = Some(ColoredPiece {
+            piece: crate::Piece::Knight,
+            side: crate::Side::White,
+        });
+
+        let moves = pos.pawn_targets(11).expect("pawn_targets returned Err");
+
+        assert_eq!(moves.len(), 0);
+    }
+
+    #[test]
+    fn wrong_piece_e2() {
+        let mut pos = empty_position(); 
+
+        pos.board[12] = Some(ColoredPiece {
+            piece: crate::Piece::King,
+            side: crate::Side::White,
+        });
+
+        assert_eq!(pos.pawn_targets(12), Err(MoveGenError::WrongPieceTypeOnSquare { expected_piece: Piece::Pawn, found_piece: Piece::King, square: 12 }));
+    }
+
+    #[test]
+    fn no_piece_e2() {
+        let pos = empty_position(); 
+
+        assert_eq!(pos.pawn_targets(12), Err(MoveGenError::NoPieceOnSquare { square: 12 }))
+    }
+}
