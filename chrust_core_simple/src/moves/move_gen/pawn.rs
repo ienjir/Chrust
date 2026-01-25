@@ -1,4 +1,4 @@
-use crate::{Piece, Side, Square, file, moves::move_gen::MoveGenError, position::Position, rank};
+use crate::{Piece, Side, Square, file, moves::move_gen::move_gen::MoveGenError, position::Position, rank};
 
 impl Position {
     // Without en passant / promotion

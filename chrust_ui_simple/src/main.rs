@@ -4,9 +4,8 @@ mod state;
 mod layout;
 mod input;
 mod controller;
-
 use chrust_core_simple::{position::load_position_from_fen};
-use crate::{assets::load_assets, controller::apply_ui_event, input::route_click, layout::{DEFAULT_FEN_STRING, EMPTY_FEN_STRING, TEST_FEN_STRING}, renderer::{render_chess_pieces, render_chessboard_without_pieces}};
+use crate::{assets::load_assets, controller::apply_ui_event, input::route_click, layout::TEST_FEN_STRING, renderer::{render_chess_pieces, render_chessboard_without_pieces, render_possible_moves}};
 use macroquad::prelude::*;
 use macroquad::file::set_pc_assets_folder;
 use crate::state::{GameState, InputState};
@@ -37,11 +36,24 @@ async fn main() {
     let mut game_state = GameState {
         position: default_position,
         assets: assets,
-        highlighted: None,
+        selected: None,
+        possible_moves: Vec::new(),
     };
 
     loop {
         clear_background(LIGHTGRAY);
+
+        // Debug
+        if let Some(selected) = game_state.selected {
+            println!("Selected square: {selected}");
+        }
+        let test = &game_state.possible_moves;
+        for test1 in test {
+            println!("Square: {test1}") 
+        }
+
+
+
         let (mouse_x, mouse_y) = mouse_position();
         let input_state = InputState {
             mouse_x: mouse_x,
@@ -55,6 +67,7 @@ async fn main() {
 
         render_chessboard_without_pieces(&game_state);
         render_chess_pieces(&game_state).await;
+        render_possible_moves(&game_state);
 
         next_frame().await;
     }

@@ -1,6 +1,6 @@
 use core::f32;
 use chrust_core_simple::{Square, file, rank};
-use macroquad::{color::WHITE, math::{Rect, Vec2}, shapes::draw_rectangle, texture::{DrawTextureParams, draw_texture_ex}};
+use macroquad::{color::{GREEN, WHITE, YELLOW}, math::{Rect, Vec2}, shapes::{draw_circle, draw_rectangle}, texture::{DrawTextureParams, draw_texture_ex}};
 use crate::{layout::{CELL_SIZE, GRID_ORIGIN_X, GRID_ORIGIN_Y}, state::{GameState}};
 
 pub fn get_square_coordinates(square: Square) -> (f32, f32) {
@@ -42,9 +42,8 @@ pub fn render_chessboard_without_pieces(game_state: &GameState) {
             color = macroquad::color::colors::DARKGRAY;
         };
 
-        if let Some(highlighted) = game_state.highlighted {
+        if let Some(highlighted) = game_state.selected {
             if highlighted == square {
-                println!("Square: {square}");
                 color = macroquad::color::colors::RED;
             }
         };
@@ -52,7 +51,6 @@ pub fn render_chessboard_without_pieces(game_state: &GameState) {
         draw_rectangle(x, y, CELL_SIZE, CELL_SIZE, color);
     }
 }
-
 
 pub async fn render_chess_pieces(game_state: &GameState) {
     for square in 0..64 {
@@ -65,5 +63,14 @@ pub async fn render_chess_pieces(game_state: &GameState) {
             dest_size: Some(Vec2::new(rect.w, rect.h)),
             ..Default::default()
         });
+    }
+}
+
+pub fn render_possible_moves(game_state: &GameState) {
+    for &to_square in game_state.possible_moves.iter() {
+        let rect = get_square_rectangle(to_square);
+        let rect_center = rect.center();
+
+        draw_circle(rect_center.x, rect_center.y, 20.0, GREEN);
     }
 }

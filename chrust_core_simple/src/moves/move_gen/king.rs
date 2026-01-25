@@ -1,4 +1,4 @@
-use crate::{Piece, Square, file, moves::move_gen::MoveGenError, position::Position, rank};
+use crate::{Piece, Square, file, moves::move_gen::move_gen::MoveGenError, position::Position, rank};
 
 impl Position {
     // No check check

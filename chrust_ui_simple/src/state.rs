@@ -4,7 +4,8 @@ use crate::assets::Assets;
 pub struct GameState {
     pub position: Position,
     pub assets: Assets, 
-    pub highlighted: Option<Square>,
+    pub selected: Option<Square>,
+    pub possible_moves: Vec<Square>,
 }
 
 pub struct InputState {
@@ -13,14 +14,8 @@ pub struct InputState {
     pub left_mouse_clicked: bool,
 }
 
-pub struct UiState {
-    // Currently not relevant 
-}
-
-#[derive(Debug)]
-pub enum UiError {
-    CouldNotLoadTexture {
-        path: String,
-        source: macroquad::Error,
-    },
-}
+/*
+   Currently not relevant 
+   pub struct UiState {
+   }
+   */
