@@ -4,7 +4,7 @@ mod state;
 mod layout;
 mod input;
 mod controller;
-use chrust_core_simple::{position::load_position_from_fen};
+use chrust_core_simple::position::{self, load_position_from_fen};
 use crate::{assets::load_assets, controller::apply_ui_event, input::route_click, layout::TEST_FEN_STRING, renderer::{render_chess_pieces, render_chessboard_without_pieces, render_possible_moves}};
 use macroquad::prelude::*;
 use macroquad::file::set_pc_assets_folder;
@@ -20,24 +20,17 @@ async fn main() {
         Err(_x) => panic!("Paniced while loading default position"),
     };
 
-    let test = default_position.pawn_targets(8 as u8);
-
-    let test2: Vec<u8> = match test {
-        Ok(x) => x,
-        Err(_x) => {
-            println!("Error");
-            return;
-        } 
-    };
-    for test in test2 {
-        println!("Squre: {test}");
-    };
-
     let mut game_state = GameState {
         position: default_position,
         assets: assets,
         selected: None,
         possible_moves: Vec::new(),
+    };
+
+    let test = game_state.position.en_passent; 
+    match test {
+        Some(x) => println!("TEst: {}", x),
+        None => println!("Not test"),
     };
 
     loop {

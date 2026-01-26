@@ -13,3 +13,14 @@ pub enum MoveGenError {
     NoPieceOnSquare {square: Square},
     NotImplemented,
 }
+
+#[derive(Debug)]
+pub enum FenError {
+    InvalidPieceChar(char),
+    SquareLenghtIsnt2Wide(usize),
+    OutOfBounds(u8),
+    InvalidFile(char),
+    InvalidRank(char),
+    MissingFenParts,
+    NotAValideSide,
+}

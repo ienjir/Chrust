@@ -1,3 +1,5 @@
+use std::i16;
+
 use crate::{Piece, Side, Square, errors::MoveGenError, file, position::Position, rank};
 
 impl Position {
@@ -56,12 +58,19 @@ impl Position {
             let capture_candidate = from_square as i16 + capture_offset;
 
             if !(0..=63).contains(&capture_candidate) {
-                continue;
+                    continue;
             }
+
 
             let file_difference_i = (file(capture_candidate as u8) as i16 - from_file_i).abs();
             if file_difference_i != 1 {
                 continue;
+            }
+
+            if let Some(en_passent_square) = self.en_passent {
+                if en_passent_square as i16 == capture_candidate {
+                    target_squares.push(capture_candidate as u8);
+                }
             }
 
             if let Some(piece) = self.board[capture_candidate as usize] {
@@ -69,9 +78,8 @@ impl Position {
                     target_squares.push(capture_candidate as u8);
                 }
             }
-        }
 
-        // Check for en passent 
+        }
 
         Ok(target_squares)
     }

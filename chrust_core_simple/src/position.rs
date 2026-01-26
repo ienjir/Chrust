@@ -1,4 +1,4 @@
-use crate::{ColoredPiece, Piece, square, Side, Square};
+use crate::{ColoredPiece, Piece, Side, Square, errors::FenError, square};
 
 #[derive(Clone, Debug)]
 pub struct Position {
@@ -6,6 +6,34 @@ pub struct Position {
     pub side_to_move: Side,
     pub castle: [bool; 4],
     pub en_passent: Option<Square>,
+}
+
+
+pub fn convert_square_string_to_square(square_string: &str) -> Result<u8, FenError> {
+    if square_string.len() != 2 {
+        return Err(FenError::SquareLenghtIsnt2Wide(square_string.len()));
+    }
+
+    let chars: Vec<char> = square_string.to_lowercase().chars().collect();
+
+    let file = (chars[0] as u8).wrapping_sub(b'a');
+    if file > 7 {
+        return Err(FenError::InvalidFile(chars[0]));
+    }
+
+    let rank = chars[1].to_digit(10)
+        .map(|d| d as u8)
+        .and_then(|d| d.checked_sub(1)) 
+        .filter(|&d| d < 8)            
+        .ok_or(FenError::InvalidRank(chars[1]))?;
+
+    let square_index = rank * 8 + file;
+
+    if square_index > 63 {
+        return Err(FenError::OutOfBounds(square_index));
+    }
+
+    Ok(square_index)
 }
 
 impl Position {
@@ -29,10 +57,6 @@ impl Position {
     }
 }
 
-#[derive(Debug)]
-pub enum FenError {
-    InvalidPieceChar(char),
-}
 
 pub fn load_position_from_fen(fen: &str) -> Result<Position, FenError> {
     let mut position = Position {
@@ -43,6 +67,27 @@ pub fn load_position_from_fen(fen: &str) -> Result<Position, FenError> {
     };
 
     let fen_parts: Vec<&str> = fen.split_whitespace().collect();
+
+    if fen_parts.len() != 6 {
+       return Err(FenError::MissingFenParts); 
+    }
+
+    let en_passent = fen_parts[3];
+    if en_passent != "-" {
+        let square = convert_square_string_to_square(en_passent);
+        match square {
+            Ok(x) => {position.en_passent = Some(x)},
+            Err(x) => return Err(x),
+        }
+    }
+
+    let test = fen_parts[1];
+    println!("Test: {test}");
+    match test {
+        "b" => {position.side_to_move = Side::Black},
+        "w" => {position.side_to_move = Side::White},
+        _ => return Err(FenError::NotAValideSide) 
+    };
 
     let fen_board_normal = fen_parts[0];
     let fen_ranks = fen_board_normal.split("/");
