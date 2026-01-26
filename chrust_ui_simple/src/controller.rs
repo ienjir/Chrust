@@ -57,7 +57,7 @@ pub fn click_square(game_state: &mut GameState, from_square: Square) {
         }
 
         if game_state.possible_moves.contains(&from_square) {
-            match game_state.position.make_move(selected_square, from_square) {
+            match game_state.position.make_move_unvalidated(selected_square, from_square) {
                 Ok(p) => {
                     game_state.position = p;
                     game_state.possible_moves.clear();

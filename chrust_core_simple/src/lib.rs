@@ -1,5 +1,6 @@
 pub mod moves;
 pub mod position;
+pub mod errors;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub enum Side { White, Black }

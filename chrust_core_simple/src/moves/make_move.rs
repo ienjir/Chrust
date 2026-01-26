@@ -1,15 +1,7 @@
-use crate::{Side, Square, position::Position};
-
-
-#[derive(Debug)]
-pub enum MoveError {
-    NoPieceOnInitalSquare(Square),
-    OutOfBounds
-}
+use crate::{Side, Square, errors::MoveError, position::Position};
 
 impl Position {
-    // No validation
-    pub fn make_move(&self, initial_square: Square, target_square: Square) -> Result<Position, MoveError> {
+    pub fn make_move_unvalidated(&self, initial_square: Square, target_square: Square) -> Result<Position, MoveError> {
         if initial_square > 63 || target_square > 63 {
             return Err(MoveError::OutOfBounds);
         }
@@ -53,7 +45,7 @@ mod tests {
     fn make_move_errors_if_initial_square_empty() {
         let pos = empty_position();
 
-        let err = pos.make_move(0, 1).unwrap_err();
+        let err = pos.make_move_unvalidated(0, 1).unwrap_err();
         match err {
             MoveError::NoPieceOnInitalSquare(sq) => assert_eq!(sq, 0),
             _ => panic!("expected NoPieceOnInitalSquare"),
@@ -64,9 +56,9 @@ mod tests {
     fn make_move_errors_if_out_of_bounds() {
         let pos = empty_position();
 
-        assert!(matches!(pos.make_move(64, 0), Err(MoveError::OutOfBounds)));
-        assert!(matches!(pos.make_move(0, 64), Err(MoveError::OutOfBounds)));
-        assert!(matches!(pos.make_move(200, 201), Err(MoveError::OutOfBounds)));
+        assert!(matches!(pos.make_move_unvalidated(64, 0), Err(MoveError::OutOfBounds)));
+        assert!(matches!(pos.make_move_unvalidated(0, 64), Err(MoveError::OutOfBounds)));
+        assert!(matches!(pos.make_move_unvalidated(200, 201), Err(MoveError::OutOfBounds)));
     }
 
     #[test]
@@ -80,7 +72,7 @@ mod tests {
 
         pos.board[0] = Some(rook); // a1
 
-        let next = pos.make_move(0, 7).unwrap(); // a1 -> h1
+        let next = pos.make_move_unvalidated(0, 7).unwrap(); // a1 -> h1
 
         assert_eq!(next.board[0], None);
         assert_eq!(next.board[7], Some(rook));
@@ -105,7 +97,7 @@ mod tests {
         pos.board[0] = Some(white_rook);
         pos.board[7] = Some(black_knight);
 
-        let next = pos.make_move(0, 7).unwrap();
+        let next = pos.make_move_unvalidated(0, 7).unwrap();
 
         assert_eq!(next.board[0], None);
         assert_eq!(next.board[7], Some(white_rook));
@@ -122,11 +114,11 @@ mod tests {
         pos.board[0] = Some(pawn);
 
         pos.side_to_move = Side::White;
-        let next = pos.make_move(0, 1).unwrap();
+        let next = pos.make_move_unvalidated(0, 1).unwrap();
         assert_eq!(next.side_to_move, Side::Black);
 
         pos.side_to_move = Side::Black;
-        let next2 = pos.make_move(0, 1).unwrap();
+        let next2 = pos.make_move_unvalidated(0, 1).unwrap();
         assert_eq!(next2.side_to_move, Side::White);
     }
 }

@@ -1,6 +1,6 @@
 use core::f32;
 use chrust_core_simple::{Square, file, rank};
-use macroquad::{color::{GREEN, WHITE, YELLOW}, math::{Rect, Vec2}, shapes::{draw_circle, draw_rectangle}, texture::{DrawTextureParams, draw_texture_ex}};
+use macroquad::{color::{GREEN, WHITE}, math::{Rect, Vec2}, shapes::{draw_circle, draw_rectangle}, texture::{DrawTextureParams, draw_texture_ex}};
 use crate::{layout::{CELL_SIZE, GRID_ORIGIN_X, GRID_ORIGIN_Y}, state::{GameState}};
 
 pub fn get_square_coordinates(square: Square) -> (f32, f32) {
