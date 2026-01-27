@@ -8,7 +8,7 @@ pub fn get_possible_moves(position: &Position, from_square: Square) -> Result<Ve
         Piece::Bishop => Err(MoveGenError::NotImplemented),
         Piece::King => Err(MoveGenError::NotImplemented),
         Piece::Pawn => Err(MoveGenError::NotImplemented),
-        Piece::Knight => position.knight_targets(from_square),
+        Piece::Knight => Err(MoveGenError::NotImplemented),
         Piece::Queen => Err(MoveGenError::NotImplemented),
     }
 }
