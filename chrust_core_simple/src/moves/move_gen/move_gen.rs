@@ -4,7 +4,7 @@ pub fn get_possible_moves(position: &Position, from_square: Square) -> Result<Ve
     let piece = position.board[from_square as usize].ok_or(MoveGenError::NoPieceOnSquare { square: from_square })?;
 
     match piece.piece {
-        Piece::Rook => position.rook_targets(from_square),
+        Piece::Rook => Err(MoveGenError::NotImplemented),
         Piece::Bishop => Err(MoveGenError::NotImplemented),
         Piece::King => Err(MoveGenError::NotImplemented),
         Piece::Pawn => Err(MoveGenError::NotImplemented),

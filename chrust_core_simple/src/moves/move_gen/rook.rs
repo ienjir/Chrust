@@ -1,8 +1,8 @@
-use crate::{Piece, Square, errors::MoveGenError, file, position::Position, rank};
+use crate::{Piece, Square, errors::MoveGenError, file, moves::make_move::{Move, MoveKind}, position::Position, rank};
 
 impl Position {
-    pub fn rook_targets(&self, from_square: Square) -> Result<Vec<Square>, MoveGenError> {
-        let mut target_squares = Vec::with_capacity(14);
+    pub fn rook_targets(&self, from_square: Square) -> Result<Vec<Move>, MoveGenError> {
+        let mut target_moves: Vec<Move> = Vec::with_capacity(14);
 
         if !(0..=63).contains(&from_square) {
             return Err(MoveGenError::NotASquareOnBoard { square: from_square })
@@ -44,12 +44,20 @@ impl Position {
                 let candidate_occupant = self.board[step_to_i as usize];
                 match candidate_occupant {
                     None => {
-                        target_squares.push(step_to_i as u8);
+                        target_moves.push(Move {
+                            from_square: from_square,
+                            to_square: step_to_i as u8,
+                            move_kind: MoveKind::Quiet,
+                        });
                         step_from_i = step_to_i;
                     },
                     Some(colored_piece) => {
                         if colored_piece.side != rook.side {
-                            target_squares.push(step_to_i as u8);
+                            target_moves.push(Move {
+                                from_square: from_square,
+                                to_square: step_to_i as u8,
+                                move_kind: MoveKind::Capture,
+                            });
                         }
                         break;
                     }
@@ -57,7 +65,7 @@ impl Position {
             }
         }
 
-        Ok(target_squares)
+        Ok(target_moves)
     }
 }
 
@@ -76,6 +84,16 @@ mod tests {
         }
     }
 
+    fn has_move(moves: &[Move], from: Square, to: Square, kind: MoveKind) -> bool {
+        moves.iter().any(|m| {
+            m.from_square == from && m.to_square == to && m.move_kind == kind
+        })
+    }
+
+    fn has_to_square(moves: &[Move], to: Square) -> bool {
+        moves.iter().any(|m| m.to_square == to)
+    }
+
     #[test]
     fn rook_h8_empty_board() {
         let mut pos = empty_position();
@@ -89,10 +107,10 @@ mod tests {
 
         assert_eq!(moves.len(), 14);
 
-        assert!(moves.contains(&62)); 
-        assert!(moves.contains(&56)); 
-        assert!(moves.contains(&55)); 
-        assert!(moves.contains(&7)); 
+        assert!(has_move(&moves, 63, 62, MoveKind::Quiet));
+        assert!(has_move(&moves, 63, 56, MoveKind::Quiet));
+        assert!(has_move(&moves, 63, 55, MoveKind::Quiet));
+        assert!(has_move(&moves, 63, 7, MoveKind::Quiet));
     }
 
     #[test]
@@ -108,10 +126,10 @@ mod tests {
 
         assert_eq!(moves.len(), 14);
 
-        assert!(moves.contains(&24)); 
-        assert!(moves.contains(&31));
-        assert!(moves.contains(&3));  
-        assert!(moves.contains(&26));
+        assert!(has_move(&moves, 27, 24, MoveKind::Quiet));
+        assert!(has_move(&moves, 27, 31, MoveKind::Quiet));
+        assert!(has_move(&moves, 27, 3, MoveKind::Quiet));
+        assert!(has_move(&moves, 27, 26, MoveKind::Quiet));
     }
 
     #[test]
@@ -130,9 +148,9 @@ mod tests {
 
         let moves = pos.rook_targets(27).expect("knight_targets returned Err");
 
-        assert!(moves.contains(&28)); 
-        assert!(!moves.contains(&29)); 
-        assert!(!moves.contains(&30));
+        assert!(has_move(&moves, 27, 28, MoveKind::Quiet));
+        assert!(!has_to_square(&moves, 29));
+        assert!(!has_to_square(&moves, 30));
     }
 
     #[test]
@@ -151,9 +169,9 @@ mod tests {
 
         let moves = pos.rook_targets(27).expect("knight_targets returned Err");
 
-        assert!(moves.contains(&28)); 
-        assert!(moves.contains(&29)); 
-        assert!(!moves.contains(&30)); 
+        assert!(has_move(&moves, 27, 28, MoveKind::Quiet));
+        assert!(has_move(&moves, 27, 29, MoveKind::Capture));
+        assert!(!has_to_square(&moves, 30));
     }
 
     #[test]
@@ -169,11 +187,11 @@ mod tests {
 
         assert_eq!(moves.len(), 14);
 
-        assert!(moves.contains(&1));
-        assert!(moves.contains(&7));
-        assert!(moves.contains(&8));
-        assert!(moves.contains(&56));
-        assert!(!moves.contains(&63));
+        assert!(has_move(&moves, 0, 1, MoveKind::Quiet));
+        assert!(has_move(&moves, 0, 7, MoveKind::Quiet));
+        assert!(has_move(&moves, 0, 8, MoveKind::Quiet));
+        assert!(has_move(&moves, 0, 56, MoveKind::Quiet));
+        assert!(!has_to_square(&moves, 63));
     }
 
     #[test]
@@ -236,10 +254,10 @@ mod tests {
         let moves = pos.rook_targets(27).expect("knight_targets returned Err");
 
         assert_eq!(moves.len(), 4);
-        assert!(moves.contains(&35));
-        assert!(moves.contains(&19));
-        assert!(moves.contains(&26));
-        assert!(moves.contains(&28));
+        assert!(has_move(&moves, 27, 35, MoveKind::Capture));
+        assert!(has_move(&moves, 27, 19, MoveKind::Capture));
+        assert!(has_move(&moves, 27, 26, MoveKind::Capture));
+        assert!(has_move(&moves, 27, 28, MoveKind::Capture));
     }
 
     #[test]
@@ -264,18 +282,18 @@ mod tests {
 
         assert_eq!(moves.len(), 10);
 
-        assert!(moves.contains(&35));
-        assert!(!moves.contains(&43));
-        assert!(moves.contains(&19));
-        assert!(moves.contains(&11));
-        assert!(moves.contains(&3));
+        assert!(has_move(&moves, 27, 35, MoveKind::Quiet));
+        assert!(!has_to_square(&moves, 43));
+        assert!(has_move(&moves, 27, 19, MoveKind::Quiet));
+        assert!(has_move(&moves, 27, 11, MoveKind::Quiet));
+        assert!(has_move(&moves, 27, 3, MoveKind::Quiet));
 
-        assert!(moves.contains(&26));
-        assert!(moves.contains(&25));
-        assert!(!moves.contains(&24));
+        assert!(has_move(&moves, 27, 26, MoveKind::Quiet));
+        assert!(has_move(&moves, 27, 25, MoveKind::Capture));
+        assert!(!has_to_square(&moves, 24));
 
-        assert!(moves.contains(&28));
-        assert!(moves.contains(&31));
+        assert!(has_move(&moves, 27, 28, MoveKind::Quiet));
+        assert!(has_move(&moves, 27, 31, MoveKind::Quiet));
     }
 
     #[test]
