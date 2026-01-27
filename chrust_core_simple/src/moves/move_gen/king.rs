@@ -1,9 +1,9 @@
-use crate::{Piece, Square, errors::MoveGenError, file, position::Position, rank};
+use crate::{Piece, Square, errors::MoveGenError, file, moves::make_move::{Move, MoveKind}, position::Position, rank};
 
 impl Position {
     // No check check
-    pub fn king_targets(&self, from_square: Square) -> Result<Vec<Square>, MoveGenError> {
-        let mut target_squares = Vec::with_capacity(8);
+    pub fn king_targets(&self, from_square: Square) -> Result<Vec<Move>, MoveGenError> {
+        let mut target_moves: Vec<Move> = Vec::with_capacity(8);
 
         if !(0..=63).contains(&from_square) {
             return Err(MoveGenError::NotASquareOnBoard { square: from_square })
@@ -40,12 +40,20 @@ impl Position {
             let candidate_occupant = self.board[candidate_square_i as usize];
             match candidate_occupant {
                 None => {
-                    target_squares.push(candidate_square_i as u8);
+                    target_moves.push(Move {
+                        from_square: from_square,
+                        to_square: candidate_square_i as u8,
+                        move_kind: MoveKind::Quiet,
+                    });
                     continue;
                 },
                 Some(colored_piece) => {
                     if colored_piece.side != king.side {
-                        target_squares.push(candidate_square_i as u8);
+                        target_moves.push(Move {
+                            from_square: from_square,
+                            to_square: candidate_square_i as u8,
+                            move_kind: MoveKind::Capture,
+                        });
                     }
                     continue;
                 }
@@ -53,7 +61,7 @@ impl Position {
 
         }
 
-        Ok(target_squares)
+        Ok(target_moves)
     }
 }
 
@@ -72,6 +80,16 @@ mod tests {
         }
     }
 
+    fn has_move(moves: &[Move], from: Square, to: Square, kind: MoveKind) -> bool {
+        moves.iter().any(|m| {
+            m.from_square == from && m.to_square == to && m.move_kind == kind
+        })
+    }
+
+    fn has_to_square(moves: &[Move], to: Square) -> bool {
+        moves.iter().any(|m| m.to_square == to)
+    }
+
     #[test]
     fn king_c5_empty_board() {
         let mut pos = empty_position();
@@ -85,10 +103,10 @@ mod tests {
 
         assert_eq!(moves.len(), 8);
 
-        assert!(moves.contains(&42));
-        assert!(moves.contains(&27));
-        assert!(moves.contains(&25));
-        assert!(moves.contains(&35));
+        assert!(has_move(&moves, 34, 42, MoveKind::Quiet));
+        assert!(has_move(&moves, 34, 27, MoveKind::Quiet));
+        assert!(has_move(&moves, 34, 25, MoveKind::Quiet));
+        assert!(has_move(&moves, 34, 35, MoveKind::Quiet));
     }
 
     #[test]
@@ -104,11 +122,11 @@ mod tests {
 
         assert_eq!(moves.len(), 3);
 
-        assert!(moves.contains(&15));
-        assert!(moves.contains(&14));
-        assert!(moves.contains(&6));
-        assert!(!moves.contains(&8));
-        assert!(!moves.contains(&16));
+        assert!(has_move(&moves, 7, 15, MoveKind::Quiet));
+        assert!(has_move(&moves, 7, 14, MoveKind::Quiet));
+        assert!(has_move(&moves, 7, 6, MoveKind::Quiet));
+        assert!(!has_to_square(&moves, 8));
+        assert!(!has_to_square(&moves, 16));
     }
 
     #[test]
@@ -129,7 +147,7 @@ mod tests {
 
         assert_eq!(moves.len(), 8);
 
-        assert!(moves.contains(&44));  
+        assert!(has_move(&moves, 35, 44, MoveKind::Capture));
     }
 
     #[test]
@@ -150,7 +168,7 @@ mod tests {
 
         assert_eq!(moves.len(), 4);
 
-        assert!(!moves.contains(&30));  
+        assert!(!has_to_square(&moves, 30));
     }
 
     #[test]
