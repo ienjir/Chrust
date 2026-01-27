@@ -1,8 +1,8 @@
-use crate::{Piece, Square, errors::MoveGenError, file, position::Position, rank};
+use crate::{Piece, Square, errors::MoveGenError, file, moves::make_move::{Move, MoveKind}, position::Position, rank};
 
 impl Position {
-    pub fn bishop_targets(&self, from_square: Square) -> Result<Vec<Square>, MoveGenError>  {
-        let mut target_squares = Vec::with_capacity(13);
+    pub fn bishop_targets(&self, from_square: Square) -> Result<Vec<Move>, MoveGenError>  {
+        let mut to_moves: Vec<Move> = Vec::with_capacity(13);
 
         if !(0..=63).contains(&from_square) {
             return Err(MoveGenError::NotASquareOnBoard { square: from_square })
@@ -38,12 +38,20 @@ impl Position {
                 let candidate_occupant = self.board[step_to_i as usize];
                 match candidate_occupant {
                     None => {
-                        target_squares.push(step_to_i as u8);
+                        to_moves.push(Move {
+                            from_square: from_square,
+                            to_square: step_to_i as u8,
+                            move_kind: MoveKind::Quiet,
+                        });
                         step_from_i = step_to_i;
                     },
                     Some(colored_piece) => {
                         if colored_piece.side != bishop.side {
-                            target_squares.push(step_to_i as u8);
+                            to_moves.push(Move {
+                                from_square: from_square,
+                                to_square: step_to_i as u8,
+                                move_kind: MoveKind::Capture,
+                            });
                         }
                         break;
                     }
@@ -51,7 +59,7 @@ impl Position {
             }
         }
 
-        Ok(target_squares)
+        Ok(to_moves)
     }
 }
 
@@ -70,6 +78,16 @@ mod tests {
         }
     }
 
+    fn has_move(moves: &[Move], from: Square, to: Square, kind: MoveKind) -> bool {
+        moves.iter().any(|m| {
+            m.from_square == from && m.to_square == to && m.move_kind == kind
+        })
+    }
+
+    fn has_to_square(moves: &[Move], to: Square) -> bool {
+        moves.iter().any(|m| m.to_square == to)
+    }
+
     #[test]
     fn bishop_g7_empty_boad() {
         let mut pos = empty_position();
@@ -83,11 +101,11 @@ mod tests {
 
         assert_eq!(moves.len(), 9);
 
-        assert!(moves.contains(&63));
-        assert!(moves.contains(&61));
-        assert!(moves.contains(&47));
-        assert!(moves.contains(&27));
-        assert!(moves.contains(&0));
+        assert!(has_move(&moves, 54, 63, MoveKind::Quiet));
+        assert!(has_move(&moves, 54, 61, MoveKind::Quiet));
+        assert!(has_move(&moves, 54, 47, MoveKind::Quiet));
+        assert!(has_move(&moves, 54, 27, MoveKind::Quiet));
+        assert!(has_move(&moves, 54, 0, MoveKind::Quiet));
     }
 
     #[test]
@@ -103,11 +121,11 @@ mod tests {
 
         assert_eq!(moves.len(), 7);
 
-        assert!(moves.contains(&14));
-        assert!(moves.contains(&56));
-        assert!(!moves.contains(&8));
-        assert!(!moves.contains(&16));
-        assert!(!moves.contains(&0));
+        assert!(has_move(&moves, 7, 14, MoveKind::Quiet));
+        assert!(has_move(&moves, 7, 56, MoveKind::Quiet));
+        assert!(!has_to_square(&moves, 8));
+        assert!(!has_to_square(&moves, 16));
+        assert!(!has_to_square(&moves, 0));
     }
 
     #[test]
@@ -128,9 +146,9 @@ mod tests {
 
         assert_eq!(moves.len(), 7);
 
-        assert!(moves.contains(&36)); 
-        assert!(moves.contains(&29));
-        assert!(!moves.contains(&22));  
+        assert!(has_move(&moves, 50, 36, MoveKind::Quiet));
+        assert!(has_move(&moves, 50, 29, MoveKind::Capture));
+        assert!(!has_to_square(&moves, 22));
     }
 
     #[test]
@@ -151,8 +169,8 @@ mod tests {
 
         assert_eq!(moves.len(), 6);
 
-        assert!(moves.contains(&35)); 
-        assert!(!moves.contains(&44));
+        assert!(has_move(&moves, 17, 35, MoveKind::Quiet));
+        assert!(!has_to_square(&moves, 44));
     }
 
     #[test]

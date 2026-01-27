@@ -5,7 +5,7 @@ use crate::{Piece, Side, Square, errors::MoveGenError, file, moves::{make_move::
 impl Position {
     // Without promotion
     pub fn pawn_targets(&self, from_square: Square)  -> Result<Vec<Move>, MoveGenError> {
-        let mut target_squares: Vec<Move> = Vec::with_capacity(4);
+        let mut target_moves: Vec<Move> = Vec::with_capacity(4);
 
         if !(0..=63).contains(&from_square) {
             return Err(MoveGenError::NotASquareOnBoard {square: from_square})
@@ -42,7 +42,7 @@ impl Position {
                        move_kind: MoveKind::Quiet,
                     };
 
-                    target_squares.push(single_move);
+                    target_moves.push(single_move);
                     forward_1_is_empty = true;
                 }
             }
@@ -59,7 +59,7 @@ impl Position {
                             to_square: forward_2_candidate_i as u8,
                             move_kind: MoveKind::DoublePawnPush { passed_square: forward_1_candidate_i as u8 },
                         };
-                        target_squares.push(double_move);
+                        target_moves.push(double_move);
                     }
                 }
             }
@@ -85,7 +85,7 @@ impl Position {
                         to_square: capture_candidate as u8,
                         move_kind: MoveKind::EnPassant { capture_square: en_passant_square }
                     };
-                    target_squares.push(en_passant_move);
+                    target_moves.push(en_passant_move);
                 }
             }
 
@@ -96,13 +96,13 @@ impl Position {
                         to_square: capture_candidate as u8,
                         move_kind: MoveKind::Capture,
                     };
-                    target_squares.push(en_passant_move);
+                    target_moves.push(en_passant_move);
                 }
             }
 
         }
 
-        Ok(target_squares)
+        Ok(target_moves)
     }
 }
 
