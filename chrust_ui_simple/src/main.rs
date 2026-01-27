@@ -27,7 +27,7 @@ async fn main() {
         possible_moves: Vec::new(),
     };
 
-    let test = game_state.position.en_passent; 
+    let test = game_state.position.en_passant; 
     match test {
         Some(x) => println!("TEst: {}", x),
         None => println!("Not test"),

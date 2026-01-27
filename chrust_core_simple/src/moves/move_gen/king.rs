@@ -68,7 +68,7 @@ mod tests {
             board: [None; 64],
             side_to_move: crate::Side::White,
             castle: [false; 4],
-            en_passent: None,
+            en_passant: None,
         }
     }
 

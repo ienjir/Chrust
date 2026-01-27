@@ -5,7 +5,7 @@ pub struct Position {
     pub board: [Option<ColoredPiece>; 64],
     pub side_to_move: Side,
     pub castle: [bool; 4],
-    pub en_passent: Option<Square>,
+    pub en_passant: Option<Square>,
 }
 
 
@@ -62,7 +62,7 @@ pub fn load_position_from_fen(fen: &str) -> Result<Position, FenError> {
     let mut position = Position {
         board: [None; 64],
         castle: [false; 4],
-        en_passent: None,
+        en_passant: None,
         side_to_move: Side::White,
     };
 
@@ -72,11 +72,11 @@ pub fn load_position_from_fen(fen: &str) -> Result<Position, FenError> {
        return Err(FenError::MissingFenParts); 
     }
 
-    let en_passent = fen_parts[3];
-    if en_passent != "-" {
-        let square = convert_square_string_to_square(en_passent);
+    let en_passant = fen_parts[3];
+    if en_passant != "-" {
+        let square = convert_square_string_to_square(en_passant);
         match square {
-            Ok(x) => {position.en_passent = Some(x)},
+            Ok(x) => {position.en_passant = Some(x)},
             Err(x) => return Err(x),
         }
     }

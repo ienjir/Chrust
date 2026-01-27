@@ -1,11 +1,11 @@
 use std::i16;
 
-use crate::{Piece, Side, Square, errors::MoveGenError, file, position::Position, rank};
+use crate::{Piece, Side, Square, errors::MoveGenError, file, moves::{make_move::{Move, MoveKind}}, position::Position, rank};
 
 impl Position {
-    // Without en passant / promotion
-    pub fn pawn_targets(&self, from_square: Square)  -> Result<Vec<Square>, MoveGenError> {
-        let mut target_squares = Vec::with_capacity(4);
+    // Without promotion
+    pub fn pawn_targets(&self, from_square: Square)  -> Result<Vec<Move>, MoveGenError> {
+        let mut target_squares: Vec<Move> = Vec::with_capacity(4);
 
         if !(0..=63).contains(&from_square) {
             return Err(MoveGenError::NotASquareOnBoard {square: from_square})
@@ -36,7 +36,13 @@ impl Position {
 
             if file_difference_i == 0 {
                 if self.board[forward_1_candidate_i as usize].is_none() {
-                    target_squares.push(forward_1_candidate_i as u8);
+                    let single_move = Move {
+                       from_square: from_square,
+                       to_square: forward_1_candidate_i as u8,
+                       move_kind: MoveKind::Quiet,
+                    };
+
+                    target_squares.push(single_move);
                     forward_1_is_empty = true;
                 }
             }
@@ -48,7 +54,12 @@ impl Position {
                 let file_difference_i = (file(forward_2_candidate_i as u8) as i16 - from_file_i).abs();
                 if file_difference_i == 0 {
                     if self.board[forward_2_candidate_i as usize].is_none() {
-                        target_squares.push(forward_2_candidate_i as u8);
+                        let double_move = Move {
+                            from_square: from_square,
+                            to_square: forward_2_candidate_i as u8,
+                            move_kind: MoveKind::DoublePawnPush { passed_square: forward_1_candidate_i as u8 },
+                        };
+                        target_squares.push(double_move);
                     }
                 }
             }
@@ -58,7 +69,7 @@ impl Position {
             let capture_candidate = from_square as i16 + capture_offset;
 
             if !(0..=63).contains(&capture_candidate) {
-                    continue;
+                continue;
             }
 
 
@@ -67,15 +78,25 @@ impl Position {
                 continue;
             }
 
-            if let Some(en_passent_square) = self.en_passent {
-                if en_passent_square as i16 == capture_candidate {
-                    target_squares.push(capture_candidate as u8);
+            if let Some(en_passant_square) = self.en_passant {
+                if en_passant_square as i16 == capture_candidate {
+                    let en_passant_move = Move {
+                        from_square: from_square,
+                        to_square: capture_candidate as u8,
+                        move_kind: MoveKind::EnPassant { capture_square: en_passant_square }
+                    };
+                    target_squares.push(en_passant_move);
                 }
             }
 
             if let Some(piece) = self.board[capture_candidate as usize] {
                 if piece.side != pawn.side {
-                    target_squares.push(capture_candidate as u8);
+                    let en_passant_move = Move {
+                        from_square: from_square,
+                        to_square: capture_candidate as u8,
+                        move_kind: MoveKind::Capture,
+                    };
+                    target_squares.push(en_passant_move);
                 }
             }
 
@@ -96,8 +117,18 @@ mod tests {
             board: [None; 64],
             side_to_move: crate::Side::White,
             castle: [false; 4],
-            en_passent: None,
+            en_passant: None,
         }
+    }
+
+    fn has_move(moves: &[Move], from: Square, to: Square, kind: MoveKind) -> bool {
+        moves.iter().any(|m| {
+            m.from_square == from && m.to_square == to && m.move_kind == kind
+        })
+    }
+
+    fn has_to_square(moves: &[Move], to: Square) -> bool {
+        moves.iter().any(|m| m.to_square == to)
     }
 
 
@@ -114,10 +145,10 @@ mod tests {
 
         assert_eq!(moves.len(), 2);
 
-        assert!(moves.contains(&18));
-        assert!(moves.contains(&26));
-        assert!(!moves.contains(&17));
-        assert!(!moves.contains(&19));
+        assert!(has_move(&moves, 10, 18, MoveKind::Quiet));
+        assert!(has_move(&moves, 10, 26, MoveKind::DoublePawnPush { passed_square: 18 }));
+        assert!(!has_to_square(&moves, 17));
+        assert!(!has_to_square(&moves, 19));
     }
 
     #[test]
@@ -133,10 +164,10 @@ mod tests {
 
         assert_eq!(moves.len(), 2);
 
-        assert!(moves.contains(&42));
-        assert!(moves.contains(&34));
-        assert!(!moves.contains(&41));
-        assert!(!moves.contains(&43));
+        assert!(has_move(&moves, 50, 42, MoveKind::Quiet));
+        assert!(has_move(&moves, 50, 34, MoveKind::DoublePawnPush { passed_square: 42 }));
+        assert!(!has_to_square(&moves, 41));
+        assert!(!has_to_square(&moves, 43));
     }
 
     #[test]
@@ -162,9 +193,9 @@ mod tests {
 
         assert_eq!(moves.len(), 2);
 
-        assert!(moves.contains(&36));
-        assert!(moves.contains(&37));
-        assert!(!moves.contains(&35));
+        assert!(has_move(&moves, 28, 36, MoveKind::Quiet));
+        assert!(has_move(&moves, 28, 37, MoveKind::Capture));
+        assert!(!has_to_square(&moves, 35));
     }
 
     #[test]
@@ -203,8 +234,8 @@ mod tests {
         let moves = pos.pawn_targets(11).expect("pawn_targets returned Err");
 
         assert_eq!(moves.len(), 1);
-        assert!(moves.contains(&19));
-        assert!(!moves.contains(&27));
+        assert!(has_move(&moves, 11, 19, MoveKind::Quiet));
+        assert!(!has_to_square(&moves, 27));
     }
 
     #[test]
@@ -224,10 +255,10 @@ mod tests {
         let moves = pos.pawn_targets(8).expect("pawn_targets returned Err");
 
         assert_eq!(moves.len(), 3);
-        assert!(moves.contains(&16));
-        assert!(moves.contains(&24));
-        assert!(moves.contains(&17));
-        assert!(!moves.contains(&15));
+        assert!(has_move(&moves, 8, 16, MoveKind::Quiet));
+        assert!(has_move(&moves, 8, 24, MoveKind::DoublePawnPush { passed_square: 16 }));
+        assert!(has_move(&moves, 8, 17, MoveKind::Capture));
+        assert!(!has_to_square(&moves, 15));
     }
 
     #[test]
@@ -247,10 +278,10 @@ mod tests {
         let moves = pos.pawn_targets(55).expect("pawn_targets returned Err");
 
         assert_eq!(moves.len(), 3);
-        assert!(moves.contains(&47));
-        assert!(moves.contains(&39));
-        assert!(moves.contains(&46));
-        assert!(!moves.contains(&48));
+        assert!(has_move(&moves, 55, 47, MoveKind::Quiet));
+        assert!(has_move(&moves, 55, 39, MoveKind::DoublePawnPush { passed_square: 47 }));
+        assert!(has_move(&moves, 55, 46, MoveKind::Capture));
+        assert!(!has_to_square(&moves, 48));
     }
 
     #[test]
@@ -277,5 +308,21 @@ mod tests {
         let pos = empty_position();
 
         assert_eq!(pos.pawn_targets(65), Err(MoveGenError::NotASquareOnBoard { square: 65 }))
-    } 
+    }
+
+    #[test]
+    fn w_pawn_e5_en_passant_d6() {
+        let mut pos = empty_position();
+
+        pos.board[36] = Some(ColoredPiece {
+            piece: crate::Piece::Pawn,
+            side: crate::Side::White,
+        });
+        pos.en_passant = Some(43); 
+
+        let moves = pos.pawn_targets(36).expect("pawn_targets returned Err");
+
+        assert!(has_move(&moves, 36, 44, MoveKind::Quiet));
+        assert!(has_move(&moves, 36, 43, MoveKind::EnPassant { capture_square: 43 }));
+    }
 }

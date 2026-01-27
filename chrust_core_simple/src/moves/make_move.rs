@@ -1,5 +1,20 @@
 use crate::{Side, Square, errors::MoveError, position::Position};
 
+#[derive(PartialEq, Debug)]
+pub struct Move {
+    pub from_square: Square,
+    pub to_square: Square,
+    pub move_kind: MoveKind, 
+}
+
+#[derive(PartialEq, Debug)]
+pub enum MoveKind {
+    Quiet,
+    Capture,
+    DoublePawnPush { passed_square: Square },
+    EnPassant { capture_square: Square }, 
+}
+
 impl Position {
     pub fn make_move_unvalidated(&self, initial_square: Square, target_square: Square) -> Result<Position, MoveError> {
         if initial_square > 63 || target_square > 63 {
@@ -8,8 +23,8 @@ impl Position {
 
         let potential_piece = self.board[initial_square as usize];
         let piece = match potential_piece {
-           Some(x) => x,
-           None => return Err(MoveError::NoPieceOnInitalSquare(initial_square))
+            Some(x) => x,
+            None => return Err(MoveError::NoPieceOnInitalSquare(initial_square))
         };
 
         let mut next_position = self.clone();
@@ -37,7 +52,7 @@ mod tests {
             board: [None; 64],
             side_to_move: Side::White,
             castle: [false; 4],
-            en_passent: None,
+            en_passant: None,
         }
     }
 
