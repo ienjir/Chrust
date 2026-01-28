@@ -67,8 +67,8 @@ pub async fn render_chess_pieces(game_state: &GameState) {
 }
 
 pub fn render_possible_moves(game_state: &GameState) {
-    for &to_square in game_state.possible_moves.iter() {
-        let rect = get_square_rectangle(to_square);
+    for mv in game_state.possible_moves.iter() {
+        let rect = get_square_rectangle(mv.to_square);
         let rect_center = rect.center();
 
         draw_circle(rect_center.x, rect_center.y, 20.0, GREEN);

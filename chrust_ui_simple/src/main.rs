@@ -36,17 +36,6 @@ async fn main() {
     loop {
         clear_background(LIGHTGRAY);
 
-        // Debug
-        if let Some(selected) = game_state.selected {
-            println!("Selected square: {selected}");
-        }
-        let test = &game_state.possible_moves;
-        for test1 in test {
-            println!("Square: {test1}") 
-        }
-
-
-
         let (mouse_x, mouse_y) = mouse_position();
         let input_state = InputState {
             mouse_x: mouse_x,
