@@ -1,6 +1,6 @@
 use std::i16;
 
-use crate::{Piece, Side, Square, errors::MoveGenError, file, moves::make_move::{Move, MoveKind}, position::{self, Position}, rank};
+use crate::{Piece, Side, Square, errors::MoveGenError, file, moves::make_move::{Move, MoveKind}, position::{Position}, rank};
 
 impl Position {
     // Without promotion
@@ -20,9 +20,9 @@ impl Position {
             return Err(MoveGenError::WrongPieceTypeOnSquare { expected_piece: Piece::Pawn, found_piece: pawn.piece, square: from_square})
         }
 
-        let (forward, start_rank, capture_offsets): (i16, i16, [i16; 2]) = match pawn.side {
-            Side::White => (8, 1, [7, 9]),
-            Side::Black => (-8, 6, [-7, -9]),
+        let (forward, start_rank, capture_offsets, last_rank): (i16, i16, [i16; 2], i16) = match pawn.side {
+            Side::White => (8, 1, [7, 9], 7),
+            Side::Black => (-8, 6, [-7, -9], 0),
         };
 
         let from_file_i = file(from_square) as i16;
@@ -36,14 +36,22 @@ impl Position {
 
             if file_difference_i == 0 {
                 if self.board[forward_1_candidate_i as usize].is_none() {
-                    let single_move = Move {
-                       from_square: from_square,
-                       to_square: forward_1_candidate_i as u8,
-                       move_kind: MoveKind::Quiet,
-                    };
+                    if from_rank_i == last_rank {
+                        target_moves.push(Move {
+                            from_square: from_square,
+                            to_square: forward_1_candidate_i as u8,
+                            move_kind: MoveKind::Promotion { promotion_piece: Piece::Pawn },
+                        });    
+                    } else {
+                        let single_move = Move {
+                            from_square: from_square,
+                            to_square: forward_1_candidate_i as u8,
+                            move_kind: MoveKind::Quiet,
+                        };
 
-                    target_moves.push(single_move);
-                    forward_1_is_empty = true;
+                        target_moves.push(single_move);
+                        forward_1_is_empty = true;
+                    }
                 }
             }
         }
@@ -64,6 +72,7 @@ impl Position {
                 }
             }
         }
+
 
         for capture_offset in capture_offsets {
             let capture_candidate = from_square as i16 + capture_offset;

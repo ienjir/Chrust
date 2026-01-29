@@ -4,7 +4,7 @@ mod state;
 mod layout;
 mod input;
 mod controller;
-use chrust_core_simple::position::{self, load_position_from_fen};
+use chrust_core_simple::{position::{load_position_from_fen}};
 use crate::{assets::load_assets, controller::apply_ui_event, input::route_click, layout::TEST_FEN_STRING, renderer::{render_chess_pieces, render_chessboard_without_pieces, render_possible_moves}};
 use macroquad::prelude::*;
 use macroquad::file::set_pc_assets_folder;

@@ -1,4 +1,4 @@
-use crate::{Side, Square, errors::MoveError, position::Position};
+use crate::{Piece, Side, Square, errors::{MoveError}, position::Position};
 
 #[derive(PartialEq, Debug)]
 pub struct Move {
@@ -13,6 +13,7 @@ pub enum MoveKind {
     Capture,
     DoublePawnPush { passed_square: Square },
     EnPassant { capture_square: Square }, 
+    Promotion { promotion_piece: Piece },
 }
 
 impl Position {
@@ -22,7 +23,7 @@ impl Position {
         }
 
         let potential_piece = self.board[mv.from_square as usize];
-        let piece = match potential_piece {
+        let mut piece = match potential_piece {
             Some(x) => x,
             None => return Err(MoveError::NoPieceOnInitalSquare(mv.from_square))
         };
@@ -30,23 +31,32 @@ impl Position {
         let mut next_position = self.clone();
 
         match mv.move_kind {
-           MoveKind::Quiet => {
-               next_position.board[mv.from_square as usize] = None;
-               next_position.board[mv.to_square as usize] = Some(piece);
-           },
-           MoveKind::Capture => {
-               next_position.board[mv.from_square as usize] = None;
-               next_position.board[mv.to_square as usize] = Some(piece);
-           },
-           MoveKind::EnPassant { capture_square } =>  {
+            MoveKind::Quiet => {
+                next_position.board[mv.from_square as usize] = None;
+                next_position.board[mv.to_square as usize] = Some(piece);
+            },
+            MoveKind::Capture => {
+                next_position.board[mv.from_square as usize] = None;
+                next_position.board[mv.to_square as usize] = Some(piece);
+            },
+            MoveKind::EnPassant { capture_square } =>  {
                 next_position.board[capture_square as usize] = None;
                 next_position.board[mv.from_square as usize] = None;
                 next_position.board[mv.to_square as usize] = Some(piece);
-           },
-           MoveKind::DoublePawnPush { passed_square: _ } => {
-               next_position.board[mv.from_square as usize] = None;
-               next_position.board[mv.to_square as usize] = Some(piece);
-           }
+            },
+            MoveKind::DoublePawnPush { passed_square: _ } => {
+                next_position.board[mv.from_square as usize] = None;
+                next_position.board[mv.to_square as usize] = Some(piece);
+            }
+            MoveKind::Promotion { promotion_piece } =>  {
+                if promotion_piece == Piece::Pawn {
+                    return Err(MoveError::NotAValidPromotionPiece);
+                }
+
+                piece.piece = promotion_piece; 
+                next_position.board[mv.from_square as usize]  = None;
+                next_position.board[mv.to_square as usize] = Some(piece);
+            } 
         };
 
 
