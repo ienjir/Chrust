@@ -57,20 +57,20 @@ pub fn click_square(game_state: &mut GameState, from_square: Square) {
         }
 
         if let Some(chosen_move) = game_state.possible_moves.iter().find(|m| m.to_square == from_square) {
-            match game_state.position.make_move_unvalidated(chosen_move.from_square, chosen_move.to_square) {
-                    Ok(p) => {
-                        game_state.position = p;
-                        game_state.possible_moves.clear();
-                        game_state.selected = None;
-                        return;
-                    }
-                    Err(_e) => {
-                        println!("Error occured, please implement error handling");
-                        game_state.selected = None;
-                        game_state.possible_moves.clear();
-                        return;
-                    }
+            match game_state.position.make_move_unvalidated(&chosen_move) {
+                Ok(p) => {
+                    game_state.position = p;
+                    game_state.possible_moves.clear();
+                    game_state.selected = None;
+                    return;
                 }
+                Err(_e) => {
+                    println!("Error occured, please implement error handling");
+                    game_state.selected = None;
+                    game_state.possible_moves.clear();
+                    return;
+                }
+            }
         }
 
         if let Some(piece) = clicked_occupant {

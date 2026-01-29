@@ -1,6 +1,6 @@
 use std::i16;
 
-use crate::{Piece, Side, Square, errors::MoveGenError, file, moves::{make_move::{Move, MoveKind}}, position::Position, rank};
+use crate::{Piece, Side, Square, errors::MoveGenError, file, moves::make_move::{Move, MoveKind}, position::{self, Position}, rank};
 
 impl Position {
     // Without promotion
@@ -80,10 +80,15 @@ impl Position {
 
             if let Some(en_passant_square) = self.en_passant {
                 if en_passant_square as i16 == capture_candidate {
+                    let captured_square = match pawn.side {
+                        Side::White => (en_passant_square as i16 - 8) as u8,
+                        Side::Black => (en_passant_square as i16 + 8) as u8,
+                    };
+
                     let en_passant_move = Move {
                         from_square: from_square,
                         to_square: capture_candidate as u8,
-                        move_kind: MoveKind::EnPassant { capture_square: en_passant_square }
+                        move_kind: MoveKind::EnPassant { capture_square: captured_square }
                     };
                     target_moves.push(en_passant_move);
                 }
@@ -323,6 +328,6 @@ mod tests {
         let moves = pos.pawn_targets(36).expect("pawn_targets returned Err");
 
         assert!(has_move(&moves, 36, 44, MoveKind::Quiet));
-        assert!(has_move(&moves, 36, 43, MoveKind::EnPassant { capture_square: 43 }));
+        assert!(has_move(&moves, 36, 43, MoveKind::EnPassant { capture_square: 35 }));
     }
 }
