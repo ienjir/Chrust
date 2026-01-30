@@ -36,11 +36,13 @@ impl Position {
 
             if file_difference_i == 0 {
                 if self.board[forward_1_candidate_i as usize].is_none() {
-                    if from_rank_i == last_rank {
+                    // Promotion check
+                    let to_rank_i = rank(forward_1_candidate_i as u8) as i16;
+                    if to_rank_i == last_rank {
                         target_moves.push(Move {
                             from_square: from_square,
                             to_square: forward_1_candidate_i as u8,
-                            move_kind: MoveKind::Promotion { promotion_piece: Piece::Pawn },
+                            move_kind: MoveKind::Promotion { promotion_piece: Some(Piece::Pawn) },
                         });    
                     } else {
                         let single_move = Move {

@@ -6,6 +6,7 @@ pub struct GameState {
     pub assets: Assets, 
     pub selected: Option<Square>,
     pub possible_moves: Vec<Move>,
+    pub ui_state: Option<UiState>,
 }
 
 pub struct InputState {
@@ -14,8 +15,6 @@ pub struct InputState {
     pub left_mouse_clicked: bool,
 }
 
-/*
-   Currently not relevant 
-   pub struct UiState {
-   }
-   */
+pub enum UiState {
+    PROMOTION { pending_move: Move }
+}

@@ -82,7 +82,6 @@ pub fn load_position_from_fen(fen: &str) -> Result<Position, FenError> {
     }
 
     let test = fen_parts[1];
-    println!("Test: {test}");
     match test {
         "b" => {position.side_to_move = Side::Black},
         "w" => {position.side_to_move = Side::White},

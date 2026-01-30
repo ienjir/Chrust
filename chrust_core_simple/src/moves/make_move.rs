@@ -1,22 +1,42 @@
 use crate::{Piece, Side, Square, errors::{MoveError}, position::Position};
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub struct Move {
     pub from_square: Square,
     pub to_square: Square,
     pub move_kind: MoveKind, 
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub enum MoveKind {
     Quiet,
     Capture,
     DoublePawnPush { passed_square: Square },
     EnPassant { capture_square: Square }, 
-    Promotion { promotion_piece: Piece },
+    Promotion { promotion_piece: Option<Piece> },
 }
 
 impl Position {
+    pub fn make_move_validated(&mut self, mv: &Move) -> Result<Position, MoveError> {
+        match self.en_passant {
+            Some(x) => println!("Test: {x}"),
+            None => println!("none")
+        }
+        let mut position = match self.make_move_unvalidated(mv) {
+            Ok(x) => x,
+            Err(x) => return Err(x),
+        };
+
+        if let MoveKind::DoublePawnPush { passed_square } = mv.move_kind {
+            println!("Passed: {passed_square}");
+            position.en_passant = Some(passed_square);
+        } else {
+            position.en_passant = None;
+        }
+
+        Ok(position)
+    }
+
     pub fn make_move_unvalidated(&self, mv: &Move) -> Result<Position, MoveError> {
         if mv.from_square > 63 || mv.to_square > 63 {
             return Err(MoveError::OutOfBounds);
@@ -49,11 +69,11 @@ impl Position {
                 next_position.board[mv.to_square as usize] = Some(piece);
             }
             MoveKind::Promotion { promotion_piece } =>  {
-                if promotion_piece == Piece::Pawn {
-                    return Err(MoveError::NotAValidPromotionPiece);
+                if promotion_piece.is_none() {
+                    return Err(MoveError::PromotionPieceCantBeEmpty);
                 }
 
-                piece.piece = promotion_piece; 
+                piece.piece = promotion_piece.expect("Promotion piece is somehow none"); 
                 next_position.board[mv.from_square as usize]  = None;
                 next_position.board[mv.to_square as usize] = Some(piece);
             } 

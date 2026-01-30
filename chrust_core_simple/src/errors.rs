@@ -3,7 +3,7 @@ use crate::{Piece, Square};
 #[derive(Debug)]
 pub enum MoveError {
     NoPieceOnInitalSquare(Square),
-    NotAValidPromotionPiece,
+    PromotionPieceCantBeEmpty,
     OutOfBounds
 }
 
