@@ -1,4 +1,6 @@
-use crate::{Piece, Square, errors::MoveGenError, file, moves::make_move::{Move, MoveKind}, position::Position, rank};
+use std::usize;
+
+use crate::{Piece, Side, Square, errors::MoveGenError, file, moves::make_move::{Move, MoveKind}, position::Position, rank};
 
 impl Position {
     // No check check
@@ -22,6 +24,31 @@ impl Position {
         let from_rank_i = rank(from_square) as i16;
 
         let directions: [i16; 8] = [-9, -8, -7, -1, 1, 7, 8, 9];
+
+        // Check casteling
+        let (king_from, k_empty, k_allowed, q_empty, q_allowed) = match king.side {
+            Side::White => (4u8, [5u8, 6u8], self.castle[0], [3u8, 2u8, 1u8], self.castle[1]),
+            Side::Black => (60u8, [61u8, 62u8], self.castle[2], [59u8, 58u8, 57u8], self.castle[3]),
+        };
+
+        let k_clear = k_empty.iter().all(|&sq| self.board[sq as usize].is_none());
+        let q_clear = q_empty.iter().all(|&sq| self.board[sq as usize].is_none());
+
+        if k_allowed && k_clear {
+            target_moves.push(Move {
+                from_square,
+                to_square: king_from + 2,
+                move_kind: MoveKind::Castling { rook_from: king_from + 3, rook_to: king_from + 1 },
+            });
+        }
+
+        if q_allowed && q_clear {
+            target_moves.push(Move {
+                from_square,
+                to_square: king_from - 2,
+                move_kind: MoveKind::Castling { rook_from: king_from - 4, rook_to: king_from - 1 },
+            });
+        }
 
         for direction in directions {
             let candidate_square_i = from_square as i16 + direction;
@@ -195,5 +222,90 @@ mod tests {
         let pos = empty_position();
 
         assert_eq!(pos.king_targets(65), Err(MoveGenError::NotASquareOnBoard {square: 65}))
-    } 
+    }
+
+    #[test]
+    fn king_castling_white_kingside_allowed_and_clear() {
+        let mut pos = empty_position();
+
+        pos.board[4] = Some(ColoredPiece {
+            piece: crate::Piece::King,
+            side: crate::Side::White,
+        });
+        pos.board[7] = Some(ColoredPiece {
+            piece: crate::Piece::Rook,
+            side: crate::Side::White,
+        });
+        pos.castle[0] = true; // white kingside
+
+        let moves = pos.king_targets(4).expect("king_targets returned Err");
+
+        assert!(has_move(
+            &moves,
+            4,
+            6,
+            MoveKind::Castling {
+                rook_from: 7,
+                rook_to: 5
+            }
+        ));
+    }
+
+    #[test]
+    fn king_castling_white_queenside_blocked_by_piece() {
+        let mut pos = empty_position();
+
+        pos.board[4] = Some(ColoredPiece {
+            piece: crate::Piece::King,
+            side: crate::Side::White,
+        });
+        pos.board[0] = Some(ColoredPiece {
+            piece: crate::Piece::Rook,
+            side: crate::Side::White,
+        });
+        pos.board[3] = Some(ColoredPiece {
+            piece: crate::Piece::Knight,
+            side: crate::Side::White,
+        }); // block d1
+        pos.castle[1] = true; // white queenside
+
+        let moves = pos.king_targets(4).expect("king_targets returned Err");
+
+        assert!(!has_move(
+            &moves,
+            4,
+            2,
+            MoveKind::Castling {
+                rook_from: 0,
+                rook_to: 3
+            }
+        ));
+    }
+
+    #[test]
+    fn king_castling_black_queenside_allowed_and_clear() {
+        let mut pos = empty_position();
+
+        pos.board[60] = Some(ColoredPiece {
+            piece: crate::Piece::King,
+            side: crate::Side::Black,
+        });
+        pos.board[56] = Some(ColoredPiece {
+            piece: crate::Piece::Rook,
+            side: crate::Side::Black,
+        });
+        pos.castle[3] = true; // black queenside
+
+        let moves = pos.king_targets(60).expect("king_targets returned Err");
+
+        assert!(has_move(
+            &moves,
+            60,
+            58,
+            MoveKind::Castling {
+                rook_from: 56,
+                rook_to: 59
+            }
+        ));
+    }
 }

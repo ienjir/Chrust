@@ -14,21 +14,17 @@ pub enum MoveKind {
     DoublePawnPush { passed_square: Square },
     EnPassant { capture_square: Square }, 
     Promotion { promotion_piece: Option<Piece> },
+    Castling { rook_from: Square, rook_to: Square }
 }
 
 impl Position {
     pub fn make_move_validated(&mut self, mv: &Move) -> Result<Position, MoveError> {
-        match self.en_passant {
-            Some(x) => println!("Test: {x}"),
-            None => println!("none")
-        }
         let mut position = match self.make_move_unvalidated(mv) {
             Ok(x) => x,
             Err(x) => return Err(x),
         };
 
         if let MoveKind::DoublePawnPush { passed_square } = mv.move_kind {
-            println!("Passed: {passed_square}");
             position.en_passant = Some(passed_square);
         } else {
             position.en_passant = None;
@@ -76,7 +72,13 @@ impl Position {
                 piece.piece = promotion_piece.expect("Promotion piece is somehow none"); 
                 next_position.board[mv.from_square as usize]  = None;
                 next_position.board[mv.to_square as usize] = Some(piece);
-            } 
+            },
+            MoveKind::Castling { rook_from, rook_to } => {
+                next_position.board[mv.from_square as usize] = None;
+                next_position.board[mv.to_square as usize] = Some(piece);
+                next_position.board[rook_from as usize] = None;
+                next_position.board[rook_to as usize] = Some(crate::ColoredPiece { piece: Piece::Rook, side: piece.side })
+            }
         };
 
 
@@ -274,5 +276,71 @@ mod tests {
 
         assert_eq!(next.board[8], None);
         assert_eq!(next.board[24], Some(pawn));
+    }
+
+    #[test]
+    fn make_move_castling_moves_king_and_rook_white_kingside() {
+        let mut pos = empty_position();
+
+        let king = ColoredPiece {
+            piece: Piece::King,
+            side: Side::White,
+        };
+        let rook = ColoredPiece {
+            piece: Piece::Rook,
+            side: Side::White,
+        };
+
+        pos.board[4] = Some(king); // e1
+        pos.board[7] = Some(rook); // h1
+
+        let mv = Move {
+            from_square: 4,
+            to_square: 6,
+            move_kind: MoveKind::Castling {
+                rook_from: 7,
+                rook_to: 5,
+            },
+        };
+
+        let next = pos.make_move_unvalidated(&mv).unwrap();
+
+        assert_eq!(next.board[4], None);
+        assert_eq!(next.board[6], Some(king));
+        assert_eq!(next.board[7], None);
+        assert_eq!(next.board[5], Some(rook));
+    }
+
+    #[test]
+    fn make_move_castling_moves_king_and_rook_black_queenside() {
+        let mut pos = empty_position();
+
+        let king = ColoredPiece {
+            piece: Piece::King,
+            side: Side::Black,
+        };
+        let rook = ColoredPiece {
+            piece: Piece::Rook,
+            side: Side::Black,
+        };
+
+        pos.board[60] = Some(king); // e8
+        pos.board[56] = Some(rook); // a8
+
+        let mv = Move {
+            from_square: 60,
+            to_square: 58,
+            move_kind: MoveKind::Castling {
+                rook_from: 56,
+                rook_to: 59,
+            },
+        };
+
+        let next = pos.make_move_unvalidated(&mv).unwrap();
+
+        assert_eq!(next.board[60], None);
+        assert_eq!(next.board[58], Some(king));
+        assert_eq!(next.board[56], None);
+        assert_eq!(next.board[59], Some(rook));
     }
 }

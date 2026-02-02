@@ -48,8 +48,14 @@ Files / X
 | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
 
 
-## ToDo
-4. Implement basics moving without validation
-5. Basic macroquad UI
+### Tests
+#### For every piece
+    - No piece on square
+    - Wrong piece on square 
+    - Empty board -> Map exact squares not just includes
+    - Friendly and enemy pieces in way (for both pieces)
 
+### King
+    - Check if squares are really empty
+    - Check if rooks (same side) are in the right places (for both sides)
 

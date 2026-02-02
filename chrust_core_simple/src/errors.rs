@@ -22,6 +22,7 @@ pub enum FenError {
     OutOfBounds(u8),
     InvalidFile(char),
     InvalidRank(char),
+    InvalidCastlingRights(char),
     MissingFenParts,
     NotAValideSide,
 }

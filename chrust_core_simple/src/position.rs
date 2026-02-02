@@ -81,8 +81,19 @@ pub fn load_position_from_fen(fen: &str) -> Result<Position, FenError> {
         }
     }
 
-    let test = fen_parts[1];
-    match test {
+    for c in fen_parts[2].chars() {
+        match c {
+            'K' => position.castle[0] = true,
+            'Q' => position.castle[1] = true,
+            'k' => position.castle[2] = true,
+            'q' => position.castle[3] = true,
+            '-' => position.castle = [false; 4],
+            other => return Err(FenError::InvalidCastlingRights(other)),
+        }
+    }
+
+    let side_to_move = fen_parts[1];
+    match side_to_move {
         "b" => {position.side_to_move = Side::Black},
         "w" => {position.side_to_move = Side::White},
         _ => return Err(FenError::NotAValideSide) 
