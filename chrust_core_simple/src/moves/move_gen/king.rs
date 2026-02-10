@@ -1,23 +1,38 @@
 use std::usize;
 
-use crate::{Piece, Side, Square, errors::MoveGenError, file, moves::make_move::{Move, MoveKind}, position::Position, rank};
+use crate::{
+    errors::MoveGenError,
+    file,
+    moves::make_move::{Move, MoveKind},
+    position::Position,
+    rank, Piece, Side, Square,
+};
 
 impl Position {
-    // No check check
     pub fn king_targets(&self, from_square: Square) -> Result<Vec<Move>, MoveGenError> {
         let mut target_moves: Vec<Move> = Vec::with_capacity(8);
 
         if !(0..=63).contains(&from_square) {
-            return Err(MoveGenError::NotASquareOnBoard { square: from_square })
+            return Err(MoveGenError::NotASquareOnBoard {
+                square: from_square,
+            });
         }
 
         let king = match self.board[from_square as usize] {
             Some(p) => p,
-            None => return Err(MoveGenError::NoPieceOnSquare { square: from_square }),
+            None => {
+                return Err(MoveGenError::NoPieceOnSquare {
+                    square: from_square,
+                })
+            }
         };
 
         if king.piece != Piece::King {
-            return Err(MoveGenError::WrongPieceTypeOnSquare { expected_piece: Piece::King, found_piece: king.piece, square: from_square})
+            return Err(MoveGenError::WrongPieceTypeOnSquare {
+                expected_piece: Piece::King,
+                found_piece: king.piece,
+                square: from_square,
+            });
         }
 
         let from_file_i = file(from_square) as i16;
@@ -27,27 +42,62 @@ impl Position {
 
         // Check casteling
         let (king_from, k_empty, k_allowed, q_empty, q_allowed) = match king.side {
-            Side::White => (4u8, [5u8, 6u8], self.castle[0], [3u8, 2u8, 1u8], self.castle[1]),
-            Side::Black => (60u8, [61u8, 62u8], self.castle[2], [59u8, 58u8, 57u8], self.castle[3]),
+            Side::White => (
+                4u8,
+                [5u8, 6u8],
+                self.castle[0],
+                [3u8, 2u8, 1u8],
+                self.castle[1],
+            ),
+            Side::Black => (
+                60u8,
+                [61u8, 62u8],
+                self.castle[2],
+                [59u8, 58u8, 57u8],
+                self.castle[3],
+            ),
         };
 
-        let k_clear = k_empty.iter().all(|&sq| self.board[sq as usize].is_none());
-        let q_clear = q_empty.iter().all(|&sq| self.board[sq as usize].is_none());
+        if from_square == king_from {
+            let king_in_check = self.is_square_attacked(king_from, king.side)?.is_some();
 
-        if k_allowed && k_clear {
-            target_moves.push(Move {
-                from_square,
-                to_square: king_from + 2,
-                move_kind: MoveKind::Castling { rook_from: king_from + 3, rook_to: king_from + 1 },
-            });
-        }
+            let k_clear = k_empty.iter().all(|&sq| self.board[sq as usize].is_none());
+            let k_rook_ok = matches!(
+                self.board[(king_from + 3) as usize],
+                Some(rook) if rook.piece == Piece::Rook && rook.side == king.side
+            );
+            let k_safe = !self.is_square_attacked(king_from + 1, king.side)?.is_some()
+                && !self.is_square_attacked(king_from + 2, king.side)?.is_some();
 
-        if q_allowed && q_clear {
-            target_moves.push(Move {
-                from_square,
-                to_square: king_from - 2,
-                move_kind: MoveKind::Castling { rook_from: king_from - 4, rook_to: king_from - 1 },
-            });
+            if k_allowed && k_clear && k_rook_ok && !king_in_check && k_safe {
+                target_moves.push(Move {
+                    from_square,
+                    to_square: king_from + 2,
+                    move_kind: MoveKind::Castling {
+                        rook_from: king_from + 3,
+                        rook_to: king_from + 1,
+                    },
+                });
+            }
+
+            let q_clear = q_empty.iter().all(|&sq| self.board[sq as usize].is_none());
+            let q_rook_ok = matches!(
+                self.board[(king_from - 4) as usize],
+                Some(rook) if rook.piece == Piece::Rook && rook.side == king.side
+            );
+            let q_safe = !self.is_square_attacked(king_from - 1, king.side)?.is_some()
+                && !self.is_square_attacked(king_from - 2, king.side)?.is_some();
+
+            if q_allowed && q_clear && q_rook_ok && !king_in_check && q_safe {
+                target_moves.push(Move {
+                    from_square,
+                    to_square: king_from - 2,
+                    move_kind: MoveKind::Castling {
+                        rook_from: king_from - 4,
+                        rook_to: king_from - 1,
+                    },
+                });
+            }
         }
 
         for direction in directions {
@@ -67,14 +117,34 @@ impl Position {
             let candidate_occupant = self.board[candidate_square_i as usize];
             match candidate_occupant {
                 None => {
+                    let check_check = self.is_square_attacked(candidate_square_i as u8, king.side);
+                    match check_check {
+                        Err(x) => return Err(x),
+                        Ok(x) => {
+                            if x.is_some() {
+                                continue;
+                            }
+                        }
+                    }
+
                     target_moves.push(Move {
                         from_square: from_square,
                         to_square: candidate_square_i as u8,
                         move_kind: MoveKind::Quiet,
                     });
                     continue;
-                },
+                }
                 Some(colored_piece) => {
+                    let check_check = self.is_square_attacked(candidate_square_i as u8, king.side);
+                    match check_check {
+                        Err(x) => return Err(x),
+                        Ok(x) => {
+                            if x.is_some() {
+                                continue;
+                            }
+                        }
+                    }
+
                     if colored_piece.side != king.side {
                         target_moves.push(Move {
                             from_square: from_square,
@@ -85,7 +155,6 @@ impl Position {
                     continue;
                 }
             };
-
         }
 
         Ok(target_moves)
@@ -108,9 +177,9 @@ mod tests {
     }
 
     fn has_move(moves: &[Move], from: Square, to: Square, kind: MoveKind) -> bool {
-        moves.iter().any(|m| {
-            m.from_square == from && m.to_square == to && m.move_kind == kind
-        })
+        moves
+            .iter()
+            .any(|m| m.from_square == from && m.to_square == to && m.move_kind == kind)
     }
 
     fn has_to_square(moves: &[Move], to: Square) -> bool {
@@ -200,28 +269,41 @@ mod tests {
 
     #[test]
     fn wrong_piece_e8() {
-        let mut pos = empty_position(); 
+        let mut pos = empty_position();
 
         pos.board[60] = Some(ColoredPiece {
             piece: crate::Piece::Knight,
             side: crate::Side::White,
         });
 
-        assert_eq!(pos.king_targets(60), Err(MoveGenError::WrongPieceTypeOnSquare { expected_piece: Piece::King, found_piece: Piece::Knight, square: 60 }));
+        assert_eq!(
+            pos.king_targets(60),
+            Err(MoveGenError::WrongPieceTypeOnSquare {
+                expected_piece: Piece::King,
+                found_piece: Piece::Knight,
+                square: 60
+            })
+        );
     }
 
     #[test]
     fn no_piece_d5() {
-        let pos = empty_position(); 
+        let pos = empty_position();
 
-        assert_eq!(pos.king_targets(35), Err(MoveGenError::NoPieceOnSquare { square: 35 }))
+        assert_eq!(
+            pos.king_targets(35),
+            Err(MoveGenError::NoPieceOnSquare { square: 35 })
+        )
     }
 
     #[test]
     fn try_move_on_non_existing_square() {
         let pos = empty_position();
 
-        assert_eq!(pos.king_targets(65), Err(MoveGenError::NotASquareOnBoard {square: 65}))
+        assert_eq!(
+            pos.king_targets(65),
+            Err(MoveGenError::NotASquareOnBoard { square: 65 })
+        )
     }
 
     #[test]
@@ -305,6 +387,122 @@ mod tests {
             MoveKind::Castling {
                 rook_from: 56,
                 rook_to: 59
+            }
+        ));
+    }
+
+    #[test]
+    fn king_castling_white_kingside_disallowed_when_in_check() {
+        let mut pos = empty_position();
+
+        pos.board[4] = Some(ColoredPiece {
+            piece: Piece::King,
+            side: Side::White,
+        });
+        pos.board[7] = Some(ColoredPiece {
+            piece: Piece::Rook,
+            side: Side::White,
+        });
+        pos.board[60] = Some(ColoredPiece {
+            piece: Piece::Rook,
+            side: Side::Black,
+        }); // attacks e1
+        pos.castle[0] = true;
+
+        let moves = pos.king_targets(4).expect("king_targets returned Err");
+
+        assert!(!has_move(
+            &moves,
+            4,
+            6,
+            MoveKind::Castling {
+                rook_from: 7,
+                rook_to: 5
+            }
+        ));
+    }
+
+    #[test]
+    fn king_castling_white_kingside_disallowed_when_path_square_attacked() {
+        let mut pos = empty_position();
+
+        pos.board[4] = Some(ColoredPiece {
+            piece: Piece::King,
+            side: Side::White,
+        });
+        pos.board[7] = Some(ColoredPiece {
+            piece: Piece::Rook,
+            side: Side::White,
+        });
+        pos.board[61] = Some(ColoredPiece {
+            piece: Piece::Rook,
+            side: Side::Black,
+        }); // attacks f1
+        pos.castle[0] = true;
+
+        let moves = pos.king_targets(4).expect("king_targets returned Err");
+
+        assert!(!has_move(
+            &moves,
+            4,
+            6,
+            MoveKind::Castling {
+                rook_from: 7,
+                rook_to: 5
+            }
+        ));
+    }
+
+    #[test]
+    fn king_castling_white_kingside_disallowed_when_destination_attacked() {
+        let mut pos = empty_position();
+
+        pos.board[4] = Some(ColoredPiece {
+            piece: Piece::King,
+            side: Side::White,
+        });
+        pos.board[7] = Some(ColoredPiece {
+            piece: Piece::Rook,
+            side: Side::White,
+        });
+        pos.board[62] = Some(ColoredPiece {
+            piece: Piece::Rook,
+            side: Side::Black,
+        }); // attacks g1
+        pos.castle[0] = true;
+
+        let moves = pos.king_targets(4).expect("king_targets returned Err");
+
+        assert!(!has_move(
+            &moves,
+            4,
+            6,
+            MoveKind::Castling {
+                rook_from: 7,
+                rook_to: 5
+            }
+        ));
+    }
+
+    #[test]
+    fn king_castling_white_kingside_disallowed_when_rook_missing() {
+        let mut pos = empty_position();
+
+        pos.board[4] = Some(ColoredPiece {
+            piece: Piece::King,
+            side: Side::White,
+        });
+        pos.castle[0] = true;
+
+        let moves = pos.king_targets(4).expect("king_targets returned Err");
+
+        assert!(!has_move(
+            &moves,
+            4,
+            6,
+            MoveKind::Castling {
+                rook_from: 7,
+                rook_to: 5
             }
         ));
     }

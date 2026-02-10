@@ -1,22 +1,23 @@
 use std::usize;
 
-use crate::{Piece, Side, Square, errors::MoveGenError, file, moves::{make_move::Move, move_gen::pawn}, position::{self, Position}, rank};
+use crate::{errors::MoveGenError, file, position::Position, rank, Piece, Side, Square};
 
 impl Position {
-    pub fn is_square_attacked(&self, from_square: Square) -> Result<Option<Vec<Square>>, MoveGenError>{
+    pub fn is_square_attacked(
+        &self,
+        from_square: Square,
+        side_to_attack: Side,
+    ) -> Result<Option<Vec<Square>>, MoveGenError> {
         let mut attacking_squares: Vec<Square> = Vec::new();
 
         if !(0..=63).contains(&from_square) {
-            return Err(MoveGenError::NotASquareOnBoard { square: from_square });
+            return Err(MoveGenError::NotASquareOnBoard {
+                square: from_square,
+            });
         }
 
-        let piece = match self.board[from_square as usize] {
-            Some(p) => p,
-            None => return Err(MoveGenError::NoPieceOnSquare { square: from_square }),
-        };
-
         // Pawns
-        let pawn_attack_offsets: Vec<i16> = match piece.side {
+        let pawn_attack_offsets: Vec<i16> = match side_to_attack {
             Side::White => vec![7, 9],
             Side::Black => vec![-7, -9],
         };
@@ -24,11 +25,15 @@ impl Position {
         for offset in pawn_attack_offsets {
             let attack_square = from_square as i16 + offset;
 
+            if !(0..=63).contains(&attack_square) {
+                continue;
+            }
+
             let Some(target) = self.board[attack_square as usize] else {
                 continue;
             };
 
-            if target.side == piece.side {
+            if target.side == side_to_attack {
                 continue;
             }
 
@@ -37,7 +42,7 @@ impl Position {
             }
         }
 
-        // Sliding 
+        // Sliding
         let directions: [i16; 8] = [-8, 8, -1, 1, -7, 7, -9, 9];
 
         for direction in directions {
@@ -60,8 +65,8 @@ impl Position {
                 let is_bishop_ray = direction.abs() == 7 || direction.abs() == 9;
 
                 if is_rook_ray {
-                    if !( (direction.abs() == 8 && file_diff == 0 && rank_diff == 1)
-                        || (direction.abs() == 1 && file_diff == 1 && rank_diff == 0) )
+                    if !((direction.abs() == 8 && file_diff == 0 && rank_diff == 1)
+                        || (direction.abs() == 1 && file_diff == 1 && rank_diff == 0))
                     {
                         break;
                     }
@@ -76,8 +81,7 @@ impl Position {
                         step_from_i = step_to_i;
                     }
                     Some(occupant) => {
-                        // TODO: replace this with `by_side` logic, not `piece.side`
-                        if occupant.side == piece.side {
+                        if occupant.side == side_to_attack {
                             break;
                         }
 
@@ -98,7 +102,7 @@ impl Position {
 
         if attacking_squares.is_empty() {
             return Ok(None);
-        } 
+        }
 
         Ok(Some(attacking_squares))
     }
@@ -124,13 +128,10 @@ mod tests {
     }
 
     #[test]
-    fn is_square_attacked_no_piece_on_square() {
+    fn is_square_attacked_empty_square_none() {
         let pos = empty_position();
 
-        assert_eq!(
-            pos.is_square_attacked(35),
-            Err(MoveGenError::NoPieceOnSquare { square: 35 })
-        );
+        assert_eq!(pos.is_square_attacked(35, Side::White), Ok(None));
     }
 
     #[test]
@@ -138,7 +139,7 @@ mod tests {
         let pos = empty_position();
 
         assert_eq!(
-            pos.is_square_attacked(65),
+            pos.is_square_attacked(65, Side::White),
             Err(MoveGenError::NotASquareOnBoard { square: 65 })
         );
     }
@@ -152,7 +153,7 @@ mod tests {
             side: Side::White,
         });
 
-        assert_eq!(pos.is_square_attacked(28), Ok(None));
+        assert_eq!(pos.is_square_attacked(28, Side::White), Ok(None));
     }
 
     #[test]
@@ -172,7 +173,10 @@ mod tests {
             side: Side::Black,
         });
 
-        let mut attacks = pos.is_square_attacked(28).expect("is_square_attacked returned Err").unwrap();
+        let mut attacks = pos
+            .is_square_attacked(28, Side::White)
+            .expect("is_square_attacked returned Err")
+            .unwrap();
         attacks.sort_unstable();
 
         assert_eq!(attacks, vec![35, 37]);
@@ -195,7 +199,10 @@ mod tests {
             side: Side::White,
         });
 
-        let mut attacks = pos.is_square_attacked(36).expect("is_square_attacked returned Err").unwrap();
+        let mut attacks = pos
+            .is_square_attacked(36, Side::Black)
+            .expect("is_square_attacked returned Err")
+            .unwrap();
         attacks.sort_unstable();
 
         assert_eq!(attacks, vec![27, 29]);
@@ -218,7 +225,10 @@ mod tests {
             side: Side::Black,
         });
 
-        let attacks = pos.is_square_attacked(28).expect("is_square_attacked returned Err").unwrap();
+        let attacks = pos
+            .is_square_attacked(28, Side::White)
+            .expect("is_square_attacked returned Err")
+            .unwrap();
 
         assert!(has_square(&attacks, 60));
         assert!(has_square(&attacks, 1));
@@ -242,7 +252,7 @@ mod tests {
             side: Side::White,
         });
 
-        assert_eq!(pos.is_square_attacked(28), Ok(None));
+        assert_eq!(pos.is_square_attacked(28, Side::White), Ok(None));
     }
 
     #[test]
@@ -262,6 +272,6 @@ mod tests {
             side: Side::Black,
         });
 
-        assert_eq!(pos.is_square_attacked(28), Ok(None));
+        assert_eq!(pos.is_square_attacked(28, Side::White), Ok(None));
     }
 }
