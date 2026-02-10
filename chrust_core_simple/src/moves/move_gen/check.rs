@@ -42,6 +42,76 @@ impl Position {
             }
         }
 
+        // King
+        let king_attack_offsets: Vec<i16> = Vec::from([1, 7, 8, 9, -1, -7, -8, -9]);
+
+        for offset in king_attack_offsets {
+            let attack_square = from_square as i16 + offset;
+
+            if !(0..=63).contains(&attack_square) {
+                continue;
+            }
+
+            let from_file = file(from_square) as i16;
+            let from_rank = rank(from_square) as i16;
+            let attack_file = file(attack_square as u8) as i16;
+            let attack_rank = rank(attack_square as u8) as i16;
+            let file_diff = (attack_file - from_file).abs();
+            let rank_diff = (attack_rank - from_rank).abs();
+
+            if file_diff > 1 || rank_diff > 1 {
+                continue;
+            }
+
+            let Some(target) = self.board[attack_square as usize] else {
+                continue;
+            };
+
+            if target.side == side_to_attack {
+                continue;
+            }
+
+            if target.piece == Piece::King {
+                attacking_squares.push(attack_square as u8);
+            }
+        }
+
+        // Knight
+        let knight_attack_offsets: Vec<i16> = Vec::from([15, 17, 6, -10, -17, -15, -6, 10]);
+
+        for offset in knight_attack_offsets {
+            let attack_square = from_square as i16 + offset;
+
+            if !(0..=63).contains(&attack_square) {
+                continue;
+            }
+
+            let from_file = file(from_square) as i16;
+            let from_rank = rank(from_square) as i16;
+            let attack_file = file(attack_square as u8) as i16;
+            let attack_rank = rank(attack_square as u8) as i16;
+            let file_diff = (attack_file - from_file).abs();
+            let rank_diff = (attack_rank - from_rank).abs();
+
+            let is_knight_l =
+                (file_diff == 1 && rank_diff == 2) || (file_diff == 2 && rank_diff == 1);
+            if !is_knight_l {
+                continue;
+            }
+
+            let Some(target) = self.board[attack_square as usize] else {
+                continue;
+            };
+
+            if target.side == side_to_attack {
+                continue;
+            }
+
+            if target.piece == Piece::Knight {
+                attacking_squares.push(attack_square as u8);
+            }
+        }
+
         // Sliding
         let directions: [i16; 8] = [-8, 8, -1, 1, -7, 7, -9, 9];
 
@@ -233,6 +303,80 @@ mod tests {
         assert!(has_square(&attacks, 60));
         assert!(has_square(&attacks, 1));
         assert_eq!(attacks.len(), 2);
+    }
+
+    #[test]
+    fn is_square_attacked_by_king_adjacent() {
+        let mut pos = empty_position();
+
+        pos.board[28] = Some(ColoredPiece {
+            piece: Piece::King,
+            side: Side::White,
+        });
+        pos.board[29] = Some(ColoredPiece {
+            piece: Piece::King,
+            side: Side::Black,
+        });
+
+        let attacks = pos
+            .is_square_attacked(28, Side::White)
+            .expect("is_square_attacked returned Err")
+            .unwrap();
+
+        assert!(has_square(&attacks, 29));
+    }
+
+    #[test]
+    fn is_square_attacked_king_does_not_wrap_board_edge() {
+        let mut pos = empty_position();
+
+        pos.board[7] = Some(ColoredPiece {
+            piece: Piece::King,
+            side: Side::White,
+        });
+        pos.board[8] = Some(ColoredPiece {
+            piece: Piece::King,
+            side: Side::Black,
+        });
+
+        assert_eq!(pos.is_square_attacked(7, Side::White), Ok(None));
+    }
+
+    #[test]
+    fn is_square_attacked_by_knight_l_shape() {
+        let mut pos = empty_position();
+
+        pos.board[28] = Some(ColoredPiece {
+            piece: Piece::King,
+            side: Side::White,
+        });
+        pos.board[45] = Some(ColoredPiece {
+            piece: Piece::Knight,
+            side: Side::Black,
+        });
+
+        let attacks = pos
+            .is_square_attacked(28, Side::White)
+            .expect("is_square_attacked returned Err")
+            .unwrap();
+
+        assert!(has_square(&attacks, 45));
+    }
+
+    #[test]
+    fn is_square_attacked_knight_does_not_wrap_board_edge() {
+        let mut pos = empty_position();
+
+        pos.board[7] = Some(ColoredPiece {
+            piece: Piece::King,
+            side: Side::White,
+        });
+        pos.board[17] = Some(ColoredPiece {
+            piece: Piece::Knight,
+            side: Side::Black,
+        });
+
+        assert_eq!(pos.is_square_attacked(7, Side::White), Ok(None));
     }
 
     #[test]
