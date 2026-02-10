@@ -28,6 +28,19 @@ async fn main() {
         ui_state: None,
     };
 
+    let test = game_state.position.is_square_attacked(54);
+    match test {
+        Ok(x) => {
+            let test2 = x.expect("kek");
+            for test3 in test2 {
+                println!("Test: {test3}")
+            }
+
+        },
+        Err(_x) => print!("Error")
+    }
+
+
     loop {
         clear_background(LIGHTGRAY);
 
