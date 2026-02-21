@@ -1,4 +1,4 @@
-use chrust_core_simple::{Piece, Square, moves::{make_move::{MoveKind}, move_gen::move_gen::get_possible_moves}};
+use chrust_core::{Piece, Square, moves::{make_move::{MoveKind}, move_gen::move_gen::get_possible_moves}};
 
 use crate::state::{GameState, UiState};
 

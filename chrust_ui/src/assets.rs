@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use chrust_core_simple::{Piece, Side};
+use chrust_core::{Piece, Side};
 use macroquad::texture::{FilterMode, Texture2D, load_texture};
 
 pub struct Assets {

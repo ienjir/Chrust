@@ -5,3 +5,4 @@ edition = "2024"
 
 [dependencies]
 chrust_core = { path = "../chrust_core" }
+macroquad = "0.4"

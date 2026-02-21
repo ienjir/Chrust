@@ -1,19 +1,15 @@
 use std::usize;
 
 use crate::{
-    errors::MoveGenError,
-    file,
-    moves::make_move::{Move, MoveKind},
-    position::Position,
-    rank, Piece, Side, Square,
+    Piece, Side, Square, errors::ChessError, file, moves::make_move::{Move, MoveKind}, position::Position, rank
 };
 
 impl Position {
-    pub fn king_targets(&self, from_square: Square) -> Result<Vec<Move>, MoveGenError> {
+    pub fn king_targets(&self, from_square: Square) -> Result<Vec<Move>, ChessError> {
         let mut target_moves: Vec<Move> = Vec::with_capacity(8);
 
         if !(0..=63).contains(&from_square) {
-            return Err(MoveGenError::NotASquareOnBoard {
+            return Err(ChessError::NotASquareOnBoard {
                 square: from_square,
             });
         }
@@ -21,14 +17,14 @@ impl Position {
         let king = match self.board[from_square as usize] {
             Some(p) => p,
             None => {
-                return Err(MoveGenError::NoPieceOnSquare {
+                return Err(ChessError::NoPieceOnSquare {
                     square: from_square,
                 })
             }
         };
 
         if king.piece != Piece::King {
-            return Err(MoveGenError::WrongPieceTypeOnSquare {
+            return Err(ChessError::WrongPieceTypeOnSquare {
                 expected_piece: Piece::King,
                 found_piece: king.piece,
                 square: from_square,
@@ -71,6 +67,7 @@ impl Position {
 
             if k_allowed && k_clear && k_rook_ok && !king_in_check && k_safe {
                 target_moves.push(Move {
+                    colored_piece: king,
                     from_square,
                     to_square: king_from + 2,
                     move_kind: MoveKind::Castling {
@@ -90,6 +87,7 @@ impl Position {
 
             if q_allowed && q_clear && q_rook_ok && !king_in_check && q_safe {
                 target_moves.push(Move {
+                    colored_piece: king,
                     from_square,
                     to_square: king_from - 2,
                     move_kind: MoveKind::Castling {
@@ -128,6 +126,7 @@ impl Position {
                     }
 
                     target_moves.push(Move {
+                        colored_piece: king,
                         from_square: from_square,
                         to_square: candidate_square_i as u8,
                         move_kind: MoveKind::Quiet,
@@ -147,6 +146,7 @@ impl Position {
 
                     if colored_piece.side != king.side {
                         target_moves.push(Move {
+                            colored_piece: king,
                             from_square: from_square,
                             to_square: candidate_square_i as u8,
                             move_kind: MoveKind::Capture,
@@ -173,6 +173,7 @@ mod tests {
             side_to_move: crate::Side::White,
             castle: [false; 4],
             en_passant: None,
+            king_squares: [4, 60],
         }
     }
 
@@ -278,7 +279,7 @@ mod tests {
 
         assert_eq!(
             pos.king_targets(60),
-            Err(MoveGenError::WrongPieceTypeOnSquare {
+            Err(ChessError::WrongPieceTypeOnSquare {
                 expected_piece: Piece::King,
                 found_piece: Piece::Knight,
                 square: 60
@@ -292,7 +293,7 @@ mod tests {
 
         assert_eq!(
             pos.king_targets(35),
-            Err(MoveGenError::NoPieceOnSquare { square: 35 })
+            Err(ChessError::NoPieceOnSquare { square: 35 })
         )
     }
 
@@ -302,7 +303,7 @@ mod tests {
 
         assert_eq!(
             pos.king_targets(65),
-            Err(MoveGenError::NotASquareOnBoard { square: 65 })
+            Err(ChessError::NotASquareOnBoard { square: 65 })
         )
     }
 

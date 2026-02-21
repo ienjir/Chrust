@@ -1,5 +1,5 @@
 use core::f32;
-use chrust_core_simple::{Square, file, rank};
+use chrust_core::{Square, file, rank};
 use macroquad::{color::{Color, GREEN, WHITE}, math::{Rect, Vec2}, shapes::{draw_circle, draw_rectangle}, texture::{DrawTextureParams, draw_texture_ex}, window::{screen_height, screen_width}};
 use crate::{layout::{CELL_SIZE, GRID_ORIGIN_X, GRID_ORIGIN_Y, PROMOTION_LEFT_CELLS, PROMOTION_PIECES, PROMOTION_TOP_CELLS}, state::GameState};
 

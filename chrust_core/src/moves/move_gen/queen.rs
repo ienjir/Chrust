@@ -1,20 +1,36 @@
-use crate::{Piece, Square, errors::MoveGenError, file, moves::make_move::{Move, MoveKind}, position::Position, rank};
+use crate::{
+    errors::ChessError,
+    file,
+    moves::make_move::{Move, MoveKind},
+    position::Position,
+    rank, Piece, Square,
+};
 
 impl Position {
-    pub fn queen_targets(&self, from_square: Square) -> Result<Vec<Move>, MoveGenError> {
+    pub fn queen_targets(&self, from_square: Square) -> Result<Vec<Move>, ChessError> {
         let mut target_moves: Vec<Move> = Vec::with_capacity(27);
 
         if !(0..=63).contains(&from_square) {
-            return Err(MoveGenError::NotASquareOnBoard { square: from_square })
+            return Err(ChessError::NotASquareOnBoard {
+                square: from_square,
+            });
         }
 
         let queen = match self.board[from_square as usize] {
             Some(p) => p,
-            None => return Err(MoveGenError::NoPieceOnSquare { square: from_square }),
+            None => {
+                return Err(ChessError::NoPieceOnSquare {
+                    square: from_square,
+                })
+            }
         };
 
         if queen.piece != Piece::Queen {
-            return Err(MoveGenError::WrongPieceTypeOnSquare { expected_piece: Piece::Queen, found_piece: queen.piece, square: from_square });
+            return Err(ChessError::WrongPieceTypeOnSquare {
+                expected_piece: Piece::Queen,
+                found_piece: queen.piece,
+                square: from_square,
+            });
         }
 
         let directions: [i16; 8] = [-8, 8, -1, 1, -7, 7, -9, 9];
@@ -28,14 +44,16 @@ impl Position {
                     break;
                 }
 
-                let file_difference_i = (file(step_to_i as u8) as i16 - file(step_from_i as u8) as i16).abs();
-                let rank_difference_i = (rank(step_to_i as u8) as i16 - rank(step_from_i as u8) as i16).abs();
+                let file_difference_i =
+                    (file(step_to_i as u8) as i16 - file(step_from_i as u8) as i16).abs();
+                let rank_difference_i =
+                    (rank(step_to_i as u8) as i16 - rank(step_from_i as u8) as i16).abs();
 
-                if direction.abs() == 8 { 
+                if direction.abs() == 8 {
                     if file_difference_i != 0 || rank_difference_i != 1 {
                         break;
                     }
-                } else if direction.abs() == 1 { 
+                } else if direction.abs() == 1 {
                     if file_difference_i != 1 || rank_difference_i != 0 {
                         break;
                     }
@@ -49,15 +67,17 @@ impl Position {
                 match candidate_occupant {
                     None => {
                         target_moves.push(Move {
+                            colored_piece: queen,
                             from_square: from_square,
                             to_square: step_to_i as u8,
                             move_kind: MoveKind::Quiet,
                         });
                         step_from_i = step_to_i;
-                    },
+                    }
                     Some(colored_piece) => {
                         if colored_piece.side != queen.side {
                             target_moves.push(Move {
+                                colored_piece: queen,
                                 from_square: from_square,
                                 to_square: step_to_i as u8,
                                 move_kind: MoveKind::Capture,
@@ -85,13 +105,14 @@ mod tests {
             side_to_move: crate::Side::White,
             castle: [false; 4],
             en_passant: None,
+            king_squares: [4, 60],
         }
     }
 
     fn has_move(moves: &[Move], from: Square, to: Square, kind: MoveKind) -> bool {
-        moves.iter().any(|m| {
-            m.from_square == from && m.to_square == to && m.move_kind == kind
-        })
+        moves
+            .iter()
+            .any(|m| m.from_square == from && m.to_square == to && m.move_kind == kind)
     }
 
     fn has_to_square(moves: &[Move], to: Square) -> bool {
@@ -169,20 +190,33 @@ mod tests {
             side: crate::Side::White,
         });
 
-        assert_eq!(pos.queen_targets(60), Err(MoveGenError::WrongPieceTypeOnSquare { expected_piece: Piece::Queen, found_piece: Piece::Knight, square: 60 }));
+        assert_eq!(
+            pos.queen_targets(60),
+            Err(ChessError::WrongPieceTypeOnSquare {
+                expected_piece: Piece::Queen,
+                found_piece: Piece::Knight,
+                square: 60
+            })
+        );
     }
 
     #[test]
     fn no_piece_d5() {
         let pos = empty_position();
 
-        assert_eq!(pos.queen_targets(35), Err(MoveGenError::NoPieceOnSquare { square: 35 }))
+        assert_eq!(
+            pos.queen_targets(35),
+            Err(ChessError::NoPieceOnSquare { square: 35 })
+        )
     }
 
     #[test]
     fn try_move_on_non_existing_square() {
         let pos = empty_position();
 
-        assert_eq!(pos.queen_targets(65), Err(MoveGenError::NotASquareOnBoard {square: 65}))
+        assert_eq!(
+            pos.queen_targets(65),
+            Err(ChessError::NotASquareOnBoard { square: 65 })
+        )
     }
 }

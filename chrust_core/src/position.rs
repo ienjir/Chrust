@@ -6,6 +6,7 @@ pub struct Position {
     pub side_to_move: Side,
     pub castle: [bool; 4],
     pub en_passant: Option<Square>,
+    pub king_squares: [Square; 2],
 }
 
 
@@ -64,6 +65,7 @@ pub fn load_position_from_fen(fen: &str) -> Result<Position, FenError> {
         castle: [false; 4],
         en_passant: None,
         side_to_move: Side::White,
+        king_squares: [4, 60],
     };
 
     let fen_parts: Vec<&str> = fen.split_whitespace().collect();

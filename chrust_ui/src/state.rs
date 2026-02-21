@@ -1,4 +1,4 @@
-use chrust_core_simple::{Square, moves::make_move::Move, position::Position};
+use chrust_core::{Square, moves::make_move::Move, position::Position};
 use crate::assets::Assets;
 
 pub struct GameState {

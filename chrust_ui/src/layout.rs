@@ -1,4 +1,4 @@
-use chrust_core_simple::Piece;
+use chrust_core::Piece;
 use macroquad::math::Rect;
 
 // pub const DEFAULT_FEN_STRING: &str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";

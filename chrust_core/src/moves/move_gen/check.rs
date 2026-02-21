@@ -1,17 +1,11 @@
-use std::usize;
-
-use crate::{errors::MoveGenError, file, position::Position, rank, Piece, Side, Square};
+use crate::{Piece, Side, Square, errors::ChessError, file, position::Position, rank};
 
 impl Position {
-    pub fn is_square_attacked(
-        &self,
-        from_square: Square,
-        side_to_attack: Side,
-    ) -> Result<Option<Vec<Square>>, MoveGenError> {
+    pub fn is_square_attacked(&self, from_square: Square, side_to_attack: Side, ) -> Result<Option<Vec<Square>>, ChessError> {
         let mut attacking_squares: Vec<Square> = Vec::new();
 
         if !(0..=63).contains(&from_square) {
-            return Err(MoveGenError::NotASquareOnBoard {
+            return Err(ChessError::NotASquareOnBoard {
                 square: from_square,
             });
         }
@@ -176,6 +170,17 @@ impl Position {
 
         Ok(Some(attacking_squares))
     }
+
+    pub fn is_king_in_check(&self, side: Side) -> Result<Option<Vec<Square>>, ChessError>{
+        let (king_square, attack_side) = match side {
+            Side::White => { (self.king_squares[0], Side::Black) },
+            Side::Black => { (self.king_squares[1], Side::White) },
+        };
+
+        let attacking_squares = self.is_square_attacked(king_square, attack_side);
+
+        attacking_squares
+    }
 }
 
 #[cfg(test)]
@@ -190,6 +195,7 @@ mod tests {
             side_to_move: Side::White,
             castle: [false; 4],
             en_passant: None,
+            king_squares: [4, 60],
         }
     }
 
@@ -210,7 +216,7 @@ mod tests {
 
         assert_eq!(
             pos.is_square_attacked(65, Side::White),
-            Err(MoveGenError::NotASquareOnBoard { square: 65 })
+            Err(ChessError::NotASquareOnBoard { square: 65 })
         );
     }
 

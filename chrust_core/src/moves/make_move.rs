@@ -1,10 +1,11 @@
-use crate::{Piece, Side, Square, errors::{MoveError}, position::Position};
+use crate::{errors::ChessError, position::Position, ColoredPiece, Piece, Side, Square};
 
 #[derive(PartialEq, Debug, Clone)]
 pub struct Move {
     pub from_square: Square,
     pub to_square: Square,
-    pub move_kind: MoveKind, 
+    pub move_kind: MoveKind,
+    pub colored_piece: ColoredPiece,
 }
 
 #[derive(PartialEq, Debug, Clone)]
@@ -12,13 +13,13 @@ pub enum MoveKind {
     Quiet,
     Capture,
     DoublePawnPush { passed_square: Square },
-    EnPassant { capture_square: Square }, 
+    EnPassant { capture_square: Square },
     Promotion { promotion_piece: Option<Piece> },
-    Castling { rook_from: Square, rook_to: Square }
+    Castling { rook_from: Square, rook_to: Square },
 }
 
 impl Position {
-    pub fn make_move_validated(&mut self, mv: &Move) -> Result<Position, MoveError> {
+    pub fn make_move_validated(&mut self, mv: &Move) -> Result<Position, ChessError> {
         let mut position = match self.make_move_unvalidated(mv) {
             Ok(x) => x,
             Err(x) => return Err(x),
@@ -30,18 +31,46 @@ impl Position {
             position.en_passant = None;
         }
 
+        if mv.colored_piece.piece == Piece::King {
+            match mv.colored_piece.side {
+                Side::White => {
+                    position.king_squares[0] = mv.to_square;
+                }
+                Side::Black => {
+                    position.king_squares[1] = mv.to_square;
+                }
+            }
+        }
+
+        let king_square = match self.side_to_move {
+            Side::White => self.king_squares[0],
+            Side::Black => self.king_squares[1],
+        };
+
         Ok(position)
     }
 
-    pub fn make_move_unvalidated(&self, mv: &Move) -> Result<Position, MoveError> {
-        if mv.from_square > 63 || mv.to_square > 63 {
-            return Err(MoveError::OutOfBounds);
+    pub fn make_move_unvalidated(&self, mv: &Move) -> Result<Position, ChessError> {
+        if mv.from_square > 63 {
+            return Err(ChessError::NotASquareOnBoard {
+                square: mv.from_square,
+            });
+        }
+
+        if mv.to_square > 63 {
+            return Err(ChessError::NotASquareOnBoard {
+                square: mv.to_square,
+            });
         }
 
         let potential_piece = self.board[mv.from_square as usize];
         let mut piece = match potential_piece {
             Some(x) => x,
-            None => return Err(MoveError::NoPieceOnInitalSquare(mv.from_square))
+            None => {
+                return Err(ChessError::NoPieceOnSquare {
+                    square: mv.from_square,
+                });
+            }
         };
 
         let mut next_position = self.clone();
@@ -50,38 +79,39 @@ impl Position {
             MoveKind::Quiet => {
                 next_position.board[mv.from_square as usize] = None;
                 next_position.board[mv.to_square as usize] = Some(piece);
-            },
+            }
             MoveKind::Capture => {
                 next_position.board[mv.from_square as usize] = None;
                 next_position.board[mv.to_square as usize] = Some(piece);
-            },
-            MoveKind::EnPassant { capture_square } =>  {
+            }
+            MoveKind::EnPassant { capture_square } => {
                 next_position.board[capture_square as usize] = None;
                 next_position.board[mv.from_square as usize] = None;
                 next_position.board[mv.to_square as usize] = Some(piece);
-            },
+            }
             MoveKind::DoublePawnPush { passed_square: _ } => {
                 next_position.board[mv.from_square as usize] = None;
                 next_position.board[mv.to_square as usize] = Some(piece);
             }
-            MoveKind::Promotion { promotion_piece } =>  {
+            MoveKind::Promotion { promotion_piece } => {
                 if promotion_piece.is_none() {
-                    return Err(MoveError::PromotionPieceCantBeEmpty);
+                    return Err(ChessError::PromotionPieceCantBeEmpty);
                 }
 
-                piece.piece = promotion_piece.expect("Promotion piece is somehow none"); 
-                next_position.board[mv.from_square as usize]  = None;
+                piece.piece = promotion_piece.expect("Promotion piece is somehow none");
+                next_position.board[mv.from_square as usize] = None;
                 next_position.board[mv.to_square as usize] = Some(piece);
-            },
+            }
             MoveKind::Castling { rook_from, rook_to } => {
                 next_position.board[mv.from_square as usize] = None;
                 next_position.board[mv.to_square as usize] = Some(piece);
                 next_position.board[rook_from as usize] = None;
-                next_position.board[rook_to as usize] = Some(crate::ColoredPiece { piece: Piece::Rook, side: piece.side })
+                next_position.board[rook_to as usize] = Some(crate::ColoredPiece {
+                    piece: Piece::Rook,
+                    side: piece.side,
+                })
             }
         };
-
-
 
         next_position.side_to_move = match next_position.side_to_move {
             Side::White => Side::Black,
@@ -104,6 +134,7 @@ mod tests {
             side_to_move: Side::White,
             castle: [false; 4],
             en_passant: None,
+            king_squares: [4, 60],
         }
     }
 
@@ -115,11 +146,15 @@ mod tests {
             from_square: 0,
             to_square: 1,
             move_kind: MoveKind::Quiet,
+            colored_piece: ColoredPiece {
+                piece: Piece::Pawn,
+                side: Side::White,
+            },
         };
         let err = pos.make_move_unvalidated(&mv).unwrap_err();
         match err {
-            MoveError::NoPieceOnInitalSquare(sq) => assert_eq!(sq, 0),
-            _ => panic!("expected NoPieceOnInitalSquare"),
+            ChessError::NoPieceOnSquare { square } => assert_eq!(square, 0),
+            _ => panic!("expected NoPieceOnSquare"),
         }
     }
 
@@ -131,21 +166,42 @@ mod tests {
             from_square: 64,
             to_square: 0,
             move_kind: MoveKind::Quiet,
+            colored_piece: ColoredPiece {
+                piece: Piece::Pawn,
+                side: Side::White,
+            },
         };
         let mv2 = Move {
             from_square: 0,
             to_square: 64,
             move_kind: MoveKind::Quiet,
+            colored_piece: ColoredPiece {
+                piece: Piece::Pawn,
+                side: Side::White,
+            },
         };
         let mv3 = Move {
             from_square: 200,
             to_square: 201,
             move_kind: MoveKind::Quiet,
+            colored_piece: ColoredPiece {
+                piece: Piece::Pawn,
+                side: Side::White,
+            },
         };
 
-        assert!(matches!(pos.make_move_unvalidated(&mv1), Err(MoveError::OutOfBounds)));
-        assert!(matches!(pos.make_move_unvalidated(&mv2), Err(MoveError::OutOfBounds)));
-        assert!(matches!(pos.make_move_unvalidated(&mv3), Err(MoveError::OutOfBounds)));
+        assert!(matches!(
+            pos.make_move_unvalidated(&mv1),
+            Err(ChessError::NotASquareOnBoard { square: 64 })
+        ));
+        assert!(matches!(
+            pos.make_move_unvalidated(&mv2),
+            Err(ChessError::NotASquareOnBoard { square: 64 })
+        ));
+        assert!(matches!(
+            pos.make_move_unvalidated(&mv3),
+            Err(ChessError::NotASquareOnBoard { square: 200 })
+        ));
     }
 
     #[test]
@@ -163,6 +219,7 @@ mod tests {
             from_square: 0,
             to_square: 7,
             move_kind: MoveKind::Quiet,
+            colored_piece: rook,
         };
         let next = pos.make_move_unvalidated(&mv).unwrap(); // a1 -> h1
 
@@ -193,6 +250,7 @@ mod tests {
             from_square: 0,
             to_square: 7,
             move_kind: MoveKind::Capture,
+            colored_piece: white_rook,
         };
         let next = pos.make_move_unvalidated(&mv).unwrap();
 
@@ -215,6 +273,7 @@ mod tests {
             from_square: 0,
             to_square: 1,
             move_kind: MoveKind::Quiet,
+            colored_piece: pawn,
         };
         let next = pos.make_move_unvalidated(&mv1).unwrap();
         assert_eq!(next.side_to_move, Side::Black);
@@ -224,6 +283,7 @@ mod tests {
             from_square: 0,
             to_square: 1,
             move_kind: MoveKind::Quiet,
+            colored_piece: pawn,
         };
         let next2 = pos.make_move_unvalidated(&mv2).unwrap();
         assert_eq!(next2.side_to_move, Side::White);
@@ -249,6 +309,7 @@ mod tests {
             from_square: 12,
             to_square: 21, // f3
             move_kind: MoveKind::EnPassant { capture_square: 20 },
+            colored_piece: white_pawn,
         };
         let next = pos.make_move_unvalidated(&mv).unwrap();
 
@@ -271,6 +332,7 @@ mod tests {
             from_square: 8,
             to_square: 24, // a4
             move_kind: MoveKind::DoublePawnPush { passed_square: 16 },
+            colored_piece: pawn,
         };
         let next = pos.make_move_unvalidated(&mv).unwrap();
 
@@ -301,6 +363,7 @@ mod tests {
                 rook_from: 7,
                 rook_to: 5,
             },
+            colored_piece: king,
         };
 
         let next = pos.make_move_unvalidated(&mv).unwrap();
@@ -334,6 +397,7 @@ mod tests {
                 rook_from: 56,
                 rook_to: 59,
             },
+            colored_piece: king,
         };
 
         let next = pos.make_move_unvalidated(&mv).unwrap();
