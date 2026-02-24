@@ -1,7 +1,7 @@
 use std::i16;
 
 use crate::{
-    Piece, Side, Square, errors::ChessError, helper::{file, rank}, moves::make_move::{Move, MoveKind}, position::Position
+    Piece, Side, Square, errors::ChessError, helper::{file, file_rank, rank}, moves::make_move::{Move, MoveKind}, position::Position
 };
 
 impl Position {
@@ -19,8 +19,9 @@ impl Position {
 	    Side::Black => (-8, 6, [-7, -9], 0),
 	};
 
-	let from_file_i = file(from_square) as i16;
-	let from_rank_i = rank(from_square) as i16;
+	let (from_file_i, from_rank_i) = file_rank(from_square);
+	let from_file_i = from_file_i as i16;
+	let from_rank_i = from_rank_i as i16;
 
 	let mut forward_1_is_empty = false;
 	let forward_1_candidate_i = from_square as i16 + forward;

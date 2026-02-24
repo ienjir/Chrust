@@ -1,7 +1,7 @@
 use std::usize;
 
 use crate::{
-    Piece, Side, Square, errors::ChessError, helper::{file, rank}, moves::make_move::{Move, MoveKind}, position::Position
+    Piece, Side, Square, errors::ChessError, helper::{file, file_rank, rank}, moves::make_move::{Move, MoveKind}, position::Position
 };
 
 impl Position {
@@ -13,8 +13,9 @@ impl Position {
 	    Err(x) => return Err(x),
 	};
 
-	let from_file_i = file(from_square) as i16;
-	let from_rank_i = rank(from_square) as i16;
+	let (from_file_i, from_rank_i) = file_rank(from_square);
+	let from_file_i = from_file_i as i16;
+	let from_rank_i = from_rank_i as i16;
 
 	let directions: [i16; 8] = [-9, -8, -7, -1, 1, 7, 8, 9];
 

@@ -1,4 +1,4 @@
-use crate::{Piece, Side, Square, errors::ChessError, helper::{file, rank}, position::Position};
+use crate::{Piece, Side, Square, errors::ChessError, helper::{file, file_rank, rank}, position::Position};
 
 impl Position {
     pub fn is_square_attacked(&self, from_square: Square, side_to_attack: Side, ) -> Result<Option<Vec<Square>>, ChessError> {
@@ -46,10 +46,10 @@ impl Position {
                 continue;
             }
 
-            let from_file = file(from_square) as i16;
-            let from_rank = rank(from_square) as i16;
-            let attack_file = file(attack_square as u8) as i16;
-            let attack_rank = rank(attack_square as u8) as i16;
+            let (from_file, from_rank) = file_rank(from_square);
+            let (from_file, from_rank) = (from_file as i16, from_rank as i16);
+            let (attack_file, attack_rank) = file_rank(attack_square as u8);
+            let (attack_file, attack_rank) = (attack_file as i16, attack_rank as i16);
             let file_diff = (attack_file - from_file).abs();
             let rank_diff = (attack_rank - from_rank).abs();
 
@@ -80,10 +80,10 @@ impl Position {
                 continue;
             }
 
-            let from_file = file(from_square) as i16;
-            let from_rank = rank(from_square) as i16;
-            let attack_file = file(attack_square as u8) as i16;
-            let attack_rank = rank(attack_square as u8) as i16;
+            let (from_file, from_rank) = file_rank(from_square);
+            let (from_file, from_rank) = (from_file as i16, from_rank as i16);
+            let (attack_file, attack_rank) = file_rank(attack_square as u8);
+            let (attack_file, attack_rank) = (attack_file as i16, attack_rank as i16);
             let file_diff = (attack_file - from_file).abs();
             let rank_diff = (attack_rank - from_rank).abs();
 

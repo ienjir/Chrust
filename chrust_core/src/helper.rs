@@ -16,6 +16,10 @@ pub fn square(file: u8, rank: u8) -> Square {
     rank * 8 + file
 }
 
+pub fn file_rank(square: Square) -> (u8, u8) {
+    (file(square), rank(square))
+}
+
 impl ColoredPiece {
     pub fn to_char(&self) -> char {
         let mut piece_char = match self.piece {

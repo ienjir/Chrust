@@ -1,5 +1,5 @@
 use core::f32;
-use chrust_core::{Square, helper::{file, rank}};
+use chrust_core::{Square, helper::file_rank};
 use macroquad::{color::{Color, GREEN, WHITE}, math::{Rect, Vec2}, shapes::{draw_circle, draw_rectangle}, texture::{DrawTextureParams, draw_texture_ex}, window::{screen_height, screen_width}};
 use crate::{layout::{CELL_SIZE, GRID_ORIGIN_X, GRID_ORIGIN_Y, PROMOTION_LEFT_CELLS, PROMOTION_PIECES, PROMOTION_TOP_CELLS}, state::{GameState, UiState}};
 
@@ -12,8 +12,7 @@ pub fn handle_ui_state(game_state: &GameState) {
 }
 
 pub fn get_square_coordinates(square: Square) -> (f32, f32) {
-    let file = file(square);
-    let rank = rank(square);
+    let (file, rank) = file_rank(square);
 
     let x: f32 = GRID_ORIGIN_X + file as f32 * CELL_SIZE;
     let y: f32 = (GRID_ORIGIN_Y + (7.0 * CELL_SIZE)) - rank as f32 * CELL_SIZE;
@@ -22,8 +21,7 @@ pub fn get_square_coordinates(square: Square) -> (f32, f32) {
 }
 
 pub fn get_square_rectangle(square: Square) -> Rect {
-    let file = file(square);
-    let rank = rank(square);
+    let (file, rank) = file_rank(square);
 
     let x: f32 = GRID_ORIGIN_X + file as f32 * CELL_SIZE;
     let y: f32 = (GRID_ORIGIN_Y + (7.0 * CELL_SIZE)) - rank as f32 * CELL_SIZE;
@@ -42,8 +40,7 @@ pub fn render_chessboard_without_pieces(game_state: &GameState) {
     for square in 0..64 {
 	let (x, y) = get_square_coordinates(square as u8);
 
-	let file = file(square);
-	let rank = rank(square);
+	let (file, rank) = file_rank(square as u8);
 
 	let mut color = macroquad::color::colors::WHITE; 
 	if (rank + file) % 2 == 0 {
