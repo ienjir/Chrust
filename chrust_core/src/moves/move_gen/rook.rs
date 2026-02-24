@@ -10,28 +10,10 @@ impl Position {
     pub fn rook_targets(&self, from_square: Square) -> Result<Vec<Move>, ChessError> {
         let mut target_moves: Vec<Move> = Vec::with_capacity(14);
 
-        if !(0..=63).contains(&from_square) {
-            return Err(ChessError::NotASquareOnBoard {
-                square: from_square,
-            });
-        }
-
-        let rook = match self.board[from_square as usize] {
-            Some(p) => p,
-            None => {
-                return Err(ChessError::NoPieceOnSquare {
-                    square: from_square,
-                })
-            }
-        };
-
-        if rook.piece != Piece::Rook {
-            return Err(ChessError::WrongPieceTypeOnSquare {
-                expected_piece: Piece::Rook,
-                found_piece: rook.piece,
-                square: from_square,
-            });
-        }
+	let rook = match self.get_validated_colored_piece(from_square, Piece::Rook) {
+	    Ok(x) => x,
+	    Err(x) => return Err(x),
+	};
 
         let directions: [i16; 4] = [-8, 8, -1, 1];
 
@@ -328,10 +310,9 @@ mod tests {
 
         assert_eq!(
             pos.rook_targets(60),
-            Err(ChessError::WrongPieceTypeOnSquare {
+            Err(ChessError::WrongPieceType {
                 expected_piece: Piece::Rook,
                 found_piece: Piece::Knight,
-                square: 60
             })
         );
     }

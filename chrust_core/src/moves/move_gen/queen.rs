@@ -10,28 +10,10 @@ impl Position {
     pub fn queen_targets(&self, from_square: Square) -> Result<Vec<Move>, ChessError> {
         let mut target_moves: Vec<Move> = Vec::with_capacity(27);
 
-        if !(0..=63).contains(&from_square) {
-            return Err(ChessError::NotASquareOnBoard {
-                square: from_square,
-            });
-        }
-
-        let queen = match self.board[from_square as usize] {
-            Some(p) => p,
-            None => {
-                return Err(ChessError::NoPieceOnSquare {
-                    square: from_square,
-                })
-            }
-        };
-
-        if queen.piece != Piece::Queen {
-            return Err(ChessError::WrongPieceTypeOnSquare {
-                expected_piece: Piece::Queen,
-                found_piece: queen.piece,
-                square: from_square,
-            });
-        }
+	let queen = match self.get_validated_colored_piece(from_square, Piece::Queen) {
+	    Ok(x) => x,
+	    Err(x) => return Err(x),
+	};
 
         let directions: [i16; 8] = [-8, 8, -1, 1, -7, 7, -9, 9];
 
@@ -192,10 +174,9 @@ mod tests {
 
         assert_eq!(
             pos.queen_targets(60),
-            Err(ChessError::WrongPieceTypeOnSquare {
+            Err(ChessError::WrongPieceType {
                 expected_piece: Piece::Queen,
                 found_piece: Piece::Knight,
-                square: 60
             })
         );
     }

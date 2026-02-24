@@ -6,28 +6,10 @@ impl Position {
     pub fn bishop_targets(&self, from_square: Square) -> Result<Vec<Move>, ChessError> {
         let mut to_moves: Vec<Move> = Vec::with_capacity(13);
 
-        if !(0..=63).contains(&from_square) {
-            return Err(ChessError::NotASquareOnBoard {
-                square: from_square,
-            });
-        }
-
-        let bishop = match self.board[from_square as usize] {
-            Some(p) => p,
-            None => {
-                return Err(ChessError::NoPieceOnSquare {
-                    square: from_square,
-                })
-            }
-        };
-
-        if bishop.piece != Piece::Bishop {
-            return Err(ChessError::WrongPieceTypeOnSquare {
-                expected_piece: Piece::Bishop,
-                found_piece: bishop.piece,
-                square: from_square,
-            });
-        }
+	let bishop = match self.get_validated_colored_piece(from_square, Piece::Bishop) {
+	    Ok(x) => x,
+	    Err(x) => return Err(x),
+	};
 
         let directions: [i16; 4] = [-7, 7, -9, 9];
 
@@ -201,10 +183,9 @@ mod tests {
 
         assert_eq!(
             pos.bishop_targets(60),
-            Err(ChessError::WrongPieceTypeOnSquare {
+            Err(ChessError::WrongPieceType {
                 expected_piece: Piece::Bishop,
                 found_piece: Piece::Knight,
-                square: 60
             })
         );
     }

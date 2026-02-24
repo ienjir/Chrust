@@ -10,28 +10,10 @@ impl Position {
     pub fn knight_targets(&self, from_square: Square) -> Result<Vec<Move>, ChessError> {
         let mut target_moves: Vec<Move> = Vec::with_capacity(8);
 
-        if !(0..=63).contains(&from_square) {
-            return Err(ChessError::NotASquareOnBoard {
-                square: from_square,
-            });
-        }
-
-        let knight = match self.board[from_square as usize] {
-            Some(p) => p,
-            None => {
-                return Err(ChessError::NoPieceOnSquare {
-                    square: from_square,
-                })
-            }
-        };
-
-        if knight.piece != Piece::Knight {
-            return Err(ChessError::WrongPieceTypeOnSquare {
-                expected_piece: Piece::Knight,
-                found_piece: knight.piece,
-                square: from_square,
-            });
-        }
+	let knight = match self.get_validated_colored_piece(from_square, Piece::Knight) {
+	    Ok(x) => x,
+	    Err(x) => return Err(x),
+	};
 
         let from_file_i = file(from_square) as i16;
         let from_rank_i = rank(from_square) as i16;
@@ -85,7 +67,7 @@ impl Position {
 
 #[cfg(test)]
 mod tests {
-    use crate::ColoredPiece;
+    use crate::{ColoredPiece, Side};
 
     use super::*;
 
@@ -112,6 +94,7 @@ mod tests {
     #[test]
     fn knight_e4_empty_board() {
         let mut pos = empty_position();
+	pos.side_to_move = Side::Black;
 
         pos.board[28] = Some(ColoredPiece {
             piece: crate::Piece::Knight,
@@ -150,6 +133,7 @@ mod tests {
     #[test]
     fn knight_g8_enemy_h6() {
         let mut pos = empty_position();
+	pos.side_to_move = Side::Black;
 
         pos.board[62] = Some(ColoredPiece {
             piece: crate::Piece::Knight,
@@ -200,10 +184,9 @@ mod tests {
 
         assert_eq!(
             pos.knight_targets(60),
-            Err(ChessError::WrongPieceTypeOnSquare {
+            Err(ChessError::WrongPieceType {
                 expected_piece: Piece::Knight,
                 found_piece: Piece::King,
-                square: 60
             })
         );
     }

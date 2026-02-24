@@ -1,9 +1,6 @@
 use crate::{errors::ChessError, moves::make_move::Move, position::Position, Piece, Square};
 
-pub fn get_possible_moves(
-    position: &Position,
-    from_square: Square,
-) -> Result<Vec<Move>, ChessError> {
+pub fn get_possible_moves(position: &Position, from_square: Square) -> Result<Vec<Move>, ChessError> {
     if from_square > 63 {
         return Err(ChessError::NotASquareOnBoard {
             square: from_square,
