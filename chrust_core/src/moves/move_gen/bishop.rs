@@ -2,16 +2,16 @@ use crate::{ Piece, Square, errors::ChessError, moves::make_move::{Move}, positi
 
 impl Position {
     pub fn bishop_targets(&self, from_square: Square) -> Result<Vec<Move>, ChessError> {
-        let mut to_moves: Vec<Move> = Vec::with_capacity(13);
+        let mut target_moves: Vec<Move> = Vec::with_capacity(13);
 
 	let bishop = match self.get_validated_colored_piece(from_square, Piece::Bishop) {
 	    Ok(x) => x,
 	    Err(x) => return Err(x),
 	};
 
-	self.diagonal_slider(from_square, bishop, &mut to_moves);
+	self.diagonal_slider(from_square, bishop, &mut target_moves);
 
-        Ok(to_moves)
+        Ok(target_moves)
     }
 }
 

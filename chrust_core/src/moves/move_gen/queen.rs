@@ -2,72 +2,17 @@ use crate::{ Piece, Square, errors::ChessError, helper::{file, rank}, moves::mak
 
 impl Position {
     pub fn queen_targets(&self, from_square: Square) -> Result<Vec<Move>, ChessError> {
-        let mut to_moves: Vec<Move> = Vec::with_capacity(13);
+        let mut target_moves: Vec<Move> = Vec::with_capacity(13);
 
 	let queen = match self.get_validated_colored_piece(from_square, Piece::Queen) {
 	    Ok(x) => x,
 	    Err(x) => return Err(x),
 	};
 
-	self.diagonal_slider(from_square, queen, &mut to_moves);
+	self.diagonal_slider(from_square, queen, &mut target_moves);
+	self.horizontal_vertical_slider(from_square, queen, &mut target_moves);
 
-        let directions: [i16; 4] = [-8, 8, -1, 1];
-
-        for direction in directions {
-            let mut step_from_i: i16 = from_square as i16;
-            loop {
-                let step_to_i = step_from_i + direction;
-
-                if !(0..=63).contains(&step_to_i) {
-                    break;
-                }
-
-                let file_difference_i =
-                    (file(step_to_i as u8) as i16 - file(step_from_i as u8) as i16).abs();
-                let rank_difference_i =
-                    (rank(step_to_i as u8) as i16 - rank(step_from_i as u8) as i16).abs();
-
-                if direction.abs() == 8 {
-                    if file_difference_i != 0 || rank_difference_i != 1 {
-                        break;
-                    }
-                } else if direction.abs() == 1 {
-                    if file_difference_i != 1 || rank_difference_i != 0 {
-                        break;
-                    }
-                } else {
-                    if rank_difference_i != 1 || file_difference_i != 1 {
-                        break;
-                    }
-                }
-
-                let candidate_occupant = self.board[step_to_i as usize];
-                match candidate_occupant {
-                    None => {
-                        to_moves.push(Move {
-                            colored_piece: queen,
-                            from_square: from_square,
-                            to_square: step_to_i as u8,
-                            move_kind: MoveKind::Quiet,
-                        });
-                        step_from_i = step_to_i;
-                    }
-                    Some(colored_piece) => {
-                        if colored_piece.side != queen.side {
-                            to_moves.push(Move {
-                                colored_piece: queen,
-                                from_square: from_square,
-                                to_square: step_to_i as u8,
-                                move_kind: MoveKind::Capture,
-                            });
-                        }
-                        break;
-                    }
-                }
-            }
-        }
-
-        Ok(to_moves)
+        Ok(target_moves)
     }
 }
 

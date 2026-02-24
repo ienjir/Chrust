@@ -1,4 +1,4 @@
-use crate::{ Piece, Square, errors::ChessError, helper::{file, rank}, moves::make_move::{Move, MoveKind}, position::Position };
+use crate::{ Piece, Square, errors::ChessError, moves::make_move::{Move}, position::Position };
 
 impl Position {
     pub fn rook_targets(&self, from_square: Square) -> Result<Vec<Move>, ChessError> {
@@ -9,57 +9,7 @@ impl Position {
 	    Err(x) => return Err(x),
 	};
 
-        let directions: [i16; 4] = [-8, 8, -1, 1];
-
-        for direction in directions {
-            let mut step_from_i: i16 = from_square as i16;
-            loop {
-                let step_to_i = step_from_i + direction;
-
-                if !(0..=63).contains(&step_to_i) {
-                    break;
-                }
-
-                let file_difference_i =
-                    (file(step_to_i as u8) as i16 - file(step_from_i as u8) as i16).abs();
-                let rank_difference_i =
-                    (rank(step_to_i as u8) as i16 - rank(step_from_i as u8) as i16).abs();
-
-                if direction.abs() == 8 {
-                    if file_difference_i != 0 || rank_difference_i != 1 {
-                        break;
-                    }
-                } else {
-                    if file_difference_i != 1 || rank_difference_i != 0 {
-                        break;
-                    }
-                }
-
-                let candidate_occupant = self.board[step_to_i as usize];
-                match candidate_occupant {
-                    None => {
-                        target_moves.push(Move {
-                            colored_piece: rook,
-                            from_square: from_square,
-                            to_square: step_to_i as u8,
-                            move_kind: MoveKind::Quiet,
-                        });
-                        step_from_i = step_to_i;
-                    }
-                    Some(colored_piece) => {
-                        if colored_piece.side != rook.side {
-                            target_moves.push(Move {
-                                colored_piece: rook,
-                                from_square: from_square,
-                                to_square: step_to_i as u8,
-                                move_kind: MoveKind::Capture,
-                            });
-                        }
-                        break;
-                    }
-                }
-            }
-        }
+	self.horizontal_vertical_slider(from_square, rook, &mut target_moves);
 
         Ok(target_moves)
     }
@@ -67,7 +17,7 @@ impl Position {
 
 #[cfg(test)]
 mod tests {
-    use crate::ColoredPiece;
+    use crate::{ColoredPiece, moves::make_move::MoveKind};
 
     use super::*;
 
