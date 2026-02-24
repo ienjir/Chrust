@@ -4,6 +4,38 @@ use crate::{
     ColoredPiece, Piece, Side, Square,
 };
 
+pub fn file(square: Square) -> u8 {
+    square % 8
+}
+
+pub fn rank(square: Square) -> u8 {
+    square / 8
+}
+
+pub fn square(file: u8, rank: u8) -> Square {
+    rank * 8 + file
+}
+
+impl ColoredPiece {
+    pub fn to_char(&self) -> char {
+        let mut piece_char = match self.piece {
+            Piece::Pawn => 'p',
+            Piece::Knight => 'n',
+            Piece::Bishop => 'b',
+            Piece::Rook => 'r',
+            Piece::Queen => 'q',
+            Piece::King => 'k',
+        };
+
+        if self.side == Side::White {
+            piece_char = piece_char.to_ascii_uppercase();
+        }
+
+        piece_char
+    }
+}
+
+
 /// Checks if a `Square` is in the 64 squares of a chessboard
 pub fn is_square_on_board(from_square: Square) -> Result<(), ChessError> {
     if !(0..=63).contains(&from_square) {

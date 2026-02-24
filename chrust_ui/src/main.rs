@@ -5,8 +5,8 @@ mod layout;
 mod input;
 mod controller;
 use chrust_core::{Side, position::load_position_from_fen};
-use crate::{assets::load_assets, controller::apply_ui_event, input::route_click, layout::TEST_FEN_STRING, renderer::{render_chess_pieces, render_chessboard_without_pieces, render_possible_moves}};
-use macroquad::prelude::*;
+use crate::{assets::load_assets, controller::apply_ui_event, input::route_click, layout::TEST_FEN_STRING, renderer::{handle_ui_state, render_chess_pieces, render_chessboard_without_pieces, render_possible_moves, render_promotion_modal}, state::UiState};
+use macroquad::{prelude::*, ui};
 use macroquad::file::set_pc_assets_folder;
 use crate::state::{GameState, InputState};
 
@@ -58,7 +58,8 @@ async fn main() {
         render_chessboard_without_pieces(&game_state);
         render_chess_pieces(&game_state).await;
         render_possible_moves(&game_state);
+	handle_ui_state(&game_state);
 
-        next_frame().await;
+	next_frame().await;
     }
 }

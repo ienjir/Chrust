@@ -1,4 +1,4 @@
-use crate::{ColoredPiece, Piece, Side, Square, errors::FenError, square};
+use crate::{ColoredPiece, Piece, Side, Square, errors::FenError, helper::square};
 
 #[derive(Clone, Debug)]
 pub struct Position {

@@ -1,4 +1,4 @@
-use crate::{Piece, Side, Square, errors::ChessError, file, position::Position, rank};
+use crate::{Piece, Side, Square, errors::ChessError, helper::{file, rank}, position::Position};
 
 impl Position {
     pub fn is_square_attacked(&self, from_square: Square, side_to_attack: Side, ) -> Result<Option<Vec<Square>>, ChessError> {

@@ -1,9 +1,4 @@
-use crate::{
-    errors::ChessError,
-    file,
-    moves::make_move::{Move, MoveKind},
-    position::Position,
-    rank, Piece, Square,
+use crate::{Piece, Square, errors::ChessError, helper::{file, rank}, moves::make_move::{Move, MoveKind}, position::Position
 };
 
 impl Position {

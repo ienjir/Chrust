@@ -1,6 +1,6 @@
 use std::usize;
 
-use chrust_core::{Piece, Square, square};
+use chrust_core::{Piece, Square, helper::square};
 use macroquad::{math::i32, prelude::Rect};
 use crate::{controller::UiEvent, layout::{CELL_SIZE, GRID_ORIGIN_X, GRID_ORIGIN_Y, PROMOTION_LEFT_CELLS, PROMOTION_PIECES, PROMOTION_TOP_CELLS, RESET_BUTTON}, state::{GameState, InputState, UiState}};
 

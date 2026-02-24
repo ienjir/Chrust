@@ -1,7 +1,7 @@
 use std::i16;
 
 use crate::{
-    Piece, Side, Square, errors::ChessError, file, moves::{make_move::{Move, MoveKind}}, position::Position, rank
+    Piece, Side, Square, errors::ChessError, helper::{file, rank}, moves::make_move::{Move, MoveKind}, position::Position
 };
 
 impl Position {
