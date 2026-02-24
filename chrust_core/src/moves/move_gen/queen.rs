@@ -2,14 +2,16 @@ use crate::{ Piece, Square, errors::ChessError, helper::{file, rank}, moves::mak
 
 impl Position {
     pub fn queen_targets(&self, from_square: Square) -> Result<Vec<Move>, ChessError> {
-        let mut target_moves: Vec<Move> = Vec::with_capacity(27);
+        let mut to_moves: Vec<Move> = Vec::with_capacity(13);
 
 	let queen = match self.get_validated_colored_piece(from_square, Piece::Queen) {
 	    Ok(x) => x,
 	    Err(x) => return Err(x),
 	};
 
-        let directions: [i16; 8] = [-8, 8, -1, 1, -7, 7, -9, 9];
+	self.diagonal_slider(from_square, queen, &mut to_moves);
+
+        let directions: [i16; 4] = [-8, 8, -1, 1];
 
         for direction in directions {
             let mut step_from_i: i16 = from_square as i16;
@@ -42,7 +44,7 @@ impl Position {
                 let candidate_occupant = self.board[step_to_i as usize];
                 match candidate_occupant {
                     None => {
-                        target_moves.push(Move {
+                        to_moves.push(Move {
                             colored_piece: queen,
                             from_square: from_square,
                             to_square: step_to_i as u8,
@@ -52,7 +54,7 @@ impl Position {
                     }
                     Some(colored_piece) => {
                         if colored_piece.side != queen.side {
-                            target_moves.push(Move {
+                            to_moves.push(Move {
                                 colored_piece: queen,
                                 from_square: from_square,
                                 to_square: step_to_i as u8,
@@ -65,7 +67,7 @@ impl Position {
             }
         }
 
-        Ok(target_moves)
+        Ok(to_moves)
     }
 }
 
