@@ -116,40 +116,44 @@ When accepting a move from UI/player input, do not trust raw click/input data. O
 - Full game-end/state rules (checkmate, stalemate, repetition, 50-move rule, insufficient material).
 
 
-## Next Steps (Simple Core)
+## Next Steps (Current Focus Only: Legal Move Generation)
 
-- [ ] Make move validation truly legal (`make_move_validated` must reject self-check moves)
-- [ ] Add global legal move generation (`generate_legal_moves(position)`)
-- [ ] Fix promotion behavior (Q/R/B/N only, including capture promotions)
-- [ ] Update castling rights during move application (king/rook move and rook capture cases)
-- [ ] Add game state/end conditions (checkmate, stalemate, insufficient material, 50-move, repetition)
-- [ ] Harden FEN parsing (rank/file shape, king count, halfmove/fullmove counters)
-- [ ] UI cleanup after core correctness (promotion modal, reset behavior, default start position)
+### Phase A: Build `generate_legal_moves(position)`
+- [ ] Keep piece-specific functions as pseudo-legal generators (`pawn_targets`, `knight_targets`, `bishop_targets`, `rook_targets`, `queen_targets`, `king_targets`)
+- [ ] Add global move collection for `side_to_move` (iterate board and aggregate pseudo-legal moves)
+- [ ] Add legality filtering by simulation: apply each pseudo-legal move on a temporary position and reject if own king is in check afterward
+- [ ] Use this legal list as the source of truth for `get_possible_moves(position, from_square)` by filtering from-square moves from the global legal list
+
+### Phase B: Check Handling Correctness (inside legal movegen)
+- [ ] Ensure single-check responses include king moves, capture-checker moves, and block-check moves (for slider checks)
+- [ ] Ensure double-check allows only king moves (naturally via legality filtering)
+- [ ] Ensure pinned-piece moves that expose own king are rejected
+
+### Phase C: Movegen Test Coverage
+- [ ] Add targeted tests for single-check block/capture responses
+- [ ] Add targeted tests for double-check king-only behavior
+- [ ] Add targeted tests for pinned-piece restrictions
+- [ ] Add perft tests (depth 1-5) to validate movegen correctness
+
+### Deferred Until Movegen Is Stable
+- [ ] Move application validation hardening (`make_move_validated`)
+- [ ] Castling rights state updates during apply
+- [ ] Promotion UX/application cleanup
+- [ ] Game-end and draw-rule handling
+- [ ] FEN parser hardening
 
 
-## Product Roadmap (Fully Working Product)
+## Product Roadmap (Now: Movegen-First)
 
-### Phase 1: Rules-Complete Local Chess (MVP)
-- [ ] Complete legal rules and game-over detection in `chrust_core_simple`
-- [ ] Add perft tests (depth 1-5) for correctness validation
-- [ ] Ensure UI can play full local 2-player games end-to-end
+### Phase 1: Legal Movegen Core (Current Priority)
+- [ ] Finish board-wide legal move generation in `chrust_core`
+- [ ] Enforce king-safety legality by post-move check filtering
+- [ ] Cover checks, blocks, captures, pins, and king-only double-check responses
+- [ ] Validate against perft depth 1-5 and targeted tactical test positions
+- [ ] Ensure UI only presents and accepts engine-legal moves
 
-### Phase 2: Quality and Architecture
-- [ ] Decide long-term core direction (`chrust_core_simple` vs bitboard `chrust_core`)
-- [ ] Improve error handling (replace `println!` with structured errors)
-- [ ] Add integration tests: `FEN -> legal moves -> apply move -> expected FEN`
-
-### Phase 3: Playable Product Features
-- [ ] Move history, undo/redo, PGN import/export
-- [ ] Clocks and time controls
-- [ ] In-game controls (reset, resign, draw offer) and settings
-
-### Phase 4: Engine Track (Optional but aligned with project goal)
-- [ ] Search: iterative deepening, alpha-beta, quiescence
-- [ ] Evaluation + move ordering + transposition table + Zobrist hashing
-- [ ] UCI support for external GUI compatibility
-
-### Phase 5: Release and Distribution
-- [ ] CI for test/lint/build
-- [ ] Cross-platform release artifacts
-- [ ] Versioned milestones and issue tracking (`rules`, `ui`, `engine`, `perf`)
+### Later Phases (Intentionally Deferred)
+- [ ] Move application/state updates and full rule enforcement
+- [ ] Game-end and draw-rule detection
+- [ ] Architecture decisions, product features, and engine/search track
+- [ ] Release automation and distribution
