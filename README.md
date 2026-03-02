@@ -49,6 +49,7 @@ Files / X
 
 
 ## Implementation of legal move gen 
+Get piece
 If piece on square does not belong to side to move return
 Generate all pseudo legal moves for the suqare. A pseudo legal move is a move that ignores king safety but checks for movement rules and occupancy rules (including promotions, en passant, castling)
 Loop over each generated move and apply the move to the position. 
@@ -66,3 +67,9 @@ Then check for things like halfmove clock etc (need to be expaned)
 
 Later for engine:
 Add a generate all moves function and cache the results 
+
+
+## Next steps
+- Add make_move that mutates a position and returns an undo
+- Add undo move
+- Add legality check to move gen

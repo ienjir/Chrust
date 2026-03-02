@@ -76,27 +76,34 @@ pub fn is_right_piece_side(from_piece: ColoredPiece, expected_side: Side) -> Res
 impl Position {
     /// Gets a colored piece that is validated so that it acutually exists. Also validates the from_square
     pub fn get_validated_colored_piece(&self, from_square: Square, expected_piece: Piece) -> Result<ColoredPiece, ChessError> {
-	let col_piece = match self.get_colored_piece_from_square(from_square) {
+	let col_piece = match self.get_unvalidated_colored_piece_from_square(from_square) {
 	    Ok(x) => x,
-	    Err(x) => return Err(x),
+	   Err(x) => return Err(x),
 	};
 
-	if let Err(x) = is_right_piece_side(col_piece, self.side_to_move) {
-	    return Err(x);
-	}
-
-	if let Err(x) = is_right_piece_type(col_piece, expected_piece) {
+	if let Err(x) = self.validate_colored_piece(col_piece, expected_piece) {
 	    return Err(x);
 	}
 
 	Ok(col_piece)
     }
 
-    pub fn get_colored_piece_from_square(&self, from_square: Square) -> Result<ColoredPiece, ChessError> {
-	if let Err(x) = is_square_on_board(from_square) {
+    pub fn validate_colored_piece(&self, colored_piece: ColoredPiece, expected_piece: Piece) -> Result<(), ChessError> {
+	if let Err(x) = is_right_piece_side(colored_piece, self.side_to_move) {
 	    return Err(x);
 	}
 
+	if let Err(x) = is_right_piece_type(colored_piece, expected_piece) {
+	    return Err(x);
+	}
+
+	Ok(())
+    }
+
+    pub fn get_unvalidated_colored_piece_from_square(&self, from_square: Square) -> Result<ColoredPiece, ChessError> {
+	if let Err(x) = is_square_on_board(from_square) {
+	    return Err(x);
+	}
 
 	match self.board[from_square as usize] {
 	    Some(p) => return Ok(p),
@@ -111,8 +118,6 @@ impl Position {
 
 #[cfg(test)]
 mod tests {
-    use crate::moves::move_gen::move_gen::get_possible_moves;
-
     use super::*;
 
     fn empty_position() -> Position {
@@ -283,7 +288,7 @@ mod tests {
 	});
 
 	assert_eq!(
-	    pos.get_colored_piece_from_square(0),
+	    pos.get_unvalidated_colored_piece_from_square(0),
 	    Ok(ColoredPiece {
 		piece: Piece::Rook,
 		side: Side::White,
@@ -291,7 +296,7 @@ mod tests {
 	);
 
 	assert_eq!(
-	    pos.get_colored_piece_from_square(63),
+	    pos.get_unvalidated_colored_piece_from_square(63),
 	    Ok(ColoredPiece {
 		piece: Piece::Rook,
 		side: Side::Black,
@@ -304,7 +309,7 @@ mod tests {
 	let pos_white = empty_position();
 
 	assert_eq!(
-	    pos_white.get_colored_piece_from_square(10),
+	    pos_white.get_unvalidated_colored_piece_from_square(10),
 	    Err(ChessError::NoPieceOnSquare { square: 10 })
 	);
 
@@ -312,7 +317,7 @@ mod tests {
 	pos_black.side_to_move = Side::Black;
 
 	assert_eq!(
-	    pos_black.get_colored_piece_from_square(54),
+	    pos_black.get_unvalidated_colored_piece_from_square(54),
 	    Err(ChessError::NoPieceOnSquare { square: 54 })
 	);
     }
@@ -322,7 +327,7 @@ mod tests {
 	let pos = empty_position();
 
 	assert_eq!(
-	    pos.get_colored_piece_from_square(64),
+	    pos.get_unvalidated_colored_piece_from_square(64),
 	    Err(ChessError::NotASquareOnBoard { square: 64 })
 	);
     }
@@ -444,7 +449,10 @@ mod tests {
 	});
 
 	assert_eq!(
-	    get_possible_moves(&pos, 63),
+	    pos.get_pseduo_legal_moves(63, ColoredPiece {
+	    piece: Piece::Rook,
+	    side: Side::Black,
+	}),
 	    Err(ChessError::WrongSide {
 		expected_side: Side::White,
 		found_side: Side::Black,

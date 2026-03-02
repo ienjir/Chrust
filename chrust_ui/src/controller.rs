@@ -1,4 +1,4 @@
-use chrust_core::{Piece, Square, moves::{make_move::{MoveKind}, move_gen::move_gen::get_possible_moves}};
+use chrust_core::{Piece, Square, moves::{make_move::{MoveKind}}};
 
 use crate::state::{GameState, UiState};
 
@@ -75,7 +75,7 @@ pub fn click_square(game_state: &mut GameState, from_square: Square) {
             return;
         }
 
-        match get_possible_moves(&game_state.position, from_square) {
+        match game_state.position.get_legal_moves(from_square) {
             Ok(moves) => {
                 game_state.selected = Some(from_square);
                 game_state.possible_moves = moves;
@@ -125,7 +125,7 @@ pub fn click_square(game_state: &mut GameState, from_square: Square) {
 
         if let Some(piece) = clicked_occupant {
             if piece.side == game_state.position.side_to_move {
-                match get_possible_moves(&game_state.position, from_square) {
+                match game_state.position.get_legal_moves(from_square) {
                     Ok(moves) => {
                         game_state.selected = Some(from_square);
                         game_state.possible_moves = moves;
