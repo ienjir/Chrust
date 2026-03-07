@@ -205,10 +205,13 @@ Add a generate all moves function and cache the results
 
 
 ## Next steps
-- Update make move unvalidated to return a right undo struct
-- Make it that if for example a capture to square is emtpy it rejects
-- Do the same for validated
-- Add undo move
-- Refactore move gen to use colored piece from the parent functions
-- Add legality check to move gen
-- Add a promotion capture move kind
+1. Add undo_move
+2. Add legality filtering to move gen
+3. Add a promotion-capture move kind
+4. Refactor make_move
+5. Refactor check.rs + slider.rs shared ray logic
+6. Refactor king.rs
+7. Unify slider pieces behind one shared function
+8. Unify repeated target-handling in king / knight / pawn (I think you meant this, not king/knight/king)
+9. Clean up verbose match error handling with ?
+10. Refactor move-gen APIs to reuse validated/colored piece context from callers where it actually reduces duplication

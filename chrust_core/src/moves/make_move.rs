@@ -126,10 +126,10 @@ impl Position {
 	}
 
 	match mv.to_square {
-	    0  => { self.castle[0] = false; } // A1 white queenside rook captured
-	    7  => { self.castle[1] = false; } // H1 white kingside rook captured
-	    56 => { self.castle[2] = false; } // A8 black queenside rook captured
-	    63 => { self.castle[3] = false; } // H8 black kingside rook captured
+	    0  => { self.castle[1] = false; } 
+	    7  => { self.castle[0] = false; } 
+	    56 => { self.castle[3] = false; } 
+	    63 => { self.castle[2] = false; } 
 	    _ => {}
 	}
 

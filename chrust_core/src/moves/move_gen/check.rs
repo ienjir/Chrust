@@ -1,7 +1,7 @@
 use crate::{Piece, Side, Square, errors::ChessError, helper::{file, file_rank, rank}, position::Position};
 
 impl Position {
-    pub fn is_square_attacked(&self, from_square: Square, side_to_attack: Side, ) -> Result<Option<Vec<Square>>, ChessError> {
+    pub fn is_square_attacked(&self, from_square: Square, attacking_side: Side, ) -> Result<Option<Vec<Square>>, ChessError> {
         let mut attacking_squares: Vec<Square> = Vec::new();
 
         if !(0..=63).contains(&from_square) {
@@ -11,9 +11,9 @@ impl Position {
         }
 
         // Pawns
-        let pawn_attack_offsets: Vec<i16> = match side_to_attack {
-            Side::White => vec![7, 9],
-            Side::Black => vec![-7, -9],
+        let pawn_attack_offsets: Vec<i16> = match attacking_side {
+            Side::White => vec![-7, -9],
+            Side::Black => vec![7, 9],
         };
 
         for offset in pawn_attack_offsets {
@@ -27,7 +27,7 @@ impl Position {
                 continue;
             };
 
-            if target.side == side_to_attack {
+            if target.side != attacking_side {
                 continue;
             }
 
@@ -61,7 +61,7 @@ impl Position {
                 continue;
             };
 
-            if target.side == side_to_attack {
+            if target.side != attacking_side {
                 continue;
             }
 
@@ -97,7 +97,7 @@ impl Position {
                 continue;
             };
 
-            if target.side == side_to_attack {
+            if target.side != attacking_side {
                 continue;
             }
 
@@ -145,7 +145,7 @@ impl Position {
                         step_from_i = step_to_i;
                     }
                     Some(occupant) => {
-                        if occupant.side == side_to_attack {
+                        if occupant.side != attacking_side {
                             break;
                         }
 

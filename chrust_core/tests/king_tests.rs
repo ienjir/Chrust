@@ -127,12 +127,7 @@ fn try_move_on_non_existing_square() {
     )
 }
 
-// BUG: king_targets calls is_square_attacked with king.side instead of opponent
-// side when checking transit-square safety.  With own rook present, the rook is
-// seen as an attacker of the transit square, so castling is always rejected.
-// Once the bug is fixed, remove #[ignore].
 #[test]
-#[ignore = "castling rejected — inverted is_square_attacked side in king_targets (known bug)"]
 fn king_castling_white_kingside_allowed_and_clear() {
     let mut pos = empty_position();
 
@@ -190,9 +185,7 @@ fn king_castling_white_queenside_blocked_by_piece() {
     ));
 }
 
-// BUG: same inverted is_square_attacked side issue as white kingside.
 #[test]
-#[ignore = "castling rejected — inverted is_square_attacked side in king_targets (known bug)"]
 fn king_castling_black_queenside_allowed_and_clear() {
     let mut pos = empty_position();
     pos.side_to_move = Side::Black;
@@ -332,10 +325,7 @@ fn wrong_side_returns_wrong_side_error() {
     );
 }
 
-// Castling tests that require the is_square_attacked side-inversion bug in
-// king_targets to be fixed before they can pass.
 #[test]
-#[ignore = "castling rejected — inverted is_square_attacked side in king_targets (known bug)"]
 fn king_castling_white_queenside_allowed_and_clear() {
     let mut pos = empty_position();
 
@@ -363,7 +353,6 @@ fn king_castling_white_queenside_allowed_and_clear() {
 }
 
 #[test]
-#[ignore = "castling rejected — inverted is_square_attacked side in king_targets (known bug)"]
 fn king_castling_black_kingside_allowed_and_clear() {
     let mut pos = empty_position();
     pos.side_to_move = Side::Black;

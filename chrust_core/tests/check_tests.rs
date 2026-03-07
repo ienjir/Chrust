@@ -57,7 +57,7 @@ fn is_square_attacked_by_black_pawns() {
     });
 
     let mut attacks = pos
-        .is_square_attacked(28, Side::White)
+        .is_square_attacked(28, Side::Black)
         .expect("is_square_attacked returned Err")
         .unwrap();
     attacks.sort_unstable();
@@ -83,7 +83,7 @@ fn is_square_attacked_by_white_pawns() {
     });
 
     let mut attacks = pos
-        .is_square_attacked(36, Side::Black)
+        .is_square_attacked(36, Side::White)
         .expect("is_square_attacked returned Err")
         .unwrap();
     attacks.sort_unstable();
@@ -109,7 +109,7 @@ fn is_square_attacked_by_rook_and_bishop() {
     });
 
     let attacks = pos
-        .is_square_attacked(28, Side::White)
+        .is_square_attacked(28, Side::Black)
         .expect("is_square_attacked returned Err")
         .unwrap();
 
@@ -132,7 +132,7 @@ fn is_square_attacked_by_king_adjacent() {
     });
 
     let attacks = pos
-        .is_square_attacked(28, Side::White)
+        .is_square_attacked(28, Side::Black)
         .expect("is_square_attacked returned Err")
         .unwrap();
 
@@ -169,7 +169,7 @@ fn is_square_attacked_by_knight_l_shape() {
     });
 
     let attacks = pos
-        .is_square_attacked(28, Side::White)
+        .is_square_attacked(28, Side::Black)
         .expect("is_square_attacked returned Err")
         .unwrap();
 
@@ -226,7 +226,7 @@ fn is_square_attacked_by_queen_on_diagonal_ray() {
     });
 
     let attacks = pos
-        .is_square_attacked(28, Side::White)
+        .is_square_attacked(28, Side::Black)
         .expect("is_square_attacked returned Err")
         .unwrap();
 
@@ -247,7 +247,7 @@ fn is_square_attacked_by_queen_on_orthogonal_ray() {
     }); // same rank, left
 
     let attacks = pos
-        .is_square_attacked(28, Side::White)
+        .is_square_attacked(28, Side::Black)
         .expect("is_square_attacked returned Err")
         .unwrap();
 
@@ -270,7 +270,7 @@ fn is_square_attacked_by_rook_on_horizontal_ray() {
     }); // h4, same rank
 
     let attacks = pos
-        .is_square_attacked(28, Side::White)
+        .is_square_attacked(28, Side::Black)
         .expect("is_square_attacked returned Err")
         .unwrap();
 
@@ -295,7 +295,7 @@ fn is_square_attacked_by_two_knights_simultaneously() {
     }); // +15
 
     let mut attacks = pos
-        .is_square_attacked(28, Side::White)
+        .is_square_attacked(28, Side::Black)
         .expect("is_square_attacked returned Err")
         .unwrap();
     attacks.sort_unstable();
@@ -321,16 +321,10 @@ fn is_square_attacked_pawn_does_not_wrap_from_a_file() {
     // b6 should be attacked by the a5 pawn (+9 from White's perspective =
     // is_square_attacked with side_to_attack=White means we look for White
     // attackers of the given square; here we want black attackers of b6).
-    let attacks = pos
-        .is_square_attacked(41, Side::White) // find White attackers of b6 — none expected
-        .expect("Err");
-    // The a5 black pawn attacks b6; but is_square_attacked(41, White) looks
-    // for attackers of the White side, i.e. Black pieces attacking sq 41.
-    // Let's re-check: side_to_attack=White means "is sq attacked by White pieces?"
-    // A black pawn on a5 would show up under side_to_attack=Black.
+    let attacks = pos.is_square_attacked(41, Side::White).expect("Err");
     // Verify no h-file wrap: is sq 47 (h6) attacked by the a5 pawn?
     assert_eq!(
-        pos.is_square_attacked(47, Side::Black), // look for black attackers of h6
+        pos.is_square_attacked(47, Side::Black),
         Ok(None),
         "a-file pawn should not wrap to attack h6"
     );
@@ -347,7 +341,7 @@ fn is_square_attacked_pawn_does_not_wrap_from_h_file() {
     }); // h4
 
     assert_eq!(
-        pos.is_square_attacked(32, Side::Black), // look for White attackers of a5
+        pos.is_square_attacked(32, Side::White),
         Ok(None),
         "h-file pawn should not wrap to attack a5"
     );
@@ -363,9 +357,7 @@ fn is_square_attacked_king_attacks_from_all_8_directions() {
     });
 
     for neighbour in [19u8, 20, 21, 27, 29, 35, 36, 37] {
-        let attacks = pos
-            .is_square_attacked(neighbour, Side::White) // look for Black attackers
-            .expect("Err");
+        let attacks = pos.is_square_attacked(neighbour, Side::Black).expect("Err");
         assert!(
             attacks.is_some() && has_square(attacks.as_ref().unwrap(), 28),
             "black king on e4 should attack sq {neighbour}"
@@ -387,13 +379,7 @@ fn is_king_in_check_white_not_in_check() {
     assert_eq!(pos.is_king_in_check(Side::White), Ok(None));
 }
 
-// BUG: is_king_in_check passes the opponent side as `side_to_attack`, but
-// is_square_attacked expects the DEFENDING side.  For White: should call
-// is_square_attacked(sq, Side::White) but calls is_square_attacked(sq, Side::Black).
-// This causes the opponent's pieces to be treated as friendly blockers, so checks
-// are never detected.  Once the bug is fixed, remove #[ignore].
 #[test]
-#[ignore]
 fn is_king_in_check_white_in_check_from_rook() {
     let mut pos = empty_position();
     pos.king_squares = [4, 60];
@@ -423,9 +409,7 @@ fn is_king_in_check_black_not_in_check() {
     assert_eq!(pos.is_king_in_check(Side::Black), Ok(None));
 }
 
-// BUG: same side-inversion issue as is_king_in_check_white_in_check_from_rook.
 #[test]
-#[ignore]
 fn is_king_in_check_black_in_check_from_knight() {
     let mut pos = empty_position();
     pos.king_squares = [4, 60];
@@ -443,9 +427,7 @@ fn is_king_in_check_black_in_check_from_knight() {
     assert!(has_square(result.as_ref().unwrap(), 43));
 }
 
-// BUG: same side-inversion issue as is_king_in_check_white_in_check_from_rook.
 #[test]
-#[ignore]
 fn is_king_in_check_uses_king_squares_array() {
     // king_squares[0] (White) is set to 27 (d4), not the standard e1.
     // The check should look at sq 27, not sq 4.

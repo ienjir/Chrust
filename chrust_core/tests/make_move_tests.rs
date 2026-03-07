@@ -304,12 +304,7 @@ fn promotion_with_non_sentinel_piece_is_rejected() {
     }
 }
 
-// Castling move tests are ignored because king_targets passes `king.side` to
-// is_square_attacked for transit-square safety, so the own rook on h1/a1 causes
-// f1/g1 / b1/c1 to appear "attacked" and castling is rejected.
-// Remove the #[ignore] once that bug in king.rs is fixed.
 #[test]
-#[ignore = "castling rejected — inverted is_square_attacked side in king_targets (known bug)"]
 fn castling_white_kingside_moves_king_and_rook() {
     let mut pos = empty_position();
 
@@ -343,7 +338,6 @@ fn castling_white_kingside_moves_king_and_rook() {
 }
 
 #[test]
-#[ignore = "castling rejected — inverted is_square_attacked side in king_targets (known bug)"]
 fn castling_white_queenside_moves_king_and_rook() {
     let mut pos = empty_position();
 
@@ -377,7 +371,6 @@ fn castling_white_queenside_moves_king_and_rook() {
 }
 
 #[test]
-#[ignore = "castling rejected — inverted is_square_attacked side in king_targets (known bug)"]
 fn castling_black_kingside_moves_king_and_rook() {
     let mut pos = empty_position();
     pos.side_to_move = Side::Black;
@@ -412,7 +405,6 @@ fn castling_black_kingside_moves_king_and_rook() {
 }
 
 #[test]
-#[ignore = "castling rejected — inverted is_square_attacked side in king_targets (known bug)"]
 fn castling_black_queenside_moves_king_and_rook() {
     let mut pos = empty_position();
     pos.side_to_move = Side::Black;
@@ -770,12 +762,7 @@ fn black_queenside_rook_move_revokes_black_queenside_right() {
     );
 }
 
-// BUG: the to_square castling-rights match in make_move has swapped indices.
-// Capturing on h1 (sq 7) clears castle[1] (queenside) instead of castle[0]
-// (kingside), and vice versa for a1. These tests assert correct expected
-// behaviour and are ignored until the bug is fixed.
 #[test]
-#[ignore = "swapped castling-rights indices in make_move to_square match (known bug)"]
 fn capturing_white_kingside_rook_on_h1_revokes_white_kingside_right() {
     // A black piece captures the White h1 rook → castle[0] (white kingside)
     // should be cleared.
@@ -805,7 +792,6 @@ fn capturing_white_kingside_rook_on_h1_revokes_white_kingside_right() {
 }
 
 #[test]
-#[ignore = "swapped castling-rights indices in make_move to_square match (known bug)"]
 fn capturing_white_queenside_rook_on_a1_revokes_white_queenside_right() {
     // A black piece captures the White a1 rook → castle[1] (white queenside)
     // should be cleared.
@@ -835,7 +821,6 @@ fn capturing_white_queenside_rook_on_a1_revokes_white_queenside_right() {
 }
 
 #[test]
-#[ignore = "castling rejected — inverted is_square_attacked side in king_targets (known bug)"]
 fn castling_revokes_both_rights_for_that_side() {
     let mut pos = empty_position();
     pos.castle = [true, true, false, false];
@@ -918,7 +903,6 @@ fn king_squares_updated_after_black_king_moves() {
 }
 
 #[test]
-#[ignore = "castling rejected — inverted is_square_attacked side in king_targets (known bug)"]
 fn king_squares_updated_after_castling() {
     let mut pos = empty_position();
     pos.king_squares = [4, 60];
@@ -1046,7 +1030,7 @@ fn double_pawn_push_undo_restores_position() {
 }
 
 #[test]
-#[ignore = "castling rejected — inverted is_square_attacked side in king_targets (known bug)"]
+#[ignore = "undo_move Castling branch is not yet implemented (WIP)"]
 fn castling_undo_restores_king_and_rook() {
     let mut pos = empty_position();
     pos.castle[0] = true;
@@ -1207,12 +1191,7 @@ fn promotion_undo_restores_original_pawn() {
     assert_eq!(pos.board[56], None, "a8 should be empty after undo");
 }
 
-// ── castling rights — black rook captures (h8 / a8) ──────────────────────────
-// The to_square index mapping has swapped indices (known bug).  These tests
-// assert the CORRECT expected behaviour and are ignored until the bug is fixed.
-
 #[test]
-#[ignore = "swapped castling-rights indices in make_move to_square match (known bug)"]
 fn capturing_black_kingside_rook_on_h8_revokes_black_kingside_right() {
     let mut pos = empty_position();
     pos.castle = [false, false, true, true];
@@ -1240,7 +1219,6 @@ fn capturing_black_kingside_rook_on_h8_revokes_black_kingside_right() {
 }
 
 #[test]
-#[ignore = "swapped castling-rights indices in make_move to_square match (known bug)"]
 fn capturing_black_queenside_rook_on_a8_revokes_black_queenside_right() {
     let mut pos = empty_position();
     pos.castle = [false, false, true, true];
