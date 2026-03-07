@@ -1,11 +1,11 @@
-use chrust_core::{Piece, Square, moves::{make_move::{MoveKind}}};
+use chrust_core::{moves::make_move::MoveKind, Piece, Square};
 
 use crate::state::{GameState, UiState};
 
 pub enum UiEvent {
     ClickSquare(Square),
     ClickPromotionSquare(Piece),
-    ClickResetButton, 
+    ClickResetButton,
 }
 
 pub fn apply_ui_event(game_state: &mut GameState, ui_event: UiEvent) {
@@ -14,7 +14,7 @@ pub fn apply_ui_event(game_state: &mut GameState, ui_event: UiEvent) {
             println!("Reset board (currently not implemented)");
         }
         UiEvent::ClickPromotionSquare(piece) => {
-            click_promotion(game_state, piece); 
+            click_promotion(game_state, piece);
         }
         UiEvent::ClickSquare(square) => {
             click_square(game_state, square);
@@ -38,11 +38,12 @@ pub fn click_promotion(game_state: &mut GameState, piece: Piece) {
         }
     };
 
-    mv.move_kind = MoveKind::Promotion { promotion_piece: Some(piece) };
+    mv.move_kind = MoveKind::Promotion {
+        promotion_piece: Some(piece),
+    };
 
-    match game_state.position.make_move_validated(&mv) {
-        Ok(p) => {
-            game_state.position = p;
+    match game_state.position.make_move(&mv) {
+        Ok(_undo) => {
             game_state.possible_moves.clear();
             game_state.selected = None;
             return;
@@ -89,7 +90,9 @@ pub fn click_square(game_state: &mut GameState, from_square: Square) {
             }
         }
     } else {
-        let Some(selected_square) = game_state.selected else { return; };
+        let Some(selected_square) = game_state.selected else {
+            return;
+        };
         let clicked_occupant = game_state.position.board[from_square as usize];
 
         if from_square == selected_square {
@@ -98,18 +101,23 @@ pub fn click_square(game_state: &mut GameState, from_square: Square) {
             return;
         }
 
-        // Make move 
-        if let Some(chosen_move) = game_state.possible_moves.iter().find(|m| m.to_square == from_square) {
+        // Make move
+        if let Some(chosen_move) = game_state
+            .possible_moves
+            .iter()
+            .find(|m| m.to_square == from_square)
+        {
             if matches!(chosen_move.move_kind, MoveKind::Promotion { .. }) {
-                game_state.ui_state = Some(UiState::PROMOTION { pending_move: chosen_move.clone()});
+                game_state.ui_state = Some(UiState::PROMOTION {
+                    pending_move: chosen_move.clone(),
+                });
                 game_state.selected = None;
                 game_state.possible_moves.clear();
                 return;
             }
 
-            match game_state.position.make_move_validated(&chosen_move) {
-                Ok(p) => {
-                    game_state.position = p;
+            match game_state.position.make_move(&chosen_move) {
+                Ok(_undo) => {
                     game_state.possible_moves.clear();
                     game_state.selected = None;
                     return;
@@ -144,4 +152,4 @@ pub fn click_square(game_state: &mut GameState, from_square: Square) {
         game_state.possible_moves.clear();
         game_state.selected = None;
     }
-} 
+}

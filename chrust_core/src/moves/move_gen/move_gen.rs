@@ -1,4 +1,4 @@
-use crate::{ColoredPiece, Piece, Square, errors::ChessError, moves::make_move::{Move, MoveKind}, position::Position};
+use crate::{ColoredPiece, Piece, Square, errors::ChessError, moves::make_move::{Move}, position::Position};
 
 impl Position {
     /// Does not validate yet
@@ -13,12 +13,11 @@ impl Position {
 	    Err(x) => return Err(x),
 	};
 
-	for pseudo_move in pseudo_moves {
-	    
-	}
+	// for pseudo_move in pseudo_moves {
+	//
+	// }
 
-	let test: Vec<Move> = Vec::new();
-	Ok(test)
+	Ok(pseudo_moves)
     }
 
     pub fn get_pseduo_legal_moves(&self, from_square: Square, colored_piece: ColoredPiece) -> Result<Vec<Move>, ChessError> {

@@ -1,4 +1,11 @@
-use crate::{errors::ChessError, position::Position, ColoredPiece, Piece, Side, Square};
+use std::usize;
+
+use crate::{
+    errors::ChessError,
+    helper::is_square_on_board,
+    position::{Position, Undo},
+    ColoredPiece, Piece, Side, Square,
+};
 
 #[derive(PartialEq, Debug, Clone)]
 pub struct Move {
@@ -19,392 +26,155 @@ pub enum MoveKind {
 }
 
 impl Position {
-    pub fn make_move_validated(&mut self, mv: &Move) -> Result<Position, ChessError> {
-        let mut position = match self.make_move_unvalidated(mv) {
-            Ok(x) => x,
-            Err(x) => return Err(x),
-        };
+    pub fn make_move(&mut self, mv: &Move) -> Result<Undo, ChessError> {
+	let legal_moves = match self.get_legal_moves(mv.from_square) {
+	    Ok(x) => x,
+	    Err(x) => return Err(x),
+	};
 
-        if let MoveKind::DoublePawnPush { passed_square } = mv.move_kind {
-            position.en_passant = Some(passed_square);
-        } else {
-            position.en_passant = None;
-        }
+	if let Err(x) = is_square_on_board(mv.to_square) {
+	    return Err(x);
+	}
 
-        if mv.colored_piece.piece == Piece::King {
-            match mv.colored_piece.side {
-                Side::White => {
-                    position.king_squares[0] = mv.to_square;
-                }
-                Side::Black => {
-                    position.king_squares[1] = mv.to_square;
-                }
-            }
-        }
+	if !legal_moves.contains(mv) {
+	    return Err(ChessError::NotAValidMove); 
+	}
 
-        let king_square = match self.side_to_move {
-            Side::White => self.king_squares[0],
-            Side::Black => self.king_squares[1],
-        };
+	let mut piece = match self.get_unvalidated_colored_piece_from_square(mv.from_square) {
+	    Ok(x) => x,
+	    Err(x) => return Err(x),
+	};
 
-        Ok(position)
+	let mut undo = Undo {
+	    captured_piece: None,
+	    previous_en_passant: self.en_passant,
+	    previous_king_squares: self.king_squares,
+	    previous_halfway_clock: self.halfmove_clock,
+	    previous_castling_rights: self.castle,
+	    fullmove_number: self.fullmove_number,
+	};
+
+	match mv.move_kind {
+	    MoveKind::Quiet => {
+		self.board[mv.from_square as usize] = None;
+		self.board[mv.to_square as usize] = Some(piece);
+	    }
+	    MoveKind::Capture => {
+		undo.captured_piece = self.board[mv.to_square as usize];
+		self.board[mv.from_square as usize] = None;
+		self.board[mv.to_square as usize] = Some(piece);
+	    }
+	    MoveKind::EnPassant { capture_square } => {
+		undo.captured_piece = self.board[capture_square as usize];
+		self.board[capture_square as usize] = None;
+		self.board[mv.from_square as usize] = None;
+		self.board[mv.to_square as usize] = Some(piece);
+	    }
+	    MoveKind::DoublePawnPush { passed_square: _ } => {
+		self.board[mv.from_square as usize] = None;
+		self.board[mv.to_square as usize] = Some(piece);
+	    }
+	    MoveKind::Promotion { promotion_piece } => {
+		if promotion_piece.is_none() {
+		    return Err(ChessError::PromotionPieceCantBeEmpty);
+		}
+
+		piece.piece =
+		    promotion_piece.expect("make_move_unvalidated(): Promotion piece is none");
+		self.board[mv.from_square as usize] = None;
+		self.board[mv.to_square as usize] = Some(piece);
+	    }
+	    MoveKind::Castling { rook_from, rook_to } => {
+		self.board[mv.from_square as usize] = None;
+		self.board[mv.to_square as usize] = Some(piece);
+		self.board[rook_from as usize] = None;
+		self.board[rook_to as usize] = Some(crate::ColoredPiece {
+		    piece: Piece::Rook,
+		    side: piece.side,
+		})
+	    }
+	};
+
+	if let MoveKind::DoublePawnPush { passed_square } = mv.move_kind {
+	    self.en_passant = Some(passed_square);
+	} else {
+	    self.en_passant = None;
+	}
+
+	match self.side_to_move {
+	    Side::White => { self.side_to_move = Side::Black },
+	    Side::Black => { 
+		self.side_to_move = Side::White;
+		self.fullmove_number += 1;
+	    },
+	}
+
+	if mv.colored_piece.piece == Piece::Pawn || matches!(mv.move_kind, MoveKind::Capture | MoveKind::EnPassant { .. }) {
+	    self.halfmove_clock = 0;
+	} else {
+	    self.halfmove_clock += 1;
+	}
+
+	match mv.from_square {
+	    4  => { self.castle[0] = false; self.castle[1] = false; } 
+	    60 => { self.castle[2] = false; self.castle[3] = false; } 
+	    0  => { self.castle[1] = false; } 
+	    7  => { self.castle[0] = false; }
+	    56 => { self.castle[3] = false; } 
+	    63 => { self.castle[2] = false; } 
+	    _ => {}
+	}
+
+	match mv.to_square {
+	    0  => { self.castle[0] = false; } // A1 white queenside rook captured
+	    7  => { self.castle[1] = false; } // H1 white kingside rook captured
+	    56 => { self.castle[2] = false; } // A8 black queenside rook captured
+	    63 => { self.castle[3] = false; } // H8 black kingside rook captured
+	    _ => {}
+	}
+
+	if mv.colored_piece.piece == Piece::King {
+	    match mv.colored_piece.side {
+		Side::White => {
+		    self.king_squares[0] = mv.to_square;
+		}
+		Side::Black => {
+		    self.king_squares[1] = mv.to_square;
+		}
+	    }
+	}
+
+	Ok(undo)
     }
 
-    pub fn make_move_unvalidated(&self, mv: &Move) -> Result<Position, ChessError> {
-        if mv.from_square > 63 {
-            return Err(ChessError::NotASquareOnBoard {
-                square: mv.from_square,
-            });
-        }
+    pub fn undo_move(&mut self, undo: Undo, mv: Move) -> Result<(), ChessError> {
+	match mv.move_kind {
+	    MoveKind::Quiet => {
+		self.board[mv.from_square as usize] = Some(mv.colored_piece);
+		self.board[mv.to_square as usize] = None;
+	    }
+	    MoveKind::Capture => {
+		self.board[mv.from_square as usize] = Some(mv.colored_piece);
+		self.board[mv.to_square as usize] = undo.captured_piece;
+	    }
+	    MoveKind::EnPassant { capture_square } => {
 
-        if mv.to_square > 63 {
-            return Err(ChessError::NotASquareOnBoard {
-                square: mv.to_square,
-            });
-        }
+	    }
+	    MoveKind::Promotion { promotion_piece } => {}
+	    MoveKind::DoublePawnPush { passed_square } => {}
+	    MoveKind::Castling { rook_from, rook_to } => {}
+	}
 
-        let potential_piece = self.board[mv.from_square as usize];
-        let mut piece = match potential_piece {
-            Some(x) => x,
-            None => {
-                return Err(ChessError::NoPieceOnSquare {
-                    square: mv.from_square,
-                });
-            }
-        };
+	self.fullmove_number = undo.fullmove_number;
+	self.castle = undo.previous_castling_rights;
+	self.en_passant = undo.previous_en_passant;
+	self.king_squares = undo.previous_king_squares;
+	self.side_to_move = match self.side_to_move {
+	    Side::White => Side::Black,
+	    Side::Black => Side::White,
+	};
 
-        let mut next_position = self.clone();
-
-        match mv.move_kind {
-            MoveKind::Quiet => {
-                next_position.board[mv.from_square as usize] = None;
-                next_position.board[mv.to_square as usize] = Some(piece);
-            }
-            MoveKind::Capture => {
-                next_position.board[mv.from_square as usize] = None;
-                next_position.board[mv.to_square as usize] = Some(piece);
-            }
-            MoveKind::EnPassant { capture_square } => {
-                next_position.board[capture_square as usize] = None;
-                next_position.board[mv.from_square as usize] = None;
-                next_position.board[mv.to_square as usize] = Some(piece);
-            }
-            MoveKind::DoublePawnPush { passed_square: _ } => {
-                next_position.board[mv.from_square as usize] = None;
-                next_position.board[mv.to_square as usize] = Some(piece);
-            }
-            MoveKind::Promotion { promotion_piece } => {
-                if promotion_piece.is_none() {
-                    return Err(ChessError::PromotionPieceCantBeEmpty);
-                }
-
-                piece.piece = promotion_piece.expect("Promotion piece is somehow none");
-                next_position.board[mv.from_square as usize] = None;
-                next_position.board[mv.to_square as usize] = Some(piece);
-            }
-            MoveKind::Castling { rook_from, rook_to } => {
-                next_position.board[mv.from_square as usize] = None;
-                next_position.board[mv.to_square as usize] = Some(piece);
-                next_position.board[rook_from as usize] = None;
-                next_position.board[rook_to as usize] = Some(crate::ColoredPiece {
-                    piece: Piece::Rook,
-                    side: piece.side,
-                })
-            }
-        };
-
-        next_position.side_to_move = match next_position.side_to_move {
-            Side::White => Side::Black,
-            Side::Black => Side::White,
-        };
-
-        Ok(next_position)
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use crate::{ColoredPiece, Piece};
-
-    use super::*;
-
-    fn empty_position() -> Position {
-        Position {
-            board: [None; 64],
-            side_to_move: Side::White,
-            castle: [false; 4],
-            en_passant: None,
-            king_squares: [4, 60],
-        }
-    }
-
-    #[test]
-    fn make_move_errors_if_initial_square_empty() {
-        let pos = empty_position();
-
-        let mv = Move {
-            from_square: 0,
-            to_square: 1,
-            move_kind: MoveKind::Quiet,
-            colored_piece: ColoredPiece {
-                piece: Piece::Pawn,
-                side: Side::White,
-            },
-        };
-        let err = pos.make_move_unvalidated(&mv).unwrap_err();
-        match err {
-            ChessError::NoPieceOnSquare { square } => assert_eq!(square, 0),
-            _ => panic!("expected NoPieceOnSquare"),
-        }
-    }
-
-    #[test]
-    fn make_move_errors_if_out_of_bounds() {
-        let pos = empty_position();
-
-        let mv1 = Move {
-            from_square: 64,
-            to_square: 0,
-            move_kind: MoveKind::Quiet,
-            colored_piece: ColoredPiece {
-                piece: Piece::Pawn,
-                side: Side::White,
-            },
-        };
-        let mv2 = Move {
-            from_square: 0,
-            to_square: 64,
-            move_kind: MoveKind::Quiet,
-            colored_piece: ColoredPiece {
-                piece: Piece::Pawn,
-                side: Side::White,
-            },
-        };
-        let mv3 = Move {
-            from_square: 200,
-            to_square: 201,
-            move_kind: MoveKind::Quiet,
-            colored_piece: ColoredPiece {
-                piece: Piece::Pawn,
-                side: Side::White,
-            },
-        };
-
-        assert!(matches!(
-            pos.make_move_unvalidated(&mv1),
-            Err(ChessError::NotASquareOnBoard { square: 64 })
-        ));
-        assert!(matches!(
-            pos.make_move_unvalidated(&mv2),
-            Err(ChessError::NotASquareOnBoard { square: 64 })
-        ));
-        assert!(matches!(
-            pos.make_move_unvalidated(&mv3),
-            Err(ChessError::NotASquareOnBoard { square: 200 })
-        ));
-    }
-
-    #[test]
-    fn make_move_moves_piece_clears_source_and_sets_target() {
-        let mut pos = empty_position();
-
-        let rook = ColoredPiece {
-            piece: Piece::Rook,
-            side: Side::White,
-        };
-
-        pos.board[0] = Some(rook); // a1
-
-        let mv = Move {
-            from_square: 0,
-            to_square: 7,
-            move_kind: MoveKind::Quiet,
-            colored_piece: rook,
-        };
-        let next = pos.make_move_unvalidated(&mv).unwrap(); // a1 -> h1
-
-        assert_eq!(next.board[0], None);
-        assert_eq!(next.board[7], Some(rook));
-
-        assert_eq!(pos.board[0], Some(rook));
-        assert_eq!(pos.board[7], None);
-    }
-
-    #[test]
-    fn make_move_overwrites_target_piece_capture_like() {
-        let mut pos = empty_position();
-
-        let white_rook = ColoredPiece {
-            piece: Piece::Rook,
-            side: Side::White,
-        };
-        let black_knight = ColoredPiece {
-            piece: Piece::Knight,
-            side: Side::Black,
-        };
-
-        pos.board[0] = Some(white_rook);
-        pos.board[7] = Some(black_knight);
-
-        let mv = Move {
-            from_square: 0,
-            to_square: 7,
-            move_kind: MoveKind::Capture,
-            colored_piece: white_rook,
-        };
-        let next = pos.make_move_unvalidated(&mv).unwrap();
-
-        assert_eq!(next.board[0], None);
-        assert_eq!(next.board[7], Some(white_rook));
-    }
-
-    #[test]
-    fn make_move_toggles_side_to_move() {
-        let mut pos = empty_position();
-
-        let pawn = ColoredPiece {
-            piece: Piece::Pawn,
-            side: Side::White,
-        };
-        pos.board[0] = Some(pawn);
-
-        pos.side_to_move = Side::White;
-        let mv1 = Move {
-            from_square: 0,
-            to_square: 1,
-            move_kind: MoveKind::Quiet,
-            colored_piece: pawn,
-        };
-        let next = pos.make_move_unvalidated(&mv1).unwrap();
-        assert_eq!(next.side_to_move, Side::Black);
-
-        pos.side_to_move = Side::Black;
-        let mv2 = Move {
-            from_square: 0,
-            to_square: 1,
-            move_kind: MoveKind::Quiet,
-            colored_piece: pawn,
-        };
-        let next2 = pos.make_move_unvalidated(&mv2).unwrap();
-        assert_eq!(next2.side_to_move, Side::White);
-    }
-
-    #[test]
-    fn make_move_en_passant_clears_capture_square() {
-        let mut pos = empty_position();
-
-        let white_pawn = ColoredPiece {
-            piece: Piece::Pawn,
-            side: Side::White,
-        };
-        let black_pawn = ColoredPiece {
-            piece: Piece::Pawn,
-            side: Side::Black,
-        };
-
-        pos.board[12] = Some(white_pawn); // e2
-        pos.board[20] = Some(black_pawn); // e3 capture square for en passant
-
-        let mv = Move {
-            from_square: 12,
-            to_square: 21, // f3
-            move_kind: MoveKind::EnPassant { capture_square: 20 },
-            colored_piece: white_pawn,
-        };
-        let next = pos.make_move_unvalidated(&mv).unwrap();
-
-        assert_eq!(next.board[20], None);
-        assert_eq!(next.board[12], None);
-        assert_eq!(next.board[21], Some(white_pawn));
-    }
-
-    #[test]
-    fn make_move_double_pawn_push_moves_piece() {
-        let mut pos = empty_position();
-
-        let pawn = ColoredPiece {
-            piece: Piece::Pawn,
-            side: Side::White,
-        };
-        pos.board[8] = Some(pawn); // a2
-
-        let mv = Move {
-            from_square: 8,
-            to_square: 24, // a4
-            move_kind: MoveKind::DoublePawnPush { passed_square: 16 },
-            colored_piece: pawn,
-        };
-        let next = pos.make_move_unvalidated(&mv).unwrap();
-
-        assert_eq!(next.board[8], None);
-        assert_eq!(next.board[24], Some(pawn));
-    }
-
-    #[test]
-    fn make_move_castling_moves_king_and_rook_white_kingside() {
-        let mut pos = empty_position();
-
-        let king = ColoredPiece {
-            piece: Piece::King,
-            side: Side::White,
-        };
-        let rook = ColoredPiece {
-            piece: Piece::Rook,
-            side: Side::White,
-        };
-
-        pos.board[4] = Some(king); // e1
-        pos.board[7] = Some(rook); // h1
-
-        let mv = Move {
-            from_square: 4,
-            to_square: 6,
-            move_kind: MoveKind::Castling {
-                rook_from: 7,
-                rook_to: 5,
-            },
-            colored_piece: king,
-        };
-
-        let next = pos.make_move_unvalidated(&mv).unwrap();
-
-        assert_eq!(next.board[4], None);
-        assert_eq!(next.board[6], Some(king));
-        assert_eq!(next.board[7], None);
-        assert_eq!(next.board[5], Some(rook));
-    }
-
-    #[test]
-    fn make_move_castling_moves_king_and_rook_black_queenside() {
-        let mut pos = empty_position();
-
-        let king = ColoredPiece {
-            piece: Piece::King,
-            side: Side::Black,
-        };
-        let rook = ColoredPiece {
-            piece: Piece::Rook,
-            side: Side::Black,
-        };
-
-        pos.board[60] = Some(king); // e8
-        pos.board[56] = Some(rook); // a8
-
-        let mv = Move {
-            from_square: 60,
-            to_square: 58,
-            move_kind: MoveKind::Castling {
-                rook_from: 56,
-                rook_to: 59,
-            },
-            colored_piece: king,
-        };
-
-        let next = pos.make_move_unvalidated(&mv).unwrap();
-
-        assert_eq!(next.board[60], None);
-        assert_eq!(next.board[58], Some(king));
-        assert_eq!(next.board[56], None);
-        assert_eq!(next.board[59], Some(rook));
+	Ok(())
     }
 }
+

@@ -1,3 +1,5 @@
+use core::fmt;
+
 pub mod moves;
 pub mod position;
 pub mod errors;
@@ -25,3 +27,25 @@ pub struct ColoredPiece {
 pub type Square = u8;
 
 pub enum CastleRigth { WK, WQ, BK, BQ }
+
+impl fmt::Display for Piece {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Piece::King => write!(f, "King"),
+            Piece::Queen => write!(f, "Queen"),
+            Piece::Rook => write!(f, "Rook"),
+            Piece::Bishop => write!(f, "Bishop"),
+            Piece::Knight => write!(f, "Knight"),
+            Piece::Pawn => write!(f, "Pawn"),
+        }
+    }
+}
+
+impl fmt::Display for Side {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Side::White => write!(f, "White"),
+            Side::Black => write!(f, "Black"),
+        }
+    }
+}
