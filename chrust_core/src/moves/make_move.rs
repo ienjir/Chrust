@@ -158,13 +158,28 @@ impl Position {
 		self.board[mv.to_square as usize] = undo.captured_piece;
 	    }
 	    MoveKind::EnPassant { capture_square } => {
-
+		self.board[mv.from_square as usize] = Some(mv.colored_piece);
+		self.board[mv.to_square as usize] = None;
+		self.board[capture_square as usize] = undo.captured_piece;
 	    }
-	    MoveKind::Promotion { promotion_piece } => {}
-	    MoveKind::DoublePawnPush { passed_square } => {}
-	    MoveKind::Castling { rook_from, rook_to } => {}
+	    MoveKind::Promotion { promotion_piece: _ } => {
+		self.board[mv.from_square as usize] = Some(mv.colored_piece);
+		self.board[mv.to_square as usize] = None;
+	    }
+	    MoveKind::DoublePawnPush { passed_square: _ } => {
+		self.board[mv.from_square as usize] = Some(mv.colored_piece);
+		self.board[mv.to_square as usize] = None;
+	    }
+	    MoveKind::Castling { rook_from, rook_to } => {
+		self.board[mv.from_square as usize] = Some(mv.colored_piece);
+		self.board[mv.to_square as usize] = None;
+		let rook = self.board[rook_to as usize];
+		self.board[rook_to as usize] = None;
+		self.board[rook_from as usize] = rook;
+	    }
 	}
 
+	self.halfmove_clock = undo.previous_halfway_clock;
 	self.fullmove_number = undo.fullmove_number;
 	self.castle = undo.previous_castling_rights;
 	self.en_passant = undo.previous_en_passant;

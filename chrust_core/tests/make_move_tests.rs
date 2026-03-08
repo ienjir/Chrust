@@ -1009,7 +1009,6 @@ fn capture_undo_restores_both_pieces() {
 }
 
 #[test]
-#[ignore = "undo_move DoublePawnPush branch is not yet implemented (WIP)"]
 fn double_pawn_push_undo_restores_position() {
     let mut pos = empty_position();
     pos.side_to_move = Side::Black;
@@ -1030,7 +1029,6 @@ fn double_pawn_push_undo_restores_position() {
 }
 
 #[test]
-#[ignore = "undo_move Castling branch is not yet implemented (WIP)"]
 fn castling_undo_restores_king_and_rook() {
     let mut pos = empty_position();
     pos.castle[0] = true;
@@ -1092,9 +1090,7 @@ fn undo_restores_side_to_move() {
 
 // BUG: undo_move does not restore halfmove_clock (it is incremented by
 // make_move but never restored on undo).  Once undo_move saves/restores
-// halfmove_clock, remove #[ignore].
 #[test]
-#[ignore = "undo_move does not restore halfmove_clock (WIP)"]
 fn undo_restores_all_metadata() {
     let mut pos = empty_position();
     pos.side_to_move = Side::Black;
@@ -1126,7 +1122,6 @@ fn undo_restores_all_metadata() {
 // ── undo — WIP branches ───────────────────────────────────────────────────────
 
 #[test]
-#[ignore = "undo_move EnPassant branch is not yet implemented (WIP)"]
 fn en_passant_undo_restores_all_squares() {
     let mut pos = empty_position();
 
@@ -1161,7 +1156,6 @@ fn en_passant_undo_restores_all_squares() {
 }
 
 #[test]
-#[ignore = "undo_move Promotion branch is not yet implemented (WIP)"]
 fn promotion_undo_restores_original_pawn() {
     let mut pos = empty_position();
 
