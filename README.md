@@ -205,7 +205,7 @@ Add a generate all moves function and cache the results
 
 
 ## Next steps
-1. Add undo_move
+1. Add undo_move - done
 2. Add legality filtering to move gen
 3. Add a promotion-capture move kind
 4. Refactor make_move

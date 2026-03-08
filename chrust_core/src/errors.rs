@@ -8,6 +8,7 @@ pub enum ChessError {
     NotASquareOnBoard { square: Square },
     NoPieceOnSquare { square: Square },
     NotAValidMove,
+    KingIsAttacked { squares: Vec<Square> },
     WrongPieceType {
         expected_piece: Piece,
         found_piece: Piece,
@@ -35,6 +36,7 @@ impl fmt::Display for ChessError {
         match self {
 	    ChessError::NotAValidMove => write!(f, "Not a valid move"),
             ChessError::NotImplemented => write!(f, "Not implemented"),
+	    ChessError::KingIsAttacked { squares: _ } => write!(f, "King is attacked"),
             ChessError::PromotionPieceCantBeEmpty => write!(f, "Promotion piece can't be empty"),
             ChessError::NotASquareOnBoard { square } => write!(f, "Not a square on board: {square}"),
             ChessError::NoPieceOnSquare { square } => write!(f, "No piece on square: {square}"),
