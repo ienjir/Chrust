@@ -17,7 +17,9 @@ fn mv(pos: &Position, from: u8, to: u8, kind: MoveKind) -> Move {
     }
 }
 
-// ── error path tests ──────────────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════════════════════
+// make_move validation tests
+// ══════════════════════════════════════════════════════════════════════════════
 
 #[test]
 fn make_move_errors_if_initial_square_empty() {
@@ -138,7 +140,9 @@ fn promotion_errors_if_promotion_piece_is_none() {
     assert!(matches!(pos.make_move(&mv), Err(_)));
 }
 
-// ── board-state tests ─────────────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════════════════════
+// make_move_unvalidated board state tests
+// ══════════════════════════════════════════════════════════════════════════════
 
 #[test]
 fn quiet_move_clears_source_and_sets_target() {
@@ -151,7 +155,7 @@ fn quiet_move_clears_source_and_sets_target() {
     pos.board[0] = Some(rook); // a1
 
     let m = mv(&pos, 0, 7, MoveKind::Quiet); // a1 → h1
-    pos.make_move(&m).unwrap();
+    pos.make_move_unvalidated(m).unwrap();
 
     assert_eq!(pos.board[0], None);
     assert_eq!(pos.board[7], Some(rook));
@@ -173,7 +177,7 @@ fn capture_move_replaces_enemy_piece() {
     pos.board[7] = Some(black_knight);
 
     let m = mv(&pos, 0, 7, MoveKind::Capture);
-    pos.make_move(&m).unwrap();
+    pos.make_move_unvalidated(m).unwrap();
 
     assert_eq!(pos.board[0], None);
     assert_eq!(pos.board[7], Some(white_rook));
@@ -195,7 +199,7 @@ fn capture_stores_captured_piece_in_undo() {
     pos.board[28] = Some(black_pawn);
 
     let m = mv(&pos, 10, 28, MoveKind::Capture);
-    let undo = pos.make_move(&m).unwrap();
+    let undo = pos.make_move_unvalidated(m).unwrap();
 
     assert_eq!(undo.captured_piece, Some(black_pawn));
 }
@@ -217,7 +221,7 @@ fn en_passant_clears_capture_square_and_moves_pawn() {
     pos.en_passant = Some(42); // c6 — the square the white pawn moves to
 
     let m = mv(&pos, 33, 42, MoveKind::EnPassant { capture_square: 34 });
-    let undo = pos.make_move(&m).unwrap();
+    let undo = pos.make_move_unvalidated(m).unwrap();
 
     assert_eq!(pos.board[33], None);
     assert_eq!(pos.board[34], None);
@@ -236,7 +240,7 @@ fn double_pawn_push_moves_piece() {
     pos.board[8] = Some(pawn); // a2
 
     let m = mv(&pos, 8, 24, MoveKind::DoublePawnPush { passed_square: 16 }); // a2 → a4
-    pos.make_move(&m).unwrap();
+    pos.make_move_unvalidated(m).unwrap();
 
     assert_eq!(pos.board[8], None);
     assert_eq!(pos.board[24], Some(pawn));
@@ -262,7 +266,7 @@ fn promotion_changes_piece_type() {
             promotion_piece: Piece::Queen,
         },
     );
-    pos.make_move(&m).unwrap();
+    pos.make_move_unvalidated(m).unwrap();
 
     assert_eq!(pos.board[48], None);
     assert_eq!(
@@ -277,8 +281,7 @@ fn promotion_changes_piece_type() {
 #[test]
 fn promotion_with_pawn_sentinel_is_rejected() {
     // The Pawn piece type is NOT valid for promotions.
-    // The move generator emits Queen, Rook, Bishop, and Knight only,
-    // so a move with Piece::Pawn won't be in the legal moves list.
+    // make_move_unvalidated checks this in apply_move_to_board.
     let mut pos = empty_position();
     let pawn = ColoredPiece {
         piece: Piece::Pawn,
@@ -294,10 +297,13 @@ fn promotion_with_pawn_sentinel_is_rejected() {
         },
         colored_piece: pawn,
     };
-    // Should be rejected as NotAValidMove since it won't be in legal moves list
+    // Should be rejected by apply_move_to_board's validation
     assert!(
-        matches!(pos.make_move(&m), Err(ChessError::NotAValidMove)),
-        "promotion to Pawn should be rejected as not in legal moves"
+        matches!(
+            pos.make_move_unvalidated(m),
+            Err(ChessError::PromotionPieceCantBePawn)
+        ),
+        "promotion to Pawn should be rejected"
     );
 }
 
@@ -326,7 +332,7 @@ fn castling_white_kingside_moves_king_and_rook() {
             rook_to: 5,
         },
     );
-    pos.make_move(&m).unwrap();
+    pos.make_move_unvalidated(m).unwrap();
 
     assert_eq!(pos.board[4], None);
     assert_eq!(pos.board[6], Some(king));
@@ -359,7 +365,7 @@ fn castling_white_queenside_moves_king_and_rook() {
             rook_to: 3,
         },
     );
-    pos.make_move(&m).unwrap();
+    pos.make_move_unvalidated(m).unwrap();
 
     assert_eq!(pos.board[4], None);
     assert_eq!(pos.board[2], Some(king));
@@ -393,7 +399,7 @@ fn castling_black_kingside_moves_king_and_rook() {
             rook_to: 61,
         },
     );
-    pos.make_move(&m).unwrap();
+    pos.make_move_unvalidated(m).unwrap();
 
     assert_eq!(pos.board[60], None);
     assert_eq!(pos.board[62], Some(king));
@@ -427,7 +433,7 @@ fn castling_black_queenside_moves_king_and_rook() {
             rook_to: 59,
         },
     );
-    pos.make_move(&m).unwrap();
+    pos.make_move_unvalidated(m).unwrap();
 
     assert_eq!(pos.board[60], None);
     assert_eq!(pos.board[58], Some(king));
@@ -448,7 +454,7 @@ fn make_move_toggles_side_to_move_white_to_black() {
     pos.board[8] = Some(pawn); // a2
 
     let m = mv(&pos, 8, 16, MoveKind::Quiet);
-    pos.make_move(&m).unwrap();
+    pos.make_move_unvalidated(m).unwrap();
 
     assert_eq!(pos.side_to_move, Side::Black);
 }
@@ -465,7 +471,7 @@ fn make_move_toggles_side_to_move_black_to_white() {
     pos.board[48] = Some(pawn); // a7
 
     let m = mv(&pos, 48, 40, MoveKind::Quiet);
-    pos.make_move(&m).unwrap();
+    pos.make_move_unvalidated(m).unwrap();
 
     assert_eq!(pos.side_to_move, Side::White);
 }
@@ -484,7 +490,7 @@ fn halfmove_clock_resets_on_pawn_move() {
     pos.board[8] = Some(pawn); // a2
 
     let m = mv(&pos, 8, 16, MoveKind::Quiet);
-    pos.make_move(&m).unwrap();
+    pos.make_move_unvalidated(m).unwrap();
 
     assert_eq!(pos.halfmove_clock, 0);
 }
@@ -506,7 +512,7 @@ fn halfmove_clock_resets_on_capture() {
     pos.board[7] = Some(black_knight);
 
     let m = mv(&pos, 0, 7, MoveKind::Capture);
-    pos.make_move(&m).unwrap();
+    pos.make_move_unvalidated(m).unwrap();
 
     assert_eq!(pos.halfmove_clock, 0);
 }
@@ -529,7 +535,7 @@ fn halfmove_clock_resets_on_en_passant() {
     pos.en_passant = Some(42); // c6
 
     let m = mv(&pos, 33, 42, MoveKind::EnPassant { capture_square: 34 });
-    pos.make_move(&m).unwrap();
+    pos.make_move_unvalidated(m).unwrap();
 
     assert_eq!(pos.halfmove_clock, 0);
 }
@@ -546,7 +552,7 @@ fn halfmove_clock_increments_on_quiet_non_pawn_move() {
     pos.board[0] = Some(rook); // a1
 
     let m = mv(&pos, 0, 7, MoveKind::Quiet);
-    pos.make_move(&m).unwrap();
+    pos.make_move_unvalidated(m).unwrap();
 
     assert_eq!(pos.halfmove_clock, 5);
 }
@@ -566,7 +572,7 @@ fn fullmove_number_increments_only_after_black_move() {
     };
     pos.board[8] = Some(white_pawn); // a2
     let m1 = mv(&pos, 8, 16, MoveKind::Quiet);
-    pos.make_move(&m1).unwrap();
+    pos.make_move_unvalidated(m1).unwrap();
     assert_eq!(
         pos.fullmove_number, 0,
         "fullmove_number should not change after White moves"
@@ -579,7 +585,7 @@ fn fullmove_number_increments_only_after_black_move() {
     };
     pos.board[48] = Some(black_pawn); // a7
     let m2 = mv(&pos, 48, 40, MoveKind::Quiet);
-    pos.make_move(&m2).unwrap();
+    pos.make_move_unvalidated(m2).unwrap();
     assert_eq!(
         pos.fullmove_number, 1,
         "fullmove_number should increment after Black moves"
@@ -599,7 +605,7 @@ fn double_pawn_push_sets_en_passant_square() {
     pos.board[8] = Some(pawn); // a2
 
     let m = mv(&pos, 8, 24, MoveKind::DoublePawnPush { passed_square: 16 });
-    pos.make_move(&m).unwrap();
+    pos.make_move_unvalidated(m).unwrap();
 
     assert_eq!(pos.en_passant, Some(16));
 }
@@ -616,7 +622,7 @@ fn any_other_move_clears_en_passant() {
     pos.board[0] = Some(rook);
 
     let m = mv(&pos, 0, 7, MoveKind::Quiet);
-    pos.make_move(&m).unwrap();
+    pos.make_move_unvalidated(m).unwrap();
 
     assert_eq!(pos.en_passant, None);
 }
@@ -635,7 +641,7 @@ fn white_king_move_revokes_both_white_castling_rights() {
     pos.board[4] = Some(king); // e1
 
     let m = mv(&pos, 4, 5, MoveKind::Quiet); // e1 → f1
-    pos.make_move(&m).unwrap();
+    pos.make_move_unvalidated(m).unwrap();
 
     assert!(!pos.castle[0], "white kingside right should be revoked");
     assert!(!pos.castle[1], "white queenside right should be revoked");
@@ -656,7 +662,7 @@ fn black_king_move_revokes_both_black_castling_rights() {
     pos.board[60] = Some(king); // e8
 
     let m = mv(&pos, 60, 61, MoveKind::Quiet); // e8 → f8
-    pos.make_move(&m).unwrap();
+    pos.make_move_unvalidated(m).unwrap();
 
     assert!(pos.castle[0], "white kingside right should be untouched");
     assert!(pos.castle[1], "white queenside right should be untouched");
@@ -677,7 +683,7 @@ fn white_kingside_rook_move_revokes_white_kingside_right() {
     pos.board[7] = Some(rook); // h1
 
     let m = mv(&pos, 7, 6, MoveKind::Quiet); // h1 → g1
-    pos.make_move(&m).unwrap();
+    pos.make_move_unvalidated(m).unwrap();
 
     assert!(
         !pos.castle[0],
@@ -702,7 +708,7 @@ fn white_queenside_rook_move_revokes_white_queenside_right() {
     pos.board[0] = Some(rook); // a1
 
     let m = mv(&pos, 0, 1, MoveKind::Quiet); // a1 → b1
-    pos.make_move(&m).unwrap();
+    pos.make_move_unvalidated(m).unwrap();
 
     assert!(pos.castle[0], "white kingside right should be untouched");
     assert!(
@@ -727,7 +733,7 @@ fn black_kingside_rook_move_revokes_black_kingside_right() {
     pos.board[63] = Some(rook); // h8
 
     let m = mv(&pos, 63, 62, MoveKind::Quiet); // h8 → g8
-    pos.make_move(&m).unwrap();
+    pos.make_move_unvalidated(m).unwrap();
 
     assert!(
         !pos.castle[2],
@@ -750,7 +756,7 @@ fn black_queenside_rook_move_revokes_black_queenside_right() {
     pos.board[56] = Some(rook); // a8
 
     let m = mv(&pos, 56, 57, MoveKind::Quiet); // a8 → b8
-    pos.make_move(&m).unwrap();
+    pos.make_move_unvalidated(m).unwrap();
 
     assert!(pos.castle[2], "black kingside right should be untouched");
     assert!(
@@ -779,7 +785,7 @@ fn capturing_white_kingside_rook_on_h1_revokes_white_kingside_right() {
     pos.board[7] = Some(white_rook); // h1
 
     let m = mv(&pos, 15, 7, MoveKind::Capture);
-    pos.make_move(&m).unwrap();
+    pos.make_move_unvalidated(m).unwrap();
 
     assert!(
         !pos.castle[0],
@@ -808,7 +814,7 @@ fn capturing_white_queenside_rook_on_a1_revokes_white_queenside_right() {
     pos.board[0] = Some(white_rook); // a1
 
     let m = mv(&pos, 8, 0, MoveKind::Capture);
-    pos.make_move(&m).unwrap();
+    pos.make_move_unvalidated(m).unwrap();
 
     assert!(pos.castle[0], "white kingside right should be untouched");
     assert!(
@@ -842,7 +848,7 @@ fn castling_revokes_both_rights_for_that_side() {
             rook_to: 5,
         },
     );
-    pos.make_move(&m).unwrap();
+    pos.make_move_unvalidated(m).unwrap();
 
     assert!(
         !pos.castle[0],
@@ -868,7 +874,7 @@ fn king_squares_updated_after_white_king_moves() {
     pos.board[4] = Some(king); // e1
 
     let m = mv(&pos, 4, 5, MoveKind::Quiet); // e1 → f1
-    pos.make_move(&m).unwrap();
+    pos.make_move_unvalidated(m).unwrap();
 
     assert_eq!(pos.king_squares[0], 5, "white king square should be f1");
     assert_eq!(
@@ -890,7 +896,7 @@ fn king_squares_updated_after_black_king_moves() {
     pos.board[60] = Some(king); // e8
 
     let m = mv(&pos, 60, 61, MoveKind::Quiet); // e8 → f8
-    pos.make_move(&m).unwrap();
+    pos.make_move_unvalidated(m).unwrap();
 
     assert_eq!(
         pos.king_squares[0], 4,
@@ -925,7 +931,7 @@ fn king_squares_updated_after_castling() {
             rook_to: 5,
         },
     );
-    pos.make_move(&m).unwrap();
+    pos.make_move_unvalidated(m).unwrap();
 
     assert_eq!(
         pos.king_squares[0], 6,
@@ -945,7 +951,7 @@ fn non_king_move_does_not_update_king_squares() {
     pos.board[0] = Some(rook);
 
     let m = mv(&pos, 0, 7, MoveKind::Quiet);
-    pos.make_move(&m).unwrap();
+    pos.make_move_unvalidated(m).unwrap();
 
     assert_eq!(
         pos.king_squares[0], 4,
@@ -970,7 +976,7 @@ fn quiet_move_undo_restores_board() {
     pos.board[1] = Some(knight); // b1
 
     let m = mv(&pos, 1, 18, MoveKind::Quiet); // b1 → c3
-    let undo = pos.make_move(&m).unwrap();
+    let undo = pos.make_move_unvalidated(m).unwrap();
 
     assert_eq!(pos.board[1], None);
     assert_eq!(pos.board[18], Some(knight));
@@ -997,7 +1003,7 @@ fn capture_undo_restores_both_pieces() {
     pos.board[59] = Some(black_rook); // d8
 
     let m = mv(&pos, 3, 59, MoveKind::Capture);
-    let undo = pos.make_move(&m).unwrap();
+    let undo = pos.make_move_unvalidated(m).unwrap();
 
     pos.undo_move(undo, m).unwrap();
 
@@ -1017,7 +1023,7 @@ fn double_pawn_push_undo_restores_position() {
     pos.board[51] = Some(pawn); // d7
 
     let m = mv(&pos, 51, 35, MoveKind::DoublePawnPush { passed_square: 43 });
-    let undo = pos.make_move(&m).unwrap();
+    let undo = pos.make_move_unvalidated(m).unwrap();
 
     pos.undo_move(undo, m).unwrap();
 
@@ -1050,7 +1056,7 @@ fn castling_undo_restores_king_and_rook() {
             rook_to: 5,
         },
     );
-    let undo = pos.make_move(&m).unwrap();
+    let undo = pos.make_move_unvalidated(m).unwrap();
 
     assert_eq!(pos.board[4], None);
     assert_eq!(pos.board[6], Some(king));
@@ -1076,7 +1082,7 @@ fn undo_restores_side_to_move() {
     pos.board[8] = Some(pawn);
 
     let m = mv(&pos, 8, 16, MoveKind::Quiet);
-    let undo = pos.make_move(&m).unwrap();
+    let undo = pos.make_move_unvalidated(m).unwrap();
 
     assert_eq!(pos.side_to_move, Side::Black);
 
@@ -1104,7 +1110,7 @@ fn undo_restores_all_metadata() {
     pos.board[57] = Some(knight); // b8
 
     let m = mv(&pos, 57, 42, MoveKind::Quiet);
-    let undo = pos.make_move(&m).unwrap();
+    let undo = pos.make_move_unvalidated(m).unwrap();
 
     pos.undo_move(undo, m).unwrap();
 
@@ -1135,7 +1141,7 @@ fn en_passant_undo_restores_all_squares() {
     pos.en_passant = Some(42); // c6
 
     let m = mv(&pos, 33, 42, MoveKind::EnPassant { capture_square: 34 });
-    let undo = pos.make_move(&m).unwrap();
+    let undo = pos.make_move_unvalidated(m).unwrap();
 
     pos.undo_move(undo, m).unwrap();
 
@@ -1170,7 +1176,7 @@ fn promotion_undo_restores_original_pawn() {
             promotion_piece: Piece::Knight,
         },
     );
-    let undo = pos.make_move(&m).unwrap();
+    let undo = pos.make_move_unvalidated(m).unwrap();
 
     pos.undo_move(undo, m).unwrap();
 
@@ -1206,7 +1212,7 @@ fn promotion_capture_changes_piece_and_captures() {
             promotion_piece: Piece::Queen,
         },
     );
-    pos.make_move(&m).unwrap();
+    pos.make_move_unvalidated(m).unwrap();
 
     assert_eq!(pos.board[48], None, "a7 should be empty");
     assert_eq!(
@@ -1249,7 +1255,7 @@ fn promotion_capture_all_piece_types() {
                 promotion_piece: piece_type,
             },
         );
-        pos.make_move(&m).unwrap();
+        pos.make_move_unvalidated(m).unwrap();
 
         assert_eq!(pos.board[48], None, "a7 should be empty (test {idx})");
         assert_eq!(
@@ -1286,7 +1292,7 @@ fn promotion_capture_undo_restores_both_pieces() {
             promotion_piece: Piece::Rook,
         },
     );
-    let undo = pos.make_move(&m).unwrap();
+    let undo = pos.make_move_unvalidated(m).unwrap();
 
     // Verify promotion + capture happened
     assert_eq!(pos.board[48], None);
@@ -1338,7 +1344,7 @@ fn black_promotion_capture_works() {
             promotion_piece: Piece::Bishop,
         },
     );
-    pos.make_move(&m).unwrap();
+    pos.make_move_unvalidated(m).unwrap();
 
     assert_eq!(pos.board[15], None, "h2 should be empty");
     assert_eq!(
@@ -1369,7 +1375,7 @@ fn capturing_black_kingside_rook_on_h8_revokes_black_kingside_right() {
     pos.board[63] = Some(black_rook); // h8
 
     let m = mv(&pos, 55, 63, MoveKind::Capture);
-    pos.make_move(&m).unwrap();
+    pos.make_move_unvalidated(m).unwrap();
 
     assert!(
         !pos.castle[2],
@@ -1396,11 +1402,695 @@ fn capturing_black_queenside_rook_on_a8_revokes_black_queenside_right() {
     pos.board[56] = Some(black_rook); // a8
 
     let m = mv(&pos, 48, 56, MoveKind::Capture);
-    pos.make_move(&m).unwrap();
+    pos.make_move_unvalidated(m).unwrap();
 
     assert!(pos.castle[2], "black kingside right should be untouched");
     assert!(
         !pos.castle[3],
         "black queenside right should be revoked when a8 rook is captured"
     );
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// Individual helper function tests
+// ══════════════════════════════════════════════════════════════════════════════
+
+// ── apply_move_to_board tests ─────────────────────────────────────────────────
+
+#[test]
+fn apply_move_to_board_quiet_move() {
+    let mut pos = empty_position();
+    let knight = ColoredPiece {
+        piece: Piece::Knight,
+        side: Side::White,
+    };
+    pos.board[1] = Some(knight);
+
+    let m = Move {
+        from_square: 1,
+        to_square: 18,
+        move_kind: MoveKind::Quiet,
+        colored_piece: knight,
+    };
+    let mut undo = pos.build_undo();
+
+    pos.apply_move_to_board(m, knight, &mut undo).unwrap();
+
+    assert_eq!(pos.board[1], None);
+    assert_eq!(pos.board[18], Some(knight));
+    assert_eq!(undo.captured_piece, None);
+}
+
+#[test]
+fn apply_move_to_board_capture() {
+    let mut pos = empty_position();
+    let white_bishop = ColoredPiece {
+        piece: Piece::Bishop,
+        side: Side::White,
+    };
+    let black_pawn = ColoredPiece {
+        piece: Piece::Pawn,
+        side: Side::Black,
+    };
+    pos.board[10] = Some(white_bishop);
+    pos.board[28] = Some(black_pawn);
+
+    let m = Move {
+        from_square: 10,
+        to_square: 28,
+        move_kind: MoveKind::Capture,
+        colored_piece: white_bishop,
+    };
+    let mut undo = pos.build_undo();
+
+    pos.apply_move_to_board(m, white_bishop, &mut undo).unwrap();
+
+    assert_eq!(pos.board[10], None);
+    assert_eq!(pos.board[28], Some(white_bishop));
+    assert_eq!(undo.captured_piece, Some(black_pawn));
+}
+
+#[test]
+fn apply_move_to_board_en_passant() {
+    let mut pos = empty_position();
+    let white_pawn = ColoredPiece {
+        piece: Piece::Pawn,
+        side: Side::White,
+    };
+    let black_pawn = ColoredPiece {
+        piece: Piece::Pawn,
+        side: Side::Black,
+    };
+    pos.board[33] = Some(white_pawn); // b5
+    pos.board[34] = Some(black_pawn); // c5
+
+    let m = Move {
+        from_square: 33,
+        to_square: 42,
+        move_kind: MoveKind::EnPassant { capture_square: 34 },
+        colored_piece: white_pawn,
+    };
+    let mut undo = pos.build_undo();
+
+    pos.apply_move_to_board(m, white_pawn, &mut undo).unwrap();
+
+    assert_eq!(pos.board[33], None);
+    assert_eq!(pos.board[34], None);
+    assert_eq!(pos.board[42], Some(white_pawn));
+    assert_eq!(undo.captured_piece, Some(black_pawn));
+}
+
+#[test]
+fn apply_move_to_board_promotion() {
+    let mut pos = empty_position();
+    let white_pawn = ColoredPiece {
+        piece: Piece::Pawn,
+        side: Side::White,
+    };
+    pos.board[48] = Some(white_pawn); // a7
+
+    let m = Move {
+        from_square: 48,
+        to_square: 56,
+        move_kind: MoveKind::Promotion {
+            promotion_piece: Piece::Queen,
+        },
+        colored_piece: white_pawn,
+    };
+    let mut undo = pos.build_undo();
+
+    pos.apply_move_to_board(m, white_pawn, &mut undo).unwrap();
+
+    assert_eq!(pos.board[48], None);
+    assert_eq!(
+        pos.board[56],
+        Some(ColoredPiece {
+            piece: Piece::Queen,
+            side: Side::White
+        })
+    );
+    assert_eq!(undo.captured_piece, None);
+}
+
+#[test]
+fn apply_move_to_board_promotion_capture() {
+    let mut pos = empty_position();
+    let white_pawn = ColoredPiece {
+        piece: Piece::Pawn,
+        side: Side::White,
+    };
+    let black_knight = ColoredPiece {
+        piece: Piece::Knight,
+        side: Side::Black,
+    };
+    pos.board[48] = Some(white_pawn); // a7
+    pos.board[57] = Some(black_knight); // b8
+
+    let m = Move {
+        from_square: 48,
+        to_square: 57,
+        move_kind: MoveKind::Promotion {
+            promotion_piece: Piece::Rook,
+        },
+        colored_piece: white_pawn,
+    };
+    let mut undo = pos.build_undo();
+
+    pos.apply_move_to_board(m, white_pawn, &mut undo).unwrap();
+
+    assert_eq!(pos.board[48], None);
+    assert_eq!(
+        pos.board[57],
+        Some(ColoredPiece {
+            piece: Piece::Rook,
+            side: Side::White
+        })
+    );
+    assert_eq!(undo.captured_piece, Some(black_knight));
+}
+
+#[test]
+fn apply_move_to_board_castling() {
+    let mut pos = empty_position();
+    let king = ColoredPiece {
+        piece: Piece::King,
+        side: Side::White,
+    };
+    let rook = ColoredPiece {
+        piece: Piece::Rook,
+        side: Side::White,
+    };
+    pos.board[4] = Some(king); // e1
+    pos.board[7] = Some(rook); // h1
+
+    let m = Move {
+        from_square: 4,
+        to_square: 6,
+        move_kind: MoveKind::Castling {
+            rook_from: 7,
+            rook_to: 5,
+        },
+        colored_piece: king,
+    };
+    let mut undo = pos.build_undo();
+
+    pos.apply_move_to_board(m, king, &mut undo).unwrap();
+
+    assert_eq!(pos.board[4], None);
+    assert_eq!(pos.board[6], Some(king));
+    assert_eq!(pos.board[7], None);
+    assert_eq!(pos.board[5], Some(rook));
+}
+
+#[test]
+fn apply_move_to_board_rejects_pawn_promotion() {
+    let mut pos = empty_position();
+    let white_pawn = ColoredPiece {
+        piece: Piece::Pawn,
+        side: Side::White,
+    };
+    pos.board[48] = Some(white_pawn);
+
+    let m = Move {
+        from_square: 48,
+        to_square: 56,
+        move_kind: MoveKind::Promotion {
+            promotion_piece: Piece::Pawn,
+        },
+        colored_piece: white_pawn,
+    };
+    let mut undo = pos.build_undo();
+
+    assert!(matches!(
+        pos.apply_move_to_board(m, white_pawn, &mut undo),
+        Err(ChessError::PromotionPieceCantBePawn)
+    ));
+}
+
+// ── update_en_passant tests ───────────────────────────────────────────────────
+
+#[test]
+fn update_en_passant_sets_on_double_pawn_push() {
+    let mut pos = empty_position();
+    pos.en_passant = None;
+
+    let pawn = ColoredPiece {
+        piece: Piece::Pawn,
+        side: Side::White,
+    };
+    let m = Move {
+        from_square: 8,
+        to_square: 24,
+        move_kind: MoveKind::DoublePawnPush { passed_square: 16 },
+        colored_piece: pawn,
+    };
+
+    pos.update_en_passant(m);
+
+    assert_eq!(pos.en_passant, Some(16));
+}
+
+#[test]
+fn update_en_passant_clears_on_quiet_move() {
+    let mut pos = empty_position();
+    pos.en_passant = Some(42);
+
+    let rook = ColoredPiece {
+        piece: Piece::Rook,
+        side: Side::White,
+    };
+    let m = Move {
+        from_square: 0,
+        to_square: 7,
+        move_kind: MoveKind::Quiet,
+        colored_piece: rook,
+    };
+
+    pos.update_en_passant(m);
+
+    assert_eq!(pos.en_passant, None);
+}
+
+#[test]
+fn update_en_passant_clears_on_capture() {
+    let mut pos = empty_position();
+    pos.en_passant = Some(16);
+
+    let bishop = ColoredPiece {
+        piece: Piece::Bishop,
+        side: Side::White,
+    };
+    let m = Move {
+        from_square: 10,
+        to_square: 28,
+        move_kind: MoveKind::Capture,
+        colored_piece: bishop,
+    };
+
+    pos.update_en_passant(m);
+
+    assert_eq!(pos.en_passant, None);
+}
+
+// ── update_clocks tests ───────────────────────────────────────────────────────
+
+#[test]
+fn update_clocks_resets_halfmove_on_pawn_move() {
+    let mut pos = empty_position();
+    pos.halfmove_clock = 5;
+
+    let pawn = ColoredPiece {
+        piece: Piece::Pawn,
+        side: Side::White,
+    };
+    let m = Move {
+        from_square: 8,
+        to_square: 16,
+        move_kind: MoveKind::Quiet,
+        colored_piece: pawn,
+    };
+
+    pos.update_clocks(m);
+
+    assert_eq!(pos.halfmove_clock, 0);
+}
+
+#[test]
+fn update_clocks_resets_halfmove_on_capture() {
+    let mut pos = empty_position();
+    pos.halfmove_clock = 3;
+
+    let rook = ColoredPiece {
+        piece: Piece::Rook,
+        side: Side::White,
+    };
+    let m = Move {
+        from_square: 0,
+        to_square: 7,
+        move_kind: MoveKind::Capture,
+        colored_piece: rook,
+    };
+
+    pos.update_clocks(m);
+
+    assert_eq!(pos.halfmove_clock, 0);
+}
+
+#[test]
+fn update_clocks_increments_halfmove_on_quiet_non_pawn() {
+    let mut pos = empty_position();
+    pos.halfmove_clock = 2;
+
+    let knight = ColoredPiece {
+        piece: Piece::Knight,
+        side: Side::White,
+    };
+    let m = Move {
+        from_square: 1,
+        to_square: 18,
+        move_kind: MoveKind::Quiet,
+        colored_piece: knight,
+    };
+
+    pos.update_clocks(m);
+
+    assert_eq!(pos.halfmove_clock, 3);
+}
+
+#[test]
+fn update_clocks_toggles_side_white_to_black() {
+    let mut pos = empty_position();
+    pos.side_to_move = Side::White;
+
+    let rook = ColoredPiece {
+        piece: Piece::Rook,
+        side: Side::White,
+    };
+    let m = Move {
+        from_square: 0,
+        to_square: 7,
+        move_kind: MoveKind::Quiet,
+        colored_piece: rook,
+    };
+
+    pos.update_clocks(m);
+
+    assert_eq!(pos.side_to_move, Side::Black);
+}
+
+#[test]
+fn update_clocks_toggles_side_black_to_white_and_increments_fullmove() {
+    let mut pos = empty_position();
+    pos.side_to_move = Side::Black;
+    pos.fullmove_number = 10;
+
+    let rook = ColoredPiece {
+        piece: Piece::Rook,
+        side: Side::Black,
+    };
+    let m = Move {
+        from_square: 56,
+        to_square: 57,
+        move_kind: MoveKind::Quiet,
+        colored_piece: rook,
+    };
+
+    pos.update_clocks(m);
+
+    assert_eq!(pos.side_to_move, Side::White);
+    assert_eq!(pos.fullmove_number, 11);
+}
+
+// ── update_king_positions tests ───────────────────────────────────────────────
+
+#[test]
+fn update_king_positions_white_king() {
+    let mut pos = empty_position();
+    pos.king_squares = [4, 60];
+
+    let king = ColoredPiece {
+        piece: Piece::King,
+        side: Side::White,
+    };
+    let m = Move {
+        from_square: 4,
+        to_square: 5,
+        move_kind: MoveKind::Quiet,
+        colored_piece: king,
+    };
+
+    pos.update_king_positions(m);
+
+    assert_eq!(pos.king_squares[0], 5);
+    assert_eq!(pos.king_squares[1], 60);
+}
+
+#[test]
+fn update_king_positions_black_king() {
+    let mut pos = empty_position();
+    pos.king_squares = [4, 60];
+
+    let king = ColoredPiece {
+        piece: Piece::King,
+        side: Side::Black,
+    };
+    let m = Move {
+        from_square: 60,
+        to_square: 61,
+        move_kind: MoveKind::Quiet,
+        colored_piece: king,
+    };
+
+    pos.update_king_positions(m);
+
+    assert_eq!(pos.king_squares[0], 4);
+    assert_eq!(pos.king_squares[1], 61);
+}
+
+#[test]
+fn update_king_positions_non_king_does_not_update() {
+    let mut pos = empty_position();
+    pos.king_squares = [4, 60];
+
+    let rook = ColoredPiece {
+        piece: Piece::Rook,
+        side: Side::White,
+    };
+    let m = Move {
+        from_square: 0,
+        to_square: 7,
+        move_kind: MoveKind::Quiet,
+        colored_piece: rook,
+    };
+
+    pos.update_king_positions(m);
+
+    assert_eq!(pos.king_squares[0], 4);
+    assert_eq!(pos.king_squares[1], 60);
+}
+
+// ── set_castle_rights tests ───────────────────────────────────────────────────
+
+#[test]
+fn set_castle_rights_white_king_from_e1_revokes_both() {
+    let mut pos = empty_position();
+    pos.castle = [true, true, true, true];
+
+    let king = ColoredPiece {
+        piece: Piece::King,
+        side: Side::White,
+    };
+    let m = Move {
+        from_square: 4, // e1
+        to_square: 5,
+        move_kind: MoveKind::Quiet,
+        colored_piece: king,
+    };
+
+    pos.set_castle_rights(m);
+
+    assert!(!pos.castle[0], "white kingside should be revoked");
+    assert!(!pos.castle[1], "white queenside should be revoked");
+    assert!(pos.castle[2], "black kingside should be untouched");
+    assert!(pos.castle[3], "black queenside should be untouched");
+}
+
+#[test]
+fn set_castle_rights_black_king_from_e8_revokes_both() {
+    let mut pos = empty_position();
+    pos.castle = [true, true, true, true];
+
+    let king = ColoredPiece {
+        piece: Piece::King,
+        side: Side::Black,
+    };
+    let m = Move {
+        from_square: 60, // e8
+        to_square: 61,
+        move_kind: MoveKind::Quiet,
+        colored_piece: king,
+    };
+
+    pos.set_castle_rights(m);
+
+    assert!(pos.castle[0], "white kingside should be untouched");
+    assert!(pos.castle[1], "white queenside should be untouched");
+    assert!(!pos.castle[2], "black kingside should be revoked");
+    assert!(!pos.castle[3], "black queenside should be revoked");
+}
+
+#[test]
+fn set_castle_rights_h1_rook_from_revokes_white_kingside() {
+    let mut pos = empty_position();
+    pos.castle = [true, true, false, false];
+
+    let rook = ColoredPiece {
+        piece: Piece::Rook,
+        side: Side::White,
+    };
+    let m = Move {
+        from_square: 7, // h1
+        to_square: 6,
+        move_kind: MoveKind::Quiet,
+        colored_piece: rook,
+    };
+
+    pos.set_castle_rights(m);
+
+    assert!(!pos.castle[0], "white kingside should be revoked");
+    assert!(pos.castle[1], "white queenside should be untouched");
+}
+
+#[test]
+fn set_castle_rights_a1_rook_from_revokes_white_queenside() {
+    let mut pos = empty_position();
+    pos.castle = [true, true, false, false];
+
+    let rook = ColoredPiece {
+        piece: Piece::Rook,
+        side: Side::White,
+    };
+    let m = Move {
+        from_square: 0, // a1
+        to_square: 1,
+        move_kind: MoveKind::Quiet,
+        colored_piece: rook,
+    };
+
+    pos.set_castle_rights(m);
+
+    assert!(pos.castle[0], "white kingside should be untouched");
+    assert!(!pos.castle[1], "white queenside should be revoked");
+}
+
+#[test]
+fn set_castle_rights_h8_rook_from_revokes_black_kingside() {
+    let mut pos = empty_position();
+    pos.castle = [false, false, true, true];
+
+    let rook = ColoredPiece {
+        piece: Piece::Rook,
+        side: Side::Black,
+    };
+    let m = Move {
+        from_square: 63, // h8
+        to_square: 62,
+        move_kind: MoveKind::Quiet,
+        colored_piece: rook,
+    };
+
+    pos.set_castle_rights(m);
+
+    assert!(!pos.castle[2], "black kingside should be revoked");
+    assert!(pos.castle[3], "black queenside should be untouched");
+}
+
+#[test]
+fn set_castle_rights_a8_rook_from_revokes_black_queenside() {
+    let mut pos = empty_position();
+    pos.castle = [false, false, true, true];
+
+    let rook = ColoredPiece {
+        piece: Piece::Rook,
+        side: Side::Black,
+    };
+    let m = Move {
+        from_square: 56, // a8
+        to_square: 57,
+        move_kind: MoveKind::Quiet,
+        colored_piece: rook,
+    };
+
+    pos.set_castle_rights(m);
+
+    assert!(pos.castle[2], "black kingside should be untouched");
+    assert!(!pos.castle[3], "black queenside should be revoked");
+}
+
+#[test]
+fn set_castle_rights_capture_on_h1_revokes_white_kingside() {
+    let mut pos = empty_position();
+    pos.castle = [true, true, false, false];
+
+    let rook = ColoredPiece {
+        piece: Piece::Rook,
+        side: Side::Black,
+    };
+    let m = Move {
+        from_square: 15,
+        to_square: 7, // h1
+        move_kind: MoveKind::Capture,
+        colored_piece: rook,
+    };
+
+    pos.set_castle_rights(m);
+
+    assert!(!pos.castle[0], "white kingside should be revoked");
+    assert!(pos.castle[1], "white queenside should be untouched");
+}
+
+#[test]
+fn set_castle_rights_capture_on_a1_revokes_white_queenside() {
+    let mut pos = empty_position();
+    pos.castle = [true, true, false, false];
+
+    let rook = ColoredPiece {
+        piece: Piece::Rook,
+        side: Side::Black,
+    };
+    let m = Move {
+        from_square: 8,
+        to_square: 0, // a1
+        move_kind: MoveKind::Capture,
+        colored_piece: rook,
+    };
+
+    pos.set_castle_rights(m);
+
+    assert!(pos.castle[0], "white kingside should be untouched");
+    assert!(!pos.castle[1], "white queenside should be revoked");
+}
+
+#[test]
+fn set_castle_rights_capture_on_h8_revokes_black_kingside() {
+    let mut pos = empty_position();
+    pos.castle = [false, false, true, true];
+
+    let rook = ColoredPiece {
+        piece: Piece::Rook,
+        side: Side::White,
+    };
+    let m = Move {
+        from_square: 55,
+        to_square: 63, // h8
+        move_kind: MoveKind::Capture,
+        colored_piece: rook,
+    };
+
+    pos.set_castle_rights(m);
+
+    assert!(!pos.castle[2], "black kingside should be revoked");
+    assert!(pos.castle[3], "black queenside should be untouched");
+}
+
+#[test]
+fn set_castle_rights_capture_on_a8_revokes_black_queenside() {
+    let mut pos = empty_position();
+    pos.castle = [false, false, true, true];
+
+    let rook = ColoredPiece {
+        piece: Piece::Rook,
+        side: Side::White,
+    };
+    let m = Move {
+        from_square: 48,
+        to_square: 56, // a8
+        move_kind: MoveKind::Capture,
+        colored_piece: rook,
+    };
+
+    pos.set_castle_rights(m);
+
+    assert!(pos.castle[2], "black kingside should be untouched");
+    assert!(!pos.castle[3], "black queenside should be revoked");
 }

@@ -205,13 +205,15 @@ Add a generate all moves function and cache the results
 
 
 ## Next steps
-1. Add undo_move - done
-2. Add legality filtering to move gen
-3. Add a promotion-capture move kind
-4. Refactor make_move
-5. Refactor check.rs + slider.rs shared ray logic
-6. Refactor king.rs
-7. Unify slider pieces behind one shared function
-8. Unify repeated target-handling in king / knight / pawn (I think you meant this, not king/knight/king)
-9. Clean up verbose match error handling with ?
-10. Refactor move-gen APIs to reuse validated/colored piece context from callers where it actually reduces duplication
+1. [x] Add undo_move 
+2. [x] Add legality filtering to move gen 
+3. [x] Add a promotion-capture move kind 
+4. [x] Refactor make_move
+5. [ ] Refactor check.rs + slider.rs shared ray logic
+6. [ ] Refactor king.rs
+7. [ ] Unify slider pieces behind one shared function
+8. [ ] Unify repeated target-handling in king / knight / pawn (I think you meant this, not king/knight/king)
+9. [ ] Clean up verbose match error handling with ?
+10. [ ] Refactor move-gen APIs to reuse validated/colored piece context from callers where it actually reduces duplication
+11. [ ] Finish fen loading
+12. [ ] Add validation for things like halfmove clock

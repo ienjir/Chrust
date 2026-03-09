@@ -22,20 +22,20 @@ pub fn file_rank(square: Square) -> (u8, u8) {
 
 impl ColoredPiece {
     pub fn to_char(&self) -> char {
-        let mut piece_char = match self.piece {
-            Piece::Pawn => 'p',
-            Piece::Knight => 'n',
-            Piece::Bishop => 'b',
-            Piece::Rook => 'r',
-            Piece::Queen => 'q',
-            Piece::King => 'k',
-        };
+	let mut piece_char = match self.piece {
+	    Piece::Pawn => 'p',
+	    Piece::Knight => 'n',
+	    Piece::Bishop => 'b',
+	    Piece::Rook => 'r',
+	    Piece::Queen => 'q',
+	    Piece::King => 'k',
+	};
 
-        if self.side == Side::White {
-            piece_char = piece_char.to_ascii_uppercase();
-        }
+	if self.side == Side::White {
+	    piece_char = piece_char.to_ascii_uppercase();
+	}
 
-        piece_char
+	piece_char
     }
 }
 
@@ -43,20 +43,28 @@ impl ColoredPiece {
 /// Checks if a `Square` is in the 64 squares of a chessboard
 pub fn is_square_on_board(from_square: Square) -> Result<(), ChessError> {
     if !(0..=63).contains(&from_square) {
-        return Err(ChessError::NotASquareOnBoard {
-            square: from_square,
-        });
+	return Err(ChessError::NotASquareOnBoard {
+	    square: from_square,
+	});
     } else {
-        return Ok(());
+	return Ok(());
     }
+}
+
+pub fn is_valid_promomotion_piece(promotion_piece: Piece) -> Result<(), ChessError> {
+   if promotion_piece == Piece::Pawn {
+	return Err(ChessError::PromotionPieceCantBePawn);
+   } 
+
+   Ok(())	
 }
 
 pub fn is_right_piece_type(from_piece: ColoredPiece, expected_piece: Piece) -> Result<(), ChessError> {
     if from_piece.piece != expected_piece {
-        return Err(ChessError::WrongPieceType {
-            expected_piece,
-            found_piece: from_piece.piece,
-        });
+	return Err(ChessError::WrongPieceType {
+	    expected_piece,
+	    found_piece: from_piece.piece,
+	});
     } 
 
     Ok(())
@@ -78,7 +86,7 @@ impl Position {
     pub fn get_validated_colored_piece(&self, from_square: Square, expected_piece: Piece) -> Result<ColoredPiece, ChessError> {
 	let col_piece = match self.get_unvalidated_colored_piece_from_square(from_square) {
 	    Ok(x) => x,
-	   Err(x) => return Err(x),
+	    Err(x) => return Err(x),
 	};
 
 	if let Err(x) = self.validate_colored_piece(col_piece, expected_piece) {
