@@ -300,7 +300,7 @@ fn w_pawn_a7_promotion() {
         48,
         56,
         MoveKind::Promotion {
-            promotion_piece: Some(Piece::Pawn)
+            promotion_piece: Piece::Pawn
         }
     ));
 }
@@ -324,7 +324,7 @@ fn b_pawn_h2_promotion() {
         15,
         7,
         MoveKind::Promotion {
-            promotion_piece: Some(Piece::Pawn)
+            promotion_piece: Piece::Pawn
         }
     ));
 }
@@ -354,7 +354,7 @@ fn w_pawn_b7_promotion_capture_on_a8() {
         49,
         57,
         MoveKind::Promotion {
-            promotion_piece: Some(Piece::Pawn)
+            promotion_piece: Piece::Pawn
         }
     ));
     // Diagonal capture on a8 (no promotion kind emitted — generator uses Capture)

@@ -4,7 +4,7 @@ mod state;
 mod layout;
 mod input;
 mod controller;
-use chrust_core::{position::load_position_from_fen};
+use chrust_core::{ColoredPiece, Piece, Side, moves::make_move::{Move, MoveKind}, position::load_position_from_fen};
 use crate::{assets::load_assets, controller::apply_ui_event, input::route_click, layout::TEST_FEN_STRING, renderer::{handle_ui_state, render_chess_pieces, render_chessboard_without_pieces, render_possible_moves}};
 use macroquad::{prelude::*};
 use macroquad::file::set_pc_assets_folder;
@@ -27,6 +27,30 @@ async fn main() {
 	possible_moves: Vec::new(),
 	ui_state: None,
     };
+
+
+    game_state.position.print_board();
+    println!("");
+    println!("");
+
+    let mv = Move {
+	from_square: 48,
+	to_square: 56,
+	colored_piece: ColoredPiece { piece: Piece::Pawn, side: Side::White },
+	move_kind: MoveKind::Promotion { promotion_piece: Piece::Queen },
+    };
+
+    let undo = game_state.position.make_move(&mv);
+    match undo {
+	Ok(_x) => {println!("Ok")},
+	Err(x) => {println!("Error: {}",x);}
+    }
+
+    game_state.position.print_board();
+
+    if 1 == 1 {
+	return ;
+    }
 
     loop {
 	clear_background(LIGHTGRAY);

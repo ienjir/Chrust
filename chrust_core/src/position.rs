@@ -51,21 +51,18 @@ pub fn convert_square_string_to_square(square_string: &str) -> Result<u8, FenErr
 impl Position {
     pub fn print_board(&self) {
 	for rank in (0..8).rev() {
+	    print!("{} ", rank + 1);
 	    for file in 0..8 {
 		let square = square(file, rank);
 		let test = self.board[square as usize];
-
 		match test {
-		    Some(piece) => {
-			print!(" {}", piece.to_char());
-		    }
-		    None => {
-			print!("  ")
-		    }
+		    Some(piece) => print!(" {}", piece.to_char()),
+		    None => print!(" ."),
 		}
 	    }
 	    print!("\n");
-	} 
+	}
+	println!("   a b c d e f g h");
     }
 }
 

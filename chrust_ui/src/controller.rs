@@ -39,7 +39,7 @@ pub fn click_promotion(game_state: &mut GameState, piece: Piece) {
     };
 
     mv.move_kind = MoveKind::Promotion {
-        promotion_piece: Some(piece),
+        promotion_piece: piece,
     };
 
     match game_state.position.make_move(&mv) {

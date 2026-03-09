@@ -4,7 +4,7 @@ use crate::{Piece, Side, Square};
 #[derive(Debug, PartialEq, Eq)]
 pub enum ChessError {
     NotImplemented,
-    PromotionPieceCantBeEmpty,
+    PromotionPieceCantBePawn,
     NotASquareOnBoard { square: Square },
     NoPieceOnSquare { square: Square },
     NotAValidMove,
@@ -37,7 +37,7 @@ impl fmt::Display for ChessError {
 	    ChessError::NotAValidMove => write!(f, "Not a valid move"),
             ChessError::NotImplemented => write!(f, "Not implemented"),
 	    ChessError::KingIsAttacked { squares: _ } => write!(f, "King is attacked"),
-            ChessError::PromotionPieceCantBeEmpty => write!(f, "Promotion piece can't be empty"),
+            ChessError::PromotionPieceCantBePawn => write!(f, "Promotion piece can't be pawn"),
             ChessError::NotASquareOnBoard { square } => write!(f, "Not a square on board: {square}"),
             ChessError::NoPieceOnSquare { square } => write!(f, "No piece on square: {square}"),
             ChessError::WrongPieceType { expected_piece, found_piece } => {

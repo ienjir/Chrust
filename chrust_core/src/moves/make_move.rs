@@ -21,7 +21,7 @@ pub enum MoveKind {
     Capture,
     DoublePawnPush { passed_square: Square },
     EnPassant { capture_square: Square },
-    Promotion { promotion_piece: Option<Piece> },
+    Promotion { promotion_piece: Piece },
     Castling { rook_from: Square, rook_to: Square },
 }
 
@@ -58,6 +58,8 @@ impl Position {
             fullmove_number: self.fullmove_number,
         };
 
+	println!("Move: {:?}", mv.move_kind);
+
         match mv.move_kind {
             MoveKind::Quiet => {
                 self.board[mv.from_square as usize] = None;
@@ -79,12 +81,12 @@ impl Position {
                 self.board[mv.to_square as usize] = Some(piece);
             }
             MoveKind::Promotion { promotion_piece } => {
-                if promotion_piece.is_none() {
-                    return Err(ChessError::PromotionPieceCantBeEmpty);
+		println!("Piece: {}", promotion_piece);
+                if promotion_piece == Piece::Pawn {
+                    return Err(ChessError::PromotionPieceCantBePawn);
                 }
 
-                piece.piece =
-                    promotion_piece.expect("make_move_unvalidated(): Promotion piece is none");
+                piece.piece = promotion_piece;
                 undo.captured_piece = self.board[mv.to_square as usize];
                 self.board[mv.from_square as usize] = None;
                 self.board[mv.to_square as usize] = Some(piece);

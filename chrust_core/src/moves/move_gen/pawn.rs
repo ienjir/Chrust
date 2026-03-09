@@ -34,14 +34,16 @@ impl Position {
 		    // Promotion check
 		    let to_rank_i = rank(forward_1_candidate_i as u8) as i16;
 		    if to_rank_i == last_rank {
-			target_moves.push(Move {
-			    colored_piece: pawn,
-			    from_square: from_square,
-			    to_square: forward_1_candidate_i as u8,
-			    move_kind: MoveKind::Promotion {
-				promotion_piece: Some(Piece::Pawn),
-			    },
-			});
+			for piece in [Piece::Queen, Piece::Rook, Piece::Bishop, Piece::Knight] {
+			    target_moves.push(Move {
+				colored_piece: pawn,
+				from_square,
+				to_square: forward_1_candidate_i as u8,
+				move_kind: MoveKind::Promotion {
+				    promotion_piece: piece,
+				},
+			    });
+			}
 		    } else {
 			let single_move = Move {
 			    colored_piece: pawn,

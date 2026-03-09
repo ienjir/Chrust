@@ -131,7 +131,7 @@ fn promotion_errors_if_promotion_piece_is_none() {
         from_square: 48,
         to_square: 56,
         move_kind: MoveKind::Promotion {
-            promotion_piece: None,
+            promotion_piece: Piece::Pawn,
         },
         colored_piece: pawn,
     };
@@ -261,7 +261,7 @@ fn promotion_changes_piece_type() {
         48,
         56,
         MoveKind::Promotion {
-            promotion_piece: Some(Piece::Pawn),
+            promotion_piece: Piece::Pawn,
         },
     );
     pos.make_move(&m).unwrap();
@@ -293,7 +293,7 @@ fn promotion_with_non_sentinel_piece_is_rejected() {
             from_square: 48,
             to_square: 56,
             move_kind: MoveKind::Promotion {
-                promotion_piece: Some(piece),
+                promotion_piece: piece,
             },
             colored_piece: pawn,
         };
@@ -1170,7 +1170,7 @@ fn promotion_undo_restores_original_pawn() {
         48,
         56,
         MoveKind::Promotion {
-            promotion_piece: Some(Piece::Pawn),
+            promotion_piece: Piece::Pawn,
         },
     );
     let undo = pos.make_move(&m).unwrap();

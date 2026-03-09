@@ -21,11 +21,7 @@ impl Position {
         Ok(target_moves)
     }
 
-    pub fn get_pseduo_legal_moves(
-        &self,
-        from_square: Square,
-        colored_piece: ColoredPiece,
-    ) -> Result<Vec<Move>, ChessError> {
+    pub fn get_pseduo_legal_moves(&self, from_square: Square, colored_piece: ColoredPiece) -> Result<Vec<Move>, ChessError> {
         match colored_piece.piece {
             Piece::Rook => self.rook_targets(from_square),
             Piece::Bishop => self.bishop_targets(from_square),
