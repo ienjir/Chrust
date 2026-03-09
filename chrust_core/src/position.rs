@@ -11,6 +11,7 @@ pub struct Position {
     pub fullmove_number: u32,
 }
 
+#[derive(Copy, Clone)]
 pub struct Undo {
    pub captured_piece: Option<ColoredPiece>,
    pub previous_castling_rights: [bool; 4],
