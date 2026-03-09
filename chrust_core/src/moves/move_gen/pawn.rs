@@ -113,13 +113,29 @@ impl Position {
 
 	    if let Some(piece) = self.board[capture_candidate as usize] {
 		if piece.side != pawn.side {
-		    let en_passant_move = Move {
-			colored_piece: pawn,
-			from_square: from_square,
-			to_square: capture_candidate as u8,
-			move_kind: MoveKind::Capture,
-		    };
-		    target_moves.push(en_passant_move);
+		    // Promotion capture
+		    let to_rank_i = rank(capture_candidate as u8) as i16;
+		    if to_rank_i == last_rank {
+			for piece in [Piece::Queen, Piece::Rook, Piece::Bishop, Piece::Knight] {
+			    target_moves.push(Move {
+				colored_piece: pawn,
+				from_square,
+				to_square: capture_candidate as u8,
+				move_kind: MoveKind::Promotion {
+				    promotion_piece: piece,
+				},
+			    });
+			} 
+		    } else {
+			// Capture 
+			target_moves.push(Move {
+			    colored_piece: pawn,
+			    from_square: from_square,
+			    to_square: capture_candidate as u8,
+			    move_kind: MoveKind::Capture,
+			});
+		    } 
+
 		}
 	    }
 	}

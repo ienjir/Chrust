@@ -294,13 +294,38 @@ fn w_pawn_a7_promotion() {
 
     let moves = pos.pawn_targets(48).expect("pawn_targets returned Err");
 
-    assert_eq!(moves.len(), 1);
+    // The generator now emits 4 separate moves, one for each promotion piece type
+    assert_eq!(moves.len(), 4);
     assert!(has_move(
         &moves,
         48,
         56,
         MoveKind::Promotion {
-            promotion_piece: Piece::Pawn
+            promotion_piece: Piece::Queen
+        }
+    ));
+    assert!(has_move(
+        &moves,
+        48,
+        56,
+        MoveKind::Promotion {
+            promotion_piece: Piece::Rook
+        }
+    ));
+    assert!(has_move(
+        &moves,
+        48,
+        56,
+        MoveKind::Promotion {
+            promotion_piece: Piece::Bishop
+        }
+    ));
+    assert!(has_move(
+        &moves,
+        48,
+        56,
+        MoveKind::Promotion {
+            promotion_piece: Piece::Knight
         }
     ));
 }
@@ -318,13 +343,38 @@ fn b_pawn_h2_promotion() {
 
     let moves = pos.pawn_targets(15).expect("pawn_targets returned Err");
 
-    assert_eq!(moves.len(), 1);
+    // The generator now emits 4 separate moves, one for each promotion piece type
+    assert_eq!(moves.len(), 4);
     assert!(has_move(
         &moves,
         15,
         7,
         MoveKind::Promotion {
-            promotion_piece: Piece::Pawn
+            promotion_piece: Piece::Queen
+        }
+    ));
+    assert!(has_move(
+        &moves,
+        15,
+        7,
+        MoveKind::Promotion {
+            promotion_piece: Piece::Rook
+        }
+    ));
+    assert!(has_move(
+        &moves,
+        15,
+        7,
+        MoveKind::Promotion {
+            promotion_piece: Piece::Bishop
+        }
+    ));
+    assert!(has_move(
+        &moves,
+        15,
+        7,
+        MoveKind::Promotion {
+            promotion_piece: Piece::Knight
         }
     ));
 }
@@ -348,17 +398,32 @@ fn w_pawn_b7_promotion_capture_on_a8() {
 
     let moves = pos.pawn_targets(49).expect("pawn_targets returned Err");
 
-    // Quiet promotion to b8
-    assert!(has_move(
-        &moves,
-        49,
-        57,
-        MoveKind::Promotion {
-            promotion_piece: Piece::Pawn
-        }
-    ));
-    // Diagonal capture on a8 (no promotion kind emitted — generator uses Capture)
-    assert!(has_move(&moves, 49, 56, MoveKind::Capture));
+    // Should have 8 total moves: 4 quiet promotions to b8 + 4 promotion captures to a8
+    assert_eq!(moves.len(), 8);
+
+    // Quiet promotions to b8 (sq 57)
+    for piece in [Piece::Queen, Piece::Rook, Piece::Bishop, Piece::Knight] {
+        assert!(has_move(
+            &moves,
+            49,
+            57,
+            MoveKind::Promotion {
+                promotion_piece: piece
+            }
+        ));
+    }
+
+    // Promotion captures on a8 (sq 56)
+    for piece in [Piece::Queen, Piece::Rook, Piece::Bishop, Piece::Knight] {
+        assert!(has_move(
+            &moves,
+            49,
+            56,
+            MoveKind::Promotion {
+                promotion_piece: piece
+            }
+        ));
+    }
 }
 
 #[test]

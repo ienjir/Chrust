@@ -252,16 +252,14 @@ fn promotion_changes_piece_type() {
     };
     pos.board[48] = Some(pawn); // a7
 
-    // The pawn generator emits Piece::Pawn as a sentinel for the promotion
-    // piece — the caller is responsible for replacing it with the desired piece
-    // before submitting.  We use the sentinel so the move passes the legal-list
-    // check; the board ends up with a Pawn on the promotion square.
+    // The pawn generator now emits 4 separate moves for each promotion choice.
+    // Test that promoting to Queen works correctly.
     let m = mv(
         &pos,
         48,
         56,
         MoveKind::Promotion {
-            promotion_piece: Piece::Pawn,
+            promotion_piece: Piece::Queen,
         },
     );
     pos.make_move(&m).unwrap();
@@ -270,38 +268,37 @@ fn promotion_changes_piece_type() {
     assert_eq!(
         pos.board[56],
         Some(ColoredPiece {
-            piece: Piece::Pawn,
+            piece: Piece::Queen,
             side: Side::White
         })
     );
 }
 
 #[test]
-fn promotion_with_non_sentinel_piece_is_rejected() {
-    // Only the Pawn sentinel is accepted by the legal-move list right now.
-    // Real piece types will be rejected as NotAValidMove until the promotion
-    // API is updated to expose one move per promotion choice.
-    for piece in [Piece::Queen, Piece::Rook, Piece::Bishop, Piece::Knight] {
-        let mut pos = empty_position();
-        let pawn = ColoredPiece {
-            piece: Piece::Pawn,
-            side: Side::White,
-        };
-        pos.board[48] = Some(pawn); // a7
+fn promotion_with_pawn_sentinel_is_rejected() {
+    // The Pawn piece type is NOT valid for promotions.
+    // The move generator emits Queen, Rook, Bishop, and Knight only,
+    // so a move with Piece::Pawn won't be in the legal moves list.
+    let mut pos = empty_position();
+    let pawn = ColoredPiece {
+        piece: Piece::Pawn,
+        side: Side::White,
+    };
+    pos.board[48] = Some(pawn); // a7
 
-        let m = Move {
-            from_square: 48,
-            to_square: 56,
-            move_kind: MoveKind::Promotion {
-                promotion_piece: piece,
-            },
-            colored_piece: pawn,
-        };
-        assert!(
-            matches!(pos.make_move(&m), Err(ChessError::NotAValidMove)),
-            "promotion to {piece:?} should return NotAValidMove until the API is updated"
-        );
-    }
+    let m = Move {
+        from_square: 48,
+        to_square: 56,
+        move_kind: MoveKind::Promotion {
+            promotion_piece: Piece::Pawn,
+        },
+        colored_piece: pawn,
+    };
+    // Should be rejected as NotAValidMove since it won't be in legal moves list
+    assert!(
+        matches!(pos.make_move(&m), Err(ChessError::NotAValidMove)),
+        "promotion to Pawn should be rejected as not in legal moves"
+    );
 }
 
 #[test]
@@ -1170,7 +1167,7 @@ fn promotion_undo_restores_original_pawn() {
         48,
         56,
         MoveKind::Promotion {
-            promotion_piece: Piece::Pawn,
+            promotion_piece: Piece::Knight,
         },
     );
     let undo = pos.make_move(&m).unwrap();
@@ -1183,6 +1180,175 @@ fn promotion_undo_restores_original_pawn() {
         "original pawn should be restored to a7"
     );
     assert_eq!(pos.board[56], None, "a8 should be empty after undo");
+}
+
+#[test]
+fn promotion_capture_changes_piece_and_captures() {
+    let mut pos = empty_position();
+
+    let white_pawn = ColoredPiece {
+        piece: Piece::Pawn,
+        side: Side::White,
+    };
+    let black_rook = ColoredPiece {
+        piece: Piece::Rook,
+        side: Side::Black,
+    };
+    pos.board[48] = Some(white_pawn); // a7
+    pos.board[57] = Some(black_rook); // b8
+
+    // Promote to Queen while capturing the rook
+    let m = mv(
+        &pos,
+        48,
+        57,
+        MoveKind::Promotion {
+            promotion_piece: Piece::Queen,
+        },
+    );
+    pos.make_move(&m).unwrap();
+
+    assert_eq!(pos.board[48], None, "a7 should be empty");
+    assert_eq!(
+        pos.board[57],
+        Some(ColoredPiece {
+            piece: Piece::Queen,
+            side: Side::White
+        }),
+        "b8 should have white queen"
+    );
+}
+
+#[test]
+fn promotion_capture_all_piece_types() {
+    // Test that all four promotion piece types work with captures
+    for (piece_type, idx) in [
+        (Piece::Queen, 0),
+        (Piece::Rook, 1),
+        (Piece::Bishop, 2),
+        (Piece::Knight, 3),
+    ] {
+        let mut pos = empty_position();
+
+        let white_pawn = ColoredPiece {
+            piece: Piece::Pawn,
+            side: Side::White,
+        };
+        let black_bishop = ColoredPiece {
+            piece: Piece::Bishop,
+            side: Side::Black,
+        };
+        pos.board[48] = Some(white_pawn); // a7
+        pos.board[57] = Some(black_bishop); // b8
+
+        let m = mv(
+            &pos,
+            48,
+            57,
+            MoveKind::Promotion {
+                promotion_piece: piece_type,
+            },
+        );
+        pos.make_move(&m).unwrap();
+
+        assert_eq!(pos.board[48], None, "a7 should be empty (test {idx})");
+        assert_eq!(
+            pos.board[57],
+            Some(ColoredPiece {
+                piece: piece_type,
+                side: Side::White
+            }),
+            "b8 should have white {piece_type:?} (test {idx})"
+        );
+    }
+}
+
+#[test]
+fn promotion_capture_undo_restores_both_pieces() {
+    let mut pos = empty_position();
+
+    let white_pawn = ColoredPiece {
+        piece: Piece::Pawn,
+        side: Side::White,
+    };
+    let black_knight = ColoredPiece {
+        piece: Piece::Knight,
+        side: Side::Black,
+    };
+    pos.board[48] = Some(white_pawn); // a7
+    pos.board[57] = Some(black_knight); // b8
+
+    let m = mv(
+        &pos,
+        48,
+        57,
+        MoveKind::Promotion {
+            promotion_piece: Piece::Rook,
+        },
+    );
+    let undo = pos.make_move(&m).unwrap();
+
+    // Verify promotion + capture happened
+    assert_eq!(pos.board[48], None);
+    assert_eq!(
+        pos.board[57],
+        Some(ColoredPiece {
+            piece: Piece::Rook,
+            side: Side::White
+        })
+    );
+
+    // Undo the move
+    pos.undo_move(undo, m).unwrap();
+
+    // Verify both pieces are restored
+    assert_eq!(
+        pos.board[48],
+        Some(white_pawn),
+        "white pawn should be restored to a7"
+    );
+    assert_eq!(
+        pos.board[57],
+        Some(black_knight),
+        "black knight should be restored to b8"
+    );
+}
+
+#[test]
+fn black_promotion_capture_works() {
+    let mut pos = empty_position();
+    pos.side_to_move = Side::Black;
+
+    let black_pawn = ColoredPiece {
+        piece: Piece::Pawn,
+        side: Side::Black,
+    };
+    let white_queen = ColoredPiece {
+        piece: Piece::Queen,
+        side: Side::White,
+    };
+    pos.board[15] = Some(black_pawn); // h2
+    pos.board[6] = Some(white_queen); // g1
+
+    let m = mv(
+        &pos,
+        15,
+        6,
+        MoveKind::Promotion {
+            promotion_piece: Piece::Bishop,
+        },
+    );
+    pos.make_move(&m).unwrap();
+
+    assert_eq!(pos.board[15], None, "h2 should be empty");
+    assert_eq!(
+        pos.board[6],
+        Some(ColoredPiece {
+            piece: Piece::Bishop,
+            side: Side::Black
+        }),
+        "g1 should have black bishop"
+    );
 }
 
 #[test]
