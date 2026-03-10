@@ -402,3 +402,466 @@ fn king_castling_white_kingside_disallowed_when_rook_missing() {
         }
     ));
 }
+
+#[test]
+fn king_a1_corner_test() {
+    let mut pos = empty_position();
+
+    pos.board[0] = Some(ColoredPiece {
+        piece: Piece::King,
+        side: Side::White,
+    });
+
+    let moves = pos.king_targets(0).expect("king_targets returned Err");
+
+    assert_eq!(moves.len(), 3);
+
+    assert!(has_move(&moves, 0, 1, MoveKind::Quiet));
+    assert!(has_move(&moves, 0, 8, MoveKind::Quiet));
+    assert!(has_move(&moves, 0, 9, MoveKind::Quiet));
+}
+
+#[test]
+fn king_a8_corner_test() {
+    let mut pos = empty_position();
+    pos.side_to_move = Side::Black;
+
+    pos.board[56] = Some(ColoredPiece {
+        piece: Piece::King,
+        side: Side::Black,
+    });
+
+    let moves = pos.king_targets(56).expect("king_targets returned Err");
+
+    assert_eq!(moves.len(), 3);
+
+    assert!(has_move(&moves, 56, 57, MoveKind::Quiet));
+    assert!(has_move(&moves, 56, 48, MoveKind::Quiet));
+    assert!(has_move(&moves, 56, 49, MoveKind::Quiet));
+}
+
+#[test]
+fn king_h8_corner_test() {
+    let mut pos = empty_position();
+    pos.side_to_move = Side::Black;
+
+    pos.board[63] = Some(ColoredPiece {
+        piece: Piece::King,
+        side: Side::Black,
+    });
+
+    let moves = pos.king_targets(63).expect("king_targets returned Err");
+
+    assert_eq!(moves.len(), 3);
+
+    assert!(has_move(&moves, 63, 62, MoveKind::Quiet));
+    assert!(has_move(&moves, 63, 55, MoveKind::Quiet));
+    assert!(has_move(&moves, 63, 54, MoveKind::Quiet));
+}
+
+#[test]
+fn king_with_multiple_captures() {
+    let mut pos = empty_position();
+
+    pos.board[27] = Some(ColoredPiece {
+        piece: Piece::King,
+        side: Side::White,
+    });
+
+    // Surround with enemy pieces
+    pos.board[34] = Some(ColoredPiece {
+        piece: Piece::Pawn,
+        side: Side::Black,
+    });
+    pos.board[35] = Some(ColoredPiece {
+        piece: Piece::Pawn,
+        side: Side::Black,
+    });
+    pos.board[36] = Some(ColoredPiece {
+        piece: Piece::Knight,
+        side: Side::Black,
+    });
+
+    let moves = pos.king_targets(27).expect("king_targets returned Err");
+
+    assert_eq!(moves.len(), 8);
+    assert!(has_move(&moves, 27, 34, MoveKind::Capture));
+    assert!(has_move(&moves, 27, 35, MoveKind::Capture));
+    assert!(has_move(&moves, 27, 36, MoveKind::Capture));
+}
+
+#[test]
+fn king_castling_black_queenside_blocked_by_piece() {
+    let mut pos = empty_position();
+    pos.side_to_move = Side::Black;
+
+    pos.board[60] = Some(ColoredPiece {
+        piece: Piece::King,
+        side: Side::Black,
+    });
+    pos.board[56] = Some(ColoredPiece {
+        piece: Piece::Rook,
+        side: Side::Black,
+    });
+    pos.board[59] = Some(ColoredPiece {
+        piece: Piece::Bishop,
+        side: Side::Black,
+    }); // block d8
+    pos.castle[3] = true; // black queenside
+
+    let moves = pos.king_targets(60).expect("king_targets returned Err");
+
+    assert!(!has_move(
+        &moves,
+        60,
+        58,
+        MoveKind::Castling {
+            rook_from: 56,
+            rook_to: 59
+        }
+    ));
+}
+
+#[test]
+fn king_castling_black_kingside_disallowed_when_in_check() {
+    let mut pos = empty_position();
+    pos.side_to_move = Side::Black;
+
+    pos.board[60] = Some(ColoredPiece {
+        piece: Piece::King,
+        side: Side::Black,
+    });
+    pos.board[63] = Some(ColoredPiece {
+        piece: Piece::Rook,
+        side: Side::Black,
+    });
+    pos.board[4] = Some(ColoredPiece {
+        piece: Piece::Rook,
+        side: Side::White,
+    }); // attacks e8
+    pos.castle[2] = true; // black kingside
+
+    let moves = pos.king_targets(60).expect("king_targets returned Err");
+
+    assert!(!has_move(
+        &moves,
+        60,
+        62,
+        MoveKind::Castling {
+            rook_from: 63,
+            rook_to: 61
+        }
+    ));
+}
+
+#[test]
+fn king_castling_black_kingside_disallowed_when_path_square_attacked() {
+    let mut pos = empty_position();
+    pos.side_to_move = Side::Black;
+
+    pos.board[60] = Some(ColoredPiece {
+        piece: Piece::King,
+        side: Side::Black,
+    });
+    pos.board[63] = Some(ColoredPiece {
+        piece: Piece::Rook,
+        side: Side::Black,
+    });
+    pos.board[5] = Some(ColoredPiece {
+        piece: Piece::Rook,
+        side: Side::White,
+    }); // attacks f8
+    pos.castle[2] = true; // black kingside
+
+    let moves = pos.king_targets(60).expect("king_targets returned Err");
+
+    assert!(!has_move(
+        &moves,
+        60,
+        62,
+        MoveKind::Castling {
+            rook_from: 63,
+            rook_to: 61
+        }
+    ));
+}
+
+#[test]
+fn king_castling_black_kingside_disallowed_when_destination_attacked() {
+    let mut pos = empty_position();
+    pos.side_to_move = Side::Black;
+
+    pos.board[60] = Some(ColoredPiece {
+        piece: Piece::King,
+        side: Side::Black,
+    });
+    pos.board[63] = Some(ColoredPiece {
+        piece: Piece::Rook,
+        side: Side::Black,
+    });
+    pos.board[6] = Some(ColoredPiece {
+        piece: Piece::Rook,
+        side: Side::White,
+    }); // attacks g8
+    pos.castle[2] = true; // black kingside
+
+    let moves = pos.king_targets(60).expect("king_targets returned Err");
+
+    assert!(!has_move(
+        &moves,
+        60,
+        62,
+        MoveKind::Castling {
+            rook_from: 63,
+            rook_to: 61
+        }
+    ));
+}
+
+#[test]
+fn king_castling_black_queenside_disallowed_when_in_check() {
+    let mut pos = empty_position();
+    pos.side_to_move = Side::Black;
+
+    pos.board[60] = Some(ColoredPiece {
+        piece: Piece::King,
+        side: Side::Black,
+    });
+    pos.board[56] = Some(ColoredPiece {
+        piece: Piece::Rook,
+        side: Side::Black,
+    });
+    pos.board[4] = Some(ColoredPiece {
+        piece: Piece::Rook,
+        side: Side::White,
+    }); // attacks e8
+    pos.castle[3] = true; // black queenside
+
+    let moves = pos.king_targets(60).expect("king_targets returned Err");
+
+    assert!(!has_move(
+        &moves,
+        60,
+        58,
+        MoveKind::Castling {
+            rook_from: 56,
+            rook_to: 59
+        }
+    ));
+}
+
+#[test]
+fn king_castling_black_queenside_disallowed_when_path_square_attacked() {
+    let mut pos = empty_position();
+    pos.side_to_move = Side::Black;
+
+    pos.board[60] = Some(ColoredPiece {
+        piece: Piece::King,
+        side: Side::Black,
+    });
+    pos.board[56] = Some(ColoredPiece {
+        piece: Piece::Rook,
+        side: Side::Black,
+    });
+    pos.board[3] = Some(ColoredPiece {
+        piece: Piece::Rook,
+        side: Side::White,
+    }); // attacks d8
+    pos.castle[3] = true; // black queenside
+
+    let moves = pos.king_targets(60).expect("king_targets returned Err");
+
+    assert!(!has_move(
+        &moves,
+        60,
+        58,
+        MoveKind::Castling {
+            rook_from: 56,
+            rook_to: 59
+        }
+    ));
+}
+
+#[test]
+fn king_castling_black_queenside_disallowed_when_destination_attacked() {
+    let mut pos = empty_position();
+    pos.side_to_move = Side::Black;
+
+    pos.board[60] = Some(ColoredPiece {
+        piece: Piece::King,
+        side: Side::Black,
+    });
+    pos.board[56] = Some(ColoredPiece {
+        piece: Piece::Rook,
+        side: Side::Black,
+    });
+    pos.board[2] = Some(ColoredPiece {
+        piece: Piece::Rook,
+        side: Side::White,
+    }); // attacks c8
+    pos.castle[3] = true; // black queenside
+
+    let moves = pos.king_targets(60).expect("king_targets returned Err");
+
+    assert!(!has_move(
+        &moves,
+        60,
+        58,
+        MoveKind::Castling {
+            rook_from: 56,
+            rook_to: 59
+        }
+    ));
+}
+
+#[test]
+fn king_castling_black_kingside_disallowed_when_rook_missing() {
+    let mut pos = empty_position();
+    pos.side_to_move = Side::Black;
+
+    pos.board[60] = Some(ColoredPiece {
+        piece: Piece::King,
+        side: Side::Black,
+    });
+    pos.castle[2] = true; // black kingside
+
+    let moves = pos.king_targets(60).expect("king_targets returned Err");
+
+    assert!(!has_move(
+        &moves,
+        60,
+        62,
+        MoveKind::Castling {
+            rook_from: 63,
+            rook_to: 61
+        }
+    ));
+}
+
+#[test]
+fn king_castling_black_queenside_disallowed_when_rook_missing() {
+    let mut pos = empty_position();
+    pos.side_to_move = Side::Black;
+
+    pos.board[60] = Some(ColoredPiece {
+        piece: Piece::King,
+        side: Side::Black,
+    });
+    pos.castle[3] = true; // black queenside
+
+    let moves = pos.king_targets(60).expect("king_targets returned Err");
+
+    assert!(!has_move(
+        &moves,
+        60,
+        58,
+        MoveKind::Castling {
+            rook_from: 56,
+            rook_to: 59
+        }
+    ));
+}
+
+#[test]
+fn king_castling_white_queenside_disallowed_when_rook_missing() {
+    let mut pos = empty_position();
+
+    pos.board[4] = Some(ColoredPiece {
+        piece: Piece::King,
+        side: Side::White,
+    });
+    pos.castle[1] = true; // white queenside
+
+    let moves = pos.king_targets(4).expect("king_targets returned Err");
+
+    assert!(!has_move(
+        &moves,
+        4,
+        2,
+        MoveKind::Castling {
+            rook_from: 0,
+            rook_to: 3
+        }
+    ));
+}
+
+#[test]
+fn king_castling_white_kingside_disallowed_when_wrong_color_rook() {
+    let mut pos = empty_position();
+
+    pos.board[4] = Some(ColoredPiece {
+        piece: Piece::King,
+        side: Side::White,
+    });
+    pos.board[7] = Some(ColoredPiece {
+        piece: Piece::Rook,
+        side: Side::Black, // Enemy rook!
+    });
+    pos.castle[0] = true; // white kingside
+
+    let moves = pos.king_targets(4).expect("king_targets returned Err");
+
+    assert!(!has_move(
+        &moves,
+        4,
+        6,
+        MoveKind::Castling {
+            rook_from: 7,
+            rook_to: 5
+        }
+    ));
+}
+
+#[test]
+fn king_castling_white_queenside_disallowed_when_wrong_color_rook() {
+    let mut pos = empty_position();
+
+    pos.board[4] = Some(ColoredPiece {
+        piece: Piece::King,
+        side: Side::White,
+    });
+    pos.board[0] = Some(ColoredPiece {
+        piece: Piece::Rook,
+        side: Side::Black, // Enemy rook!
+    });
+    pos.castle[1] = true; // white queenside
+
+    let moves = pos.king_targets(4).expect("king_targets returned Err");
+
+    assert!(!has_move(
+        &moves,
+        4,
+        2,
+        MoveKind::Castling {
+            rook_from: 0,
+            rook_to: 3
+        }
+    ));
+}
+
+#[test]
+fn king_castling_white_kingside_disallowed_when_wrong_piece_type() {
+    let mut pos = empty_position();
+
+    pos.board[4] = Some(ColoredPiece {
+        piece: Piece::King,
+        side: Side::White,
+    });
+    pos.board[7] = Some(ColoredPiece {
+        piece: Piece::Knight, // Wrong piece type!
+        side: Side::White,
+    });
+    pos.castle[0] = true; // white kingside
+
+    let moves = pos.king_targets(4).expect("king_targets returned Err");
+
+    assert!(!has_move(
+        &moves,
+        4,
+        6,
+        MoveKind::Castling {
+            rook_from: 7,
+            rook_to: 5
+        }
+    ));
+}

@@ -1,3 +1,5 @@
+use std::u8;
+
 use crate::{
     errors::ChessError,
     position::{Position},
@@ -44,7 +46,7 @@ impl ColoredPiece {
 pub fn is_square_on_board(from_square: Square) -> Result<(), ChessError> {
     if !(0..=63).contains(&from_square) {
 	return Err(ChessError::NotASquareOnBoard {
-	    square: from_square,
+	    square: from_square as i16,
 	});
     } else {
 	return Ok(());
@@ -124,3 +126,11 @@ impl Position {
     }
 }
 
+impl Side {
+    pub fn opponent(&self) -> Side {
+        match self {
+            Side::White => Side::Black,
+            Side::Black => Side::White,
+        }
+    }
+}

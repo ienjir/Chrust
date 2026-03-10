@@ -31,7 +31,7 @@ fn is_square_on_board_negative_test_with_negative_number() {
     assert_eq!(
         is_square_on_board(negative_square_as_u8),
         Err(ChessError::NotASquareOnBoard {
-            square: negative_square_as_u8
+            square: negative_square_as_u8 as i16
         })
     );
 }

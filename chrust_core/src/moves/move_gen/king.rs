@@ -1,201 +1,140 @@
-use std::usize;
+use std::{u8, usize};
 
 use crate::{
-    errors::ChessError,
-    helper::{file, file_rank, rank},
-    moves::make_move::{Move, MoveKind},
-    position::Position,
-    Piece, Side, Square,
+    ColoredPiece, Piece, Side, Square, errors::ChessError, helper::{file, is_square_on_board, rank}, moves::{make_move::{Move, MoveKind}, move_gen::rook}, position::Position
 };
 
 impl Position {
     pub fn king_targets(&self, from_square: Square) -> Result<Vec<Move>, ChessError> {
-        let mut target_moves: Vec<Move> = Vec::with_capacity(8);
+	let mut target_moves: Vec<Move> = Vec::with_capacity(8);
 
-        let king = match self.get_validated_colored_piece(from_square, Piece::King) {
-            Ok(x) => x,
-            Err(x) => return Err(x),
-        };
+	let king = self.get_validated_colored_piece(from_square, Piece::King)?;
 
-        let (from_file_i, from_rank_i) = file_rank(from_square);
-        let from_file_i = from_file_i as i16;
-        let from_rank_i = from_rank_i as i16;
+	self.check_castling(&mut target_moves, from_square, king.side)?;
 
-        let directions: [i16; 8] = [-9, -8, -7, -1, 1, 7, 8, 9];
+	let directions: [i16; 8] = [-9, -8, -7, -1, 1, 7, 8, 9];
 
-        // Check casteling
-        let (king_from, k_empty, k_allowed, q_empty, q_allowed) = match king.side {
-            Side::White => (
-                4u8,
-                [5u8, 6u8],
-                self.castle[0],
-                [3u8, 2u8, 1u8],
-                self.castle[1],
-            ),
-            Side::Black => (
-                60u8,
-                [61u8, 62u8],
-                self.castle[2],
-                [59u8, 58u8, 57u8],
-                self.castle[3],
-            ),
-        };
+	for direction in directions {
 
-        if from_square == king_from {
-            let king_in_check = self
-                .is_square_attacked(
-                    king_from,
-                    match king.side {
-                        Side::Black => Side::White,
-                        Side::White => Side::Black,
-                    },
-                )?
-                .is_some();
+	    let candidate_square_u = match get_validated_candidate_square(from_square, direction) {
+		Ok(x) => x,
+		Err(_x) => { continue },
+	    };
 
-            let k_clear = k_empty.iter().all(|&sq| self.board[sq as usize].is_none());
-            let k_rook_ok = matches!(
-            self.board[(king_from + 3) as usize],
-            Some(rook) if rook.piece == Piece::Rook && rook.side == king.side
-            );
-            let k_safe = !self
-                .is_square_attacked(
-                    king_from + 1,
-                    match king.side {
-                        Side::Black => Side::White,
-                        Side::White => Side::Black,
-                    },
-                )?
-                .is_some()
-                && !self
-                    .is_square_attacked(
-                        king_from + 2,
-                        match king.side {
-                            Side::Black => Side::White,
-                            Side::White => Side::Black,
-                        },
-                    )?
-                    .is_some();
+	    let (file_difference_i, rank_difference_i) = get_file_and_rank_difference(from_square, candidate_square_u);
 
-            if k_allowed && k_clear && k_rook_ok && !king_in_check && k_safe {
-                target_moves.push(Move {
-                    colored_piece: king,
-                    from_square,
-                    to_square: king_from + 2,
-                    move_kind: MoveKind::Castling {
-                        rook_from: king_from + 3,
-                        rook_to: king_from + 1,
-                    },
-                });
-            }
 
-            let q_clear = q_empty.iter().all(|&sq| self.board[sq as usize].is_none());
-            let q_rook_ok = matches!(
-            self.board[(king_from - 4) as usize],
-            Some(rook) if rook.piece == Piece::Rook && rook.side == king.side
-            );
-            let q_safe = !self
-                .is_square_attacked(
-                    king_from - 1,
-                    match king.side {
-                        Side::Black => Side::White,
-                        Side::White => Side::Black,
-                    },
-                )?
-                .is_some()
-                && !self
-                    .is_square_attacked(
-                        king_from - 2,
-                        match king.side {
-                            Side::Black => Side::White,
-                            Side::White => Side::Black,
-                        },
-                    )?
-                    .is_some();
+	    if !(file_difference_i <= 1 && rank_difference_i <= 1) {
+		continue;
+	    }
 
-            if q_allowed && q_clear && q_rook_ok && !king_in_check && q_safe {
-                target_moves.push(Move {
-                    colored_piece: king,
-                    from_square,
-                    to_square: king_from - 2,
-                    move_kind: MoveKind::Castling {
-                        rook_from: king_from - 4,
-                        rook_to: king_from - 1,
-                    },
-                });
-            }
-        }
+	    let candidate_occupant = self.board[candidate_square_u as usize];
+	    match candidate_occupant {
+		None => {
+		    target_moves.push(Move {
+			colored_piece: king,
+			from_square: from_square,
+			to_square: candidate_square_u,
+			move_kind: MoveKind::Quiet,
+		    });
+		},
+		Some(colored_piece) => {
+		    if colored_piece.side != king.side {
+			target_moves.push(Move {
+			    colored_piece: king,
+			    from_square: from_square,
+			    to_square: candidate_square_u,
+			    move_kind: MoveKind::Capture,
+			});
+		    }
 
-        for direction in directions {
-            let candidate_square_i = from_square as i16 + direction;
+		    continue;
+		}
+	    };
+	}
 
-            if !(0..=63).contains(&candidate_square_i) {
-                continue;
-            }
-
-            let file_difference_i = (file(candidate_square_i as u8) as i16 - from_file_i).abs();
-            let rank_difference_i = (rank(candidate_square_i as u8) as i16 - from_rank_i).abs();
-
-            if !(file_difference_i <= 1 && rank_difference_i <= 1) {
-                continue;
-            }
-
-            let candidate_occupant = self.board[candidate_square_i as usize];
-            match candidate_occupant {
-                None => {
-                    let check_check = self.is_square_attacked(
-                        candidate_square_i as u8,
-                        match king.side {
-                            Side::Black => Side::White,
-                            Side::White => Side::Black,
-                        },
-                    );
-                    match check_check {
-                        Err(x) => return Err(x),
-                        Ok(x) => {
-                            if x.is_some() {
-                                continue;
-                            }
-                        }
-                    }
-
-                    target_moves.push(Move {
-                        colored_piece: king,
-                        from_square: from_square,
-                        to_square: candidate_square_i as u8,
-                        move_kind: MoveKind::Quiet,
-                    });
-                    continue;
-                }
-                Some(colored_piece) => {
-                    let check_check = self.is_square_attacked(
-                        candidate_square_i as u8,
-                        match king.side {
-                            Side::Black => Side::White,
-                            Side::White => Side::Black,
-                        },
-                    );
-                    match check_check {
-                        Err(x) => return Err(x),
-                        Ok(x) => {
-                            if x.is_some() {
-                                continue;
-                            }
-                        }
-                    }
-
-                    if colored_piece.side != king.side {
-                        target_moves.push(Move {
-                            colored_piece: king,
-                            from_square: from_square,
-                            to_square: candidate_square_i as u8,
-                            move_kind: MoveKind::Capture,
-                        });
-                    }
-                    continue;
-                }
-            };
-        }
-
-        Ok(target_moves)
+	Ok(target_moves)
     }
+
+    fn is_square_safe(&self, square: u8, opponent: Side) -> Result<bool, ChessError> {
+	Ok(self.is_square_attacked(square, opponent)?.is_none())
+    }
+
+    pub fn check_castling(&self, target_moves: &mut Vec<Move>, from_square: Square, king_side: Side) -> Result<(), ChessError>{
+	if self.is_king_in_check(king_side)?.is_some() {
+	    return Ok(()); 
+	} 
+
+	let (king_side_castling_allowed, queen_side_castling) = match king_side {
+	    Side::White => {(self.castle[0], self.castle[1])},
+	    Side::Black => {(self.castle[2], self.castle[3])}
+	};
+
+	if king_side_castling_allowed {
+	    self.check_castling_queen_or_king_side(target_moves, true, from_square, king_side)?;
+	}
+
+	if queen_side_castling {
+	    self.check_castling_queen_or_king_side(target_moves, false, from_square, king_side)?;
+	}
+
+	Ok(())
+    }
+
+    pub fn check_castling_queen_or_king_side(&self, target_moves: &mut Vec<Move>, is_king_half: bool, from_square: Square, king_side: Side) -> Result<(), ChessError>{
+	let from_square_i = from_square as i16;
+	let (king_to, king_travel, rook_from, rook_to, side_squares): (u8, u8, u8, u8, [u8; 3]) = match is_king_half {
+	    true =>  ((from_square_i + 2) as u8, (from_square_i + 1) as u8, (from_square_i + 3) as u8, (from_square_i + 1) as u8, [(from_square_i + 1) as u8, (from_square_i + 1) as u8, (from_square_i + 2) as u8]),
+	    false => ((from_square_i - 2) as u8, (from_square_i - 1) as u8, (from_square_i - 4) as u8, (from_square_i - 1) as u8, [(from_square_i - 1) as u8, (from_square_i - 2) as u8, (from_square_i - 3) as u8]),
+	};
+
+	match self.board[rook_from as usize] {
+	    Some(piece) if piece.piece == Piece::Rook && piece.side == king_side =>  {},
+	    _ => {return Ok(());}
+	}
+
+	if !side_squares.iter().all(|&square| self.board[square as usize].is_none()) { return Ok(())}
+	if !self.is_square_safe(king_to, king_side.opponent())? { return Ok(()) }
+	match self.is_square_safe(king_to, king_side.opponent()) {
+	    Ok(x) => {
+		if !x {
+		    return Ok(());
+		}
+	    },
+	    Err(x) => return Err(x),
+	} 
+	match self.is_square_safe(king_travel, king_side.opponent()) {
+	    Ok(x) => {
+		if !x {
+		    return Ok(());
+		}
+	    },
+	    Err(x) => return Err(x),
+	} 
+
+	target_moves.push(Move { 
+	    from_square, 
+	    to_square: king_to, 
+	    move_kind: MoveKind::Castling { rook_from, rook_to }, 
+	    colored_piece: ColoredPiece { piece: Piece::King, side: king_side } 
+	});	
+
+	Ok(())
+    }
+}
+
+pub fn get_validated_candidate_square(from_square: Square, direction: i16) -> Result<Square, ChessError> {
+    let candidate_square_i = from_square as i16 + direction;
+
+    if !(0..=63).contains(&candidate_square_i) {
+	return Err(ChessError::NotASquareOnBoard { square: candidate_square_i });  
+    }
+
+    Ok(candidate_square_i as u8)
+}     
+
+pub fn get_file_and_rank_difference(from_square: Square, substracting_square: Square) -> (i16, i16) {
+    let file_difference_i = (file(from_square) as i16 - file(substracting_square) as i16).abs();
+    let rank_difference_i = (rank(from_square) as i16 - rank(substracting_square) as i16).abs();
+    (file_difference_i, rank_difference_i)
 }

@@ -5,7 +5,7 @@ use crate::{Piece, Side, Square};
 pub enum ChessError {
     NotImplemented,
     PromotionPieceCantBePawn,
-    NotASquareOnBoard { square: Square },
+    NotASquareOnBoard { square: i16 },
     NoPieceOnSquare { square: Square },
     NotAValidMove,
     KingIsAttacked { squares: Vec<Square> },
