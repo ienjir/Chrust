@@ -283,3 +283,49 @@ fn black_rook_d4_empty_board() {
     assert!(has_move(&moves, 27, 24, MoveKind::Quiet)); // a4
     assert!(has_move(&moves, 27, 31, MoveKind::Quiet)); // h4
 }
+
+#[test]
+fn rook_a4_does_not_wrap_to_h_file() {
+    // Rook on a4 (sq 24) moving left should wrap check prevent going to h3
+    let mut pos = empty_position();
+
+    pos.board[24] = Some(ColoredPiece {
+        piece: Piece::Rook,
+        side: Side::White,
+    });
+
+    let moves = pos.rook_targets(24).expect("rook_targets returned Err");
+
+    assert_eq!(moves.len(), 14); // 7 vertical + 7 horizontal
+
+    // Should not wrap to previous rank
+    assert!(!has_to_square(&moves, 23)); // h3 - wrong rank
+    assert!(!has_to_square(&moves, 15)); // h2 - wrong rank
+
+    // Should contain valid moves along the rank
+    assert!(has_move(&moves, 24, 25, MoveKind::Quiet)); // b4
+    assert!(has_move(&moves, 24, 31, MoveKind::Quiet)); // h4 - valid same rank
+}
+
+#[test]
+fn rook_h4_does_not_wrap_to_a_file() {
+    // Rook on h4 (sq 31) moving right should wrap check prevent going to a5
+    let mut pos = empty_position();
+
+    pos.board[31] = Some(ColoredPiece {
+        piece: Piece::Rook,
+        side: Side::White,
+    });
+
+    let moves = pos.rook_targets(31).expect("rook_targets returned Err");
+
+    assert_eq!(moves.len(), 14); // 7 vertical + 7 horizontal
+
+    // Should not wrap to next rank
+    assert!(!has_to_square(&moves, 32)); // a5 - next rank, would be wrap
+    assert!(!has_to_square(&moves, 40)); // a6 - next rank
+
+    // Should contain valid moves along the rank
+    assert!(has_move(&moves, 31, 30, MoveKind::Quiet)); // g4
+    assert!(has_move(&moves, 31, 24, MoveKind::Quiet)); // a4 - valid same rank
+}

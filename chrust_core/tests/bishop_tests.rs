@@ -166,3 +166,45 @@ fn black_bishop_d4_empty_board() {
     assert!(has_move(&moves, 27, 6, MoveKind::Quiet)); // g1
     assert!(has_move(&moves, 27, 48, MoveKind::Quiet)); // a7
 }
+
+#[test]
+fn bishop_a3_does_not_wrap_around_board_edge() {
+    // Bishop on a3 (sq 16) should not wrap to h2 or h4
+    let mut pos = empty_position();
+
+    pos.board[16] = Some(ColoredPiece {
+        piece: Piece::Bishop,
+        side: Side::White,
+    });
+
+    let moves = pos.bishop_targets(16).expect("bishop_targets returned Err");
+
+    // Should not wrap to h-file
+    assert!(!has_to_square(&moves, 15)); // h2
+    assert!(!has_to_square(&moves, 23)); // h3
+
+    // Should contain valid diagonal moves
+    assert!(has_move(&moves, 16, 9, MoveKind::Quiet)); // b2
+    assert!(has_move(&moves, 16, 25, MoveKind::Quiet)); // b4
+}
+
+#[test]
+fn bishop_h6_does_not_wrap_around_board_edge() {
+    // Bishop on h6 (sq 47) should not wrap to a5 or a7
+    let mut pos = empty_position();
+
+    pos.board[47] = Some(ColoredPiece {
+        piece: Piece::Bishop,
+        side: Side::White,
+    });
+
+    let moves = pos.bishop_targets(47).expect("bishop_targets returned Err");
+
+    // Should not wrap to a-file
+    assert!(!has_to_square(&moves, 32)); // a5
+    assert!(!has_to_square(&moves, 48)); // a7
+
+    // Should contain valid diagonal moves
+    assert!(has_move(&moves, 47, 38, MoveKind::Quiet)); // g5
+    assert!(has_move(&moves, 47, 54, MoveKind::Quiet)); // g7
+}

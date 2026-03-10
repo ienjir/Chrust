@@ -1,14 +1,30 @@
-use crate::{Piece, Side, Square, errors::ChessError, helper::{file, file_rank, rank}, position::Position};
+use crate::{
+    errors::ChessError,
+    helper::{file_rank, is_square_on_board},
+    position::Position,
+    Piece, Side, Square,
+};
 
 impl Position {
-    pub fn is_square_attacked(&self, from_square: Square, attacking_side: Side, ) -> Result<Option<Vec<Square>>, ChessError> {
+    pub fn is_king_in_check(&self, side: Side) -> Result<Option<Vec<Square>>, ChessError> {
+        let (king_square, attack_side) = match side {
+            Side::White => (self.king_squares[0], Side::Black),
+            Side::Black => (self.king_squares[1], Side::White),
+        };
+
+        let attacking_squares = self.is_square_attacked(king_square, attack_side);
+
+        attacking_squares
+    }
+
+    pub fn is_square_attacked(
+        &self,
+        from_square: Square,
+        attacking_side: Side,
+    ) -> Result<Option<Vec<Square>>, ChessError> {
         let mut attacking_squares: Vec<Square> = Vec::new();
 
-        if !(0..=63).contains(&from_square) {
-            return Err(ChessError::NotASquareOnBoard {
-                square: from_square,
-            });
-        }
+        is_square_on_board(from_square)?;
 
         // Pawns
         let pawn_attack_offsets: Vec<i16> = match attacking_side {
@@ -107,62 +123,7 @@ impl Position {
         }
 
         // Sliding
-        let directions: [i16; 8] = [-8, 8, -1, 1, -7, 7, -9, 9];
-
-        for direction in directions {
-            let mut step_from_i: i16 = from_square as i16;
-
-            loop {
-                let step_to_i = step_from_i + direction;
-
-                if !(0..=63).contains(&step_to_i) {
-                    break;
-                }
-
-                let from_step = step_from_i as u8;
-                let to_step = step_to_i as u8;
-
-                let file_diff = (file(to_step) as i16 - file(from_step) as i16).abs();
-                let rank_diff = (rank(to_step) as i16 - rank(from_step) as i16).abs();
-
-                let is_rook_ray = direction.abs() == 8 || direction.abs() == 1;
-                let is_bishop_ray = direction.abs() == 7 || direction.abs() == 9;
-
-                if is_rook_ray {
-                    if !((direction.abs() == 8 && file_diff == 0 && rank_diff == 1)
-                        || (direction.abs() == 1 && file_diff == 1 && rank_diff == 0))
-                    {
-                        break;
-                    }
-                } else if is_bishop_ray {
-                    if !(file_diff == 1 && rank_diff == 1) {
-                        break;
-                    }
-                }
-
-                match self.board[to_step as usize] {
-                    None => {
-                        step_from_i = step_to_i;
-                    }
-                    Some(occupant) => {
-                        if occupant.side != attacking_side {
-                            break;
-                        }
-
-                        let attacks = if is_rook_ray {
-                            occupant.piece == Piece::Rook || occupant.piece == Piece::Queen
-                        } else {
-                            occupant.piece == Piece::Bishop || occupant.piece == Piece::Queen
-                        };
-
-                        if attacks {
-                            attacking_squares.push(to_step);
-                        }
-                        break;
-                    }
-                }
-            }
-        }
+        self.is_square_attacked_sliding(&mut attacking_squares, from_square, attacking_side);
 
         if attacking_squares.is_empty() {
             return Ok(None);
@@ -171,15 +132,34 @@ impl Position {
         Ok(Some(attacking_squares))
     }
 
-    pub fn is_king_in_check(&self, side: Side) -> Result<Option<Vec<Square>>, ChessError>{
-        let (king_square, attack_side) = match side {
-            Side::White => { (self.king_squares[0], Side::Black) },
-            Side::Black => { (self.king_squares[1], Side::White) },
-        };
+    pub fn is_square_attacked_sliding(
+        &self,
+        attacking_squares: &mut Vec<Square>,
+        from_square: Square,
+        attacking_side: Side,
+    ) {
+        let directions: [i16; 8] = [-8, 8, -1, 1, -7, 7, -9, 9];
 
-        let attacking_squares = self.is_square_attacked(king_square, attack_side);
-
-        attacking_squares
+        for direction in directions {
+            self.slide_ray(from_square, direction, |to_square, occupant| {
+                match occupant {
+                    None => true, // continue
+                    Some(occ) => {
+                        if occ.side == attacking_side {
+                            let is_rook_ray = direction.abs() == 8 || direction.abs() == 1;
+                            let attacks = if is_rook_ray {
+                                occ.piece == Piece::Rook || occ.piece == Piece::Queen
+                            } else {
+                                occ.piece == Piece::Bishop || occ.piece == Piece::Queen
+                            };
+                            if attacks {
+                                attacking_squares.push(to_square);
+                            }
+                        }
+                        false // stop
+                    }
+                }
+            });
+        }
     }
 }
-

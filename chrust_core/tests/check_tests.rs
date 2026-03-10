@@ -468,3 +468,76 @@ fn is_square_attacked_blocked_by_enemy_non_attacker() {
 
     assert_eq!(pos.is_square_attacked(28, Side::White), Ok(None));
 }
+
+#[test]
+fn is_square_attacked_sliding_does_not_wrap_board_edge() {
+    // Rook on h4 should not wrap to attack a3 via horizontal ray
+    let mut pos = empty_position();
+
+    pos.board[24] = Some(ColoredPiece {
+        piece: Piece::King,
+        side: Side::White,
+    }); // a4
+    pos.board[31] = Some(ColoredPiece {
+        piece: Piece::Rook,
+        side: Side::Black,
+    }); // h4
+
+    // a4 should be attacked by rook on h4 (same rank)
+    let attacks = pos
+        .is_square_attacked(24, Side::Black)
+        .expect("is_square_attacked returned Err")
+        .unwrap();
+
+    assert!(has_square(&attacks, 31));
+
+    // a3 should NOT be attacked by rook on h4 (different rank, would require wrap)
+    assert_eq!(pos.is_square_attacked(16, Side::Black), Ok(None));
+}
+
+#[test]
+fn is_square_attacked_bishop_does_not_wrap_diagonally() {
+    // Bishop on a1 should not wrap to attack h2 via invalid diagonal
+    let mut pos = empty_position();
+
+    pos.board[0] = Some(ColoredPiece {
+        piece: Piece::Bishop,
+        side: Side::Black,
+    }); // a1
+
+    // a1 bishop can attack b2, c3, etc on the valid diagonal
+    let attacks_b2 = pos.is_square_attacked(9, Side::Black).expect("Err");
+    assert!(attacks_b2.is_some()); // b2 is on valid diagonal
+
+    // But should not wrap to attack invalid squares
+    // h2 (square 15) is not on a valid diagonal from a1
+    assert_eq!(pos.is_square_attacked(15, Side::Black), Ok(None));
+}
+
+#[test]
+fn is_square_attacked_queen_multiple_rays_with_blockers() {
+    // Queen with blockers in various directions
+    let mut pos = empty_position();
+
+    pos.board[27] = Some(ColoredPiece {
+        piece: Piece::King,
+        side: Side::White,
+    }); // d4
+    pos.board[0] = Some(ColoredPiece {
+        piece: Piece::Queen,
+        side: Side::Black,
+    }); // a1
+
+    // Queen on a1 can attack d4 along diagonal (a1-b2-c3-d4)
+    let attacks_d4 = pos.is_square_attacked(27, Side::Black).expect("Err");
+    assert!(attacks_d4.is_some()); // d4 attacked by queen on a1 (diagonal)
+
+    // Add blocker on the diagonal
+    pos.board[18] = Some(ColoredPiece {
+        piece: Piece::Pawn,
+        side: Side::White,
+    }); // c3 blocks diagonal
+
+    // Now d4 should not be attacked
+    assert_eq!(pos.is_square_attacked(27, Side::Black), Ok(None));
+}

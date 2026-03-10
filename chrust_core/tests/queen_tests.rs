@@ -143,3 +143,75 @@ fn black_queen_d4_empty_board() {
     assert!(has_move(&moves, 27, 0, MoveKind::Quiet)); // a1 diagonal
     assert!(has_move(&moves, 27, 63, MoveKind::Quiet)); // h8 diagonal
 }
+
+#[test]
+fn queen_a1_corner_all_directions() {
+    // Queen in corner should move along rank, file, and one diagonal
+    let mut pos = empty_position();
+
+    pos.board[0] = Some(ColoredPiece {
+        piece: Piece::Queen,
+        side: Side::White,
+    });
+
+    let moves = pos.queen_targets(0).expect("queen_targets returned Err");
+
+    assert_eq!(moves.len(), 21);
+
+    // Orthogonal moves along rank
+    assert!(has_move(&moves, 0, 7, MoveKind::Quiet)); // a1-h1
+
+    // Orthogonal moves along file
+    assert!(has_move(&moves, 0, 56, MoveKind::Quiet)); // a1-a8
+
+    // Diagonal moves
+    assert!(has_move(&moves, 0, 63, MoveKind::Quiet)); // a1-h8 diagonal
+
+    // Verify we have moves in all available directions (7 + 7 + 7 = 21)
+    assert!(has_move(&moves, 0, 1, MoveKind::Quiet)); // b1
+    assert!(has_move(&moves, 0, 8, MoveKind::Quiet)); // a2
+    assert!(has_move(&moves, 0, 9, MoveKind::Quiet)); // b2 (diagonal)
+}
+
+#[test]
+fn queen_e4_blocked_in_multiple_directions() {
+    // Queen with blockers in different directions
+    let mut pos = empty_position();
+
+    pos.board[28] = Some(ColoredPiece {
+        piece: Piece::Queen,
+        side: Side::White,
+    }); // e4
+
+    // Add friendly blockers in some directions
+    pos.board[36] = Some(ColoredPiece {
+        piece: Piece::Pawn,
+        side: Side::White,
+    }); // e5 (blocks north)
+
+    pos.board[37] = Some(ColoredPiece {
+        piece: Piece::Pawn,
+        side: Side::White,
+    }); // f5 (blocks northeast)
+
+    // Add enemy blockers in other directions
+    pos.board[19] = Some(ColoredPiece {
+        piece: Piece::Pawn,
+        side: Side::Black,
+    }); // d3 (blocks southwest, capturable)
+
+    let moves = pos.queen_targets(28).expect("queen_targets returned Err");
+
+    // Should not move past friendly blockers
+    assert!(!has_to_square(&moves, 36)); // e5 blocked
+    assert!(!has_to_square(&moves, 37)); // f5 blocked
+    assert!(!has_to_square(&moves, 44)); // e6 (past e5)
+
+    // Should capture enemy blocker but not move past it
+    assert!(has_move(&moves, 28, 19, MoveKind::Capture)); // d3 capture
+    assert!(!has_to_square(&moves, 10)); // c2 (past d3)
+
+    // Other directions should be open
+    assert!(has_move(&moves, 28, 4, MoveKind::Quiet)); // e1
+    assert!(has_move(&moves, 28, 31, MoveKind::Quiet)); // h4
+}
