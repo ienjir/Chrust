@@ -86,9 +86,7 @@ impl Position {
 		Ok(())
 	}
 
-	pub fn check_castling_queen_or_king_side(
-		&self, target_moves: &mut Vec<Move>, is_king_half: bool, from_square: Square, king_side: Side,
-	) -> Result<(), ChessError> {
+	pub fn check_castling_queen_or_king_side(&self, target_moves: &mut Vec<Move>, is_king_half: bool, from_square: Square, king_side: Side) -> Result<(), ChessError> {
 		let from_square_i = from_square as i16;
 		let (king_to, king_travel, rook_from, rook_to, side_squares): (u8, u8, u8, u8, [u8; 3]) = match is_king_half {
 			true => (

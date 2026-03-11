@@ -22,12 +22,7 @@ pub fn route_click(input: &InputState, game_state: &GameState) -> Option<UiEvent
 	}
 
 	if matches!(game_state.ui_state, Some(UiState::PROMOTION { .. })) {
-		let promotion_ui = Rect::new(
-			GRID_ORIGIN_X + (CELL_SIZE * PROMOTION_LEFT_CELLS),
-			GRID_ORIGIN_Y + (CELL_SIZE * PROMOTION_TOP_CELLS),
-			CELL_SIZE * 4.0,
-			CELL_SIZE,
-		);
+		let promotion_ui = Rect::new(GRID_ORIGIN_X + (CELL_SIZE * PROMOTION_LEFT_CELLS), GRID_ORIGIN_Y + (CELL_SIZE * PROMOTION_TOP_CELLS), CELL_SIZE * 4.0, CELL_SIZE);
 		if mouse_over_rect(input, promotion_ui) {
 			let piece = get_promotion_square(input);
 			return Some(UiEvent::ClickPromotionSquare(piece));
