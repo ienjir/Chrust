@@ -7,537 +7,337 @@ use chrust_core::{ColoredPiece, Piece, Side, Square};
 use common::{empty_position, has_move, has_to_square};
 
 fn has_square(squares: &[Square], square: Square) -> bool {
-    squares.iter().any(|&s| s == square)
+	squares.iter().any(|&s| s == square)
 }
 
 #[test]
 fn is_square_attacked_empty_square_none() {
-    let pos = empty_position();
+	let pos = empty_position();
 
-    assert_eq!(pos.is_square_attacked(35, Side::White), Ok(None));
+	assert_eq!(pos.is_square_attacked(35, Side::White), Ok(None));
 }
 
 #[test]
 fn is_square_attacked_out_of_bounds() {
-    let pos = empty_position();
+	let pos = empty_position();
 
-    assert_eq!(
-        pos.is_square_attacked(65, Side::White),
-        Err(ChessError::NotASquareOnBoard { square: 65 })
-    );
+	assert_eq!(pos.is_square_attacked(65, Side::White), Err(ChessError::NotASquareOnBoard { square: 65 }));
 }
 
 #[test]
 fn is_square_attacked_empty_board_none() {
-    let mut pos = empty_position();
+	let mut pos = empty_position();
 
-    pos.board[28] = Some(ColoredPiece {
-        piece: Piece::King,
-        side: Side::White,
-    });
+	pos.board[28] = Some(ColoredPiece { piece: Piece::King, side: Side::White });
 
-    assert_eq!(pos.is_square_attacked(28, Side::White), Ok(None));
+	assert_eq!(pos.is_square_attacked(28, Side::White), Ok(None));
 }
 
 #[test]
 fn is_square_attacked_by_black_pawns() {
-    let mut pos = empty_position();
+	let mut pos = empty_position();
 
-    pos.board[28] = Some(ColoredPiece {
-        piece: Piece::King,
-        side: Side::White,
-    });
-    pos.board[35] = Some(ColoredPiece {
-        piece: Piece::Pawn,
-        side: Side::Black,
-    });
-    pos.board[37] = Some(ColoredPiece {
-        piece: Piece::Pawn,
-        side: Side::Black,
-    });
+	pos.board[28] = Some(ColoredPiece { piece: Piece::King, side: Side::White });
+	pos.board[35] = Some(ColoredPiece { piece: Piece::Pawn, side: Side::Black });
+	pos.board[37] = Some(ColoredPiece { piece: Piece::Pawn, side: Side::Black });
 
-    let mut attacks = pos
-        .is_square_attacked(28, Side::Black)
-        .expect("is_square_attacked returned Err")
-        .unwrap();
-    attacks.sort_unstable();
+	let mut attacks = pos.is_square_attacked(28, Side::Black).expect("is_square_attacked returned Err").unwrap();
+	attacks.sort_unstable();
 
-    assert_eq!(attacks, vec![35, 37]);
+	assert_eq!(attacks, vec![35, 37]);
 }
 
 #[test]
 fn is_square_attacked_by_white_pawns() {
-    let mut pos = empty_position();
+	let mut pos = empty_position();
 
-    pos.board[36] = Some(ColoredPiece {
-        piece: Piece::King,
-        side: Side::Black,
-    });
-    pos.board[27] = Some(ColoredPiece {
-        piece: Piece::Pawn,
-        side: Side::White,
-    });
-    pos.board[29] = Some(ColoredPiece {
-        piece: Piece::Pawn,
-        side: Side::White,
-    });
+	pos.board[36] = Some(ColoredPiece { piece: Piece::King, side: Side::Black });
+	pos.board[27] = Some(ColoredPiece { piece: Piece::Pawn, side: Side::White });
+	pos.board[29] = Some(ColoredPiece { piece: Piece::Pawn, side: Side::White });
 
-    let mut attacks = pos
-        .is_square_attacked(36, Side::White)
-        .expect("is_square_attacked returned Err")
-        .unwrap();
-    attacks.sort_unstable();
+	let mut attacks = pos.is_square_attacked(36, Side::White).expect("is_square_attacked returned Err").unwrap();
+	attacks.sort_unstable();
 
-    assert_eq!(attacks, vec![27, 29]);
+	assert_eq!(attacks, vec![27, 29]);
 }
 
 #[test]
 fn is_square_attacked_by_rook_and_bishop() {
-    let mut pos = empty_position();
+	let mut pos = empty_position();
 
-    pos.board[28] = Some(ColoredPiece {
-        piece: Piece::King,
-        side: Side::White,
-    });
-    pos.board[60] = Some(ColoredPiece {
-        piece: Piece::Rook,
-        side: Side::Black,
-    });
-    pos.board[1] = Some(ColoredPiece {
-        piece: Piece::Bishop,
-        side: Side::Black,
-    });
+	pos.board[28] = Some(ColoredPiece { piece: Piece::King, side: Side::White });
+	pos.board[60] = Some(ColoredPiece { piece: Piece::Rook, side: Side::Black });
+	pos.board[1] = Some(ColoredPiece { piece: Piece::Bishop, side: Side::Black });
 
-    let attacks = pos
-        .is_square_attacked(28, Side::Black)
-        .expect("is_square_attacked returned Err")
-        .unwrap();
+	let attacks = pos.is_square_attacked(28, Side::Black).expect("is_square_attacked returned Err").unwrap();
 
-    assert!(has_square(&attacks, 60));
-    assert!(has_square(&attacks, 1));
-    assert_eq!(attacks.len(), 2);
+	assert!(has_square(&attacks, 60));
+	assert!(has_square(&attacks, 1));
+	assert_eq!(attacks.len(), 2);
 }
 
 #[test]
 fn is_square_attacked_by_king_adjacent() {
-    let mut pos = empty_position();
+	let mut pos = empty_position();
 
-    pos.board[28] = Some(ColoredPiece {
-        piece: Piece::King,
-        side: Side::White,
-    });
-    pos.board[29] = Some(ColoredPiece {
-        piece: Piece::King,
-        side: Side::Black,
-    });
+	pos.board[28] = Some(ColoredPiece { piece: Piece::King, side: Side::White });
+	pos.board[29] = Some(ColoredPiece { piece: Piece::King, side: Side::Black });
 
-    let attacks = pos
-        .is_square_attacked(28, Side::Black)
-        .expect("is_square_attacked returned Err")
-        .unwrap();
+	let attacks = pos.is_square_attacked(28, Side::Black).expect("is_square_attacked returned Err").unwrap();
 
-    assert!(has_square(&attacks, 29));
+	assert!(has_square(&attacks, 29));
 }
 
 #[test]
 fn is_square_attacked_king_does_not_wrap_board_edge() {
-    let mut pos = empty_position();
+	let mut pos = empty_position();
 
-    pos.board[7] = Some(ColoredPiece {
-        piece: Piece::King,
-        side: Side::White,
-    });
-    pos.board[8] = Some(ColoredPiece {
-        piece: Piece::King,
-        side: Side::Black,
-    });
+	pos.board[7] = Some(ColoredPiece { piece: Piece::King, side: Side::White });
+	pos.board[8] = Some(ColoredPiece { piece: Piece::King, side: Side::Black });
 
-    assert_eq!(pos.is_square_attacked(7, Side::White), Ok(None));
+	assert_eq!(pos.is_square_attacked(7, Side::White), Ok(None));
 }
 
 #[test]
 fn is_square_attacked_by_knight_l_shape() {
-    let mut pos = empty_position();
+	let mut pos = empty_position();
 
-    pos.board[28] = Some(ColoredPiece {
-        piece: Piece::King,
-        side: Side::White,
-    });
-    pos.board[45] = Some(ColoredPiece {
-        piece: Piece::Knight,
-        side: Side::Black,
-    });
+	pos.board[28] = Some(ColoredPiece { piece: Piece::King, side: Side::White });
+	pos.board[45] = Some(ColoredPiece { piece: Piece::Knight, side: Side::Black });
 
-    let attacks = pos
-        .is_square_attacked(28, Side::Black)
-        .expect("is_square_attacked returned Err")
-        .unwrap();
+	let attacks = pos.is_square_attacked(28, Side::Black).expect("is_square_attacked returned Err").unwrap();
 
-    assert!(has_square(&attacks, 45));
+	assert!(has_square(&attacks, 45));
 }
 
 #[test]
 fn is_square_attacked_knight_does_not_wrap_board_edge() {
-    let mut pos = empty_position();
+	let mut pos = empty_position();
 
-    pos.board[7] = Some(ColoredPiece {
-        piece: Piece::King,
-        side: Side::White,
-    });
-    pos.board[17] = Some(ColoredPiece {
-        piece: Piece::Knight,
-        side: Side::Black,
-    });
+	pos.board[7] = Some(ColoredPiece { piece: Piece::King, side: Side::White });
+	pos.board[17] = Some(ColoredPiece { piece: Piece::Knight, side: Side::Black });
 
-    assert_eq!(pos.is_square_attacked(7, Side::White), Ok(None));
+	assert_eq!(pos.is_square_attacked(7, Side::White), Ok(None));
 }
 
 #[test]
 fn is_square_attacked_blocked_by_friendly_piece() {
-    let mut pos = empty_position();
+	let mut pos = empty_position();
 
-    pos.board[28] = Some(ColoredPiece {
-        piece: Piece::King,
-        side: Side::White,
-    });
-    pos.board[60] = Some(ColoredPiece {
-        piece: Piece::Rook,
-        side: Side::Black,
-    });
-    pos.board[44] = Some(ColoredPiece {
-        piece: Piece::Bishop,
-        side: Side::White,
-    });
+	pos.board[28] = Some(ColoredPiece { piece: Piece::King, side: Side::White });
+	pos.board[60] = Some(ColoredPiece { piece: Piece::Rook, side: Side::Black });
+	pos.board[44] = Some(ColoredPiece { piece: Piece::Bishop, side: Side::White });
 
-    assert_eq!(pos.is_square_attacked(28, Side::White), Ok(None));
+	assert_eq!(pos.is_square_attacked(28, Side::White), Ok(None));
 }
 
 #[test]
 fn is_square_attacked_by_queen_on_diagonal_ray() {
-    let mut pos = empty_position();
+	let mut pos = empty_position();
 
-    pos.board[28] = Some(ColoredPiece {
-        piece: Piece::King,
-        side: Side::White,
-    });
-    pos.board[1] = Some(ColoredPiece {
-        piece: Piece::Queen,
-        side: Side::Black,
-    });
+	pos.board[28] = Some(ColoredPiece { piece: Piece::King, side: Side::White });
+	pos.board[1] = Some(ColoredPiece { piece: Piece::Queen, side: Side::Black });
 
-    let attacks = pos
-        .is_square_attacked(28, Side::Black)
-        .expect("is_square_attacked returned Err")
-        .unwrap();
+	let attacks = pos.is_square_attacked(28, Side::Black).expect("is_square_attacked returned Err").unwrap();
 
-    assert!(has_square(&attacks, 1));
+	assert!(has_square(&attacks, 1));
 }
 
 #[test]
 fn is_square_attacked_by_queen_on_orthogonal_ray() {
-    let mut pos = empty_position();
+	let mut pos = empty_position();
 
-    pos.board[28] = Some(ColoredPiece {
-        piece: Piece::King,
-        side: Side::White,
-    });
-    pos.board[24] = Some(ColoredPiece {
-        piece: Piece::Queen,
-        side: Side::Black,
-    }); // same rank, left
+	pos.board[28] = Some(ColoredPiece { piece: Piece::King, side: Side::White });
+	pos.board[24] = Some(ColoredPiece { piece: Piece::Queen, side: Side::Black }); // same rank, left
 
-    let attacks = pos
-        .is_square_attacked(28, Side::Black)
-        .expect("is_square_attacked returned Err")
-        .unwrap();
+	let attacks = pos.is_square_attacked(28, Side::Black).expect("is_square_attacked returned Err").unwrap();
 
-    assert!(has_square(&attacks, 24));
+	assert!(has_square(&attacks, 24));
 }
 
 #[test]
 fn is_square_attacked_by_rook_on_horizontal_ray() {
-    // All existing rook tests use vertical (same-file) rays — this checks a
-    // same-rank (horizontal) ray.
-    let mut pos = empty_position();
+	// All existing rook tests use vertical (same-file) rays — this checks a
+	// same-rank (horizontal) ray.
+	let mut pos = empty_position();
 
-    pos.board[28] = Some(ColoredPiece {
-        piece: Piece::King,
-        side: Side::White,
-    });
-    pos.board[31] = Some(ColoredPiece {
-        piece: Piece::Rook,
-        side: Side::Black,
-    }); // h4, same rank
+	pos.board[28] = Some(ColoredPiece { piece: Piece::King, side: Side::White });
+	pos.board[31] = Some(ColoredPiece { piece: Piece::Rook, side: Side::Black }); // h4, same rank
 
-    let attacks = pos
-        .is_square_attacked(28, Side::Black)
-        .expect("is_square_attacked returned Err")
-        .unwrap();
+	let attacks = pos.is_square_attacked(28, Side::Black).expect("is_square_attacked returned Err").unwrap();
 
-    assert!(has_square(&attacks, 31));
+	assert!(has_square(&attacks, 31));
 }
 
 #[test]
 fn is_square_attacked_by_two_knights_simultaneously() {
-    let mut pos = empty_position();
+	let mut pos = empty_position();
 
-    pos.board[28] = Some(ColoredPiece {
-        piece: Piece::King,
-        side: Side::White,
-    });
-    pos.board[45] = Some(ColoredPiece {
-        piece: Piece::Knight,
-        side: Side::Black,
-    }); // +17
-    pos.board[43] = Some(ColoredPiece {
-        piece: Piece::Knight,
-        side: Side::Black,
-    }); // +15
+	pos.board[28] = Some(ColoredPiece { piece: Piece::King, side: Side::White });
+	pos.board[45] = Some(ColoredPiece { piece: Piece::Knight, side: Side::Black }); // +17
+	pos.board[43] = Some(ColoredPiece { piece: Piece::Knight, side: Side::Black }); // +15
 
-    let mut attacks = pos
-        .is_square_attacked(28, Side::Black)
-        .expect("is_square_attacked returned Err")
-        .unwrap();
-    attacks.sort_unstable();
+	let mut attacks = pos.is_square_attacked(28, Side::Black).expect("is_square_attacked returned Err").unwrap();
+	attacks.sort_unstable();
 
-    assert_eq!(attacks, vec![43, 45]);
+	assert_eq!(attacks, vec![43, 45]);
 }
 
 #[test]
 fn is_square_attacked_pawn_does_not_wrap_from_a_file() {
-    // A black pawn on a5 (sq 32) attacks b6 (sq 41) but NOT h6 (sq 47)
-    // via the -9 offset (which would wrap to the h-file).
-    let mut pos = empty_position();
+	// A black pawn on a5 (sq 32) attacks b6 (sq 41) but NOT h6 (sq 47)
+	// via the -9 offset (which would wrap to the h-file).
+	let mut pos = empty_position();
 
-    pos.board[41] = Some(ColoredPiece {
-        piece: Piece::King,
-        side: Side::White,
-    }); // b6
-    pos.board[32] = Some(ColoredPiece {
-        piece: Piece::Pawn,
-        side: Side::Black,
-    }); // a5
+	pos.board[41] = Some(ColoredPiece { piece: Piece::King, side: Side::White }); // b6
+	pos.board[32] = Some(ColoredPiece { piece: Piece::Pawn, side: Side::Black }); // a5
 
-    // b6 should be attacked by the a5 pawn (+9 from White's perspective =
-    // is_square_attacked with side_to_attack=White means we look for White
-    // attackers of the given square; here we want black attackers of b6).
-    let attacks = pos.is_square_attacked(41, Side::White).expect("Err");
-    // Verify no h-file wrap: is sq 47 (h6) attacked by the a5 pawn?
-    assert_eq!(
-        pos.is_square_attacked(47, Side::Black),
-        Ok(None),
-        "a-file pawn should not wrap to attack h6"
-    );
+	// b6 should be attacked by the a5 pawn (+9 from White's perspective =
+	// is_square_attacked with side_to_attack=White means we look for White
+	// attackers of the given square; here we want black attackers of b6).
+	let attacks = pos.is_square_attacked(41, Side::White).expect("Err");
+	// Verify no h-file wrap: is sq 47 (h6) attacked by the a5 pawn?
+	assert_eq!(pos.is_square_attacked(47, Side::Black), Ok(None), "a-file pawn should not wrap to attack h6");
 }
 
 #[test]
 fn is_square_attacked_pawn_does_not_wrap_from_h_file() {
-    // A white pawn on h4 (sq 31) should NOT wrap to attack a5 (sq 32).
-    let mut pos = empty_position();
+	// A white pawn on h4 (sq 31) should NOT wrap to attack a5 (sq 32).
+	let mut pos = empty_position();
 
-    pos.board[31] = Some(ColoredPiece {
-        piece: Piece::Pawn,
-        side: Side::White,
-    }); // h4
+	pos.board[31] = Some(ColoredPiece { piece: Piece::Pawn, side: Side::White }); // h4
 
-    assert_eq!(
-        pos.is_square_attacked(32, Side::White),
-        Ok(None),
-        "h-file pawn should not wrap to attack a5"
-    );
+	assert_eq!(pos.is_square_attacked(32, Side::White), Ok(None), "h-file pawn should not wrap to attack a5");
 }
 
 #[test]
 fn is_square_attacked_king_attacks_from_all_8_directions() {
-    // Place a black king on e4 (sq 28) and verify it attacks all 8 neighbours.
-    let mut pos = empty_position();
-    pos.board[28] = Some(ColoredPiece {
-        piece: Piece::King,
-        side: Side::Black,
-    });
+	// Place a black king on e4 (sq 28) and verify it attacks all 8 neighbours.
+	let mut pos = empty_position();
+	pos.board[28] = Some(ColoredPiece { piece: Piece::King, side: Side::Black });
 
-    for neighbour in [19u8, 20, 21, 27, 29, 35, 36, 37] {
-        let attacks = pos.is_square_attacked(neighbour, Side::Black).expect("Err");
-        assert!(
-            attacks.is_some() && has_square(attacks.as_ref().unwrap(), 28),
-            "black king on e4 should attack sq {neighbour}"
-        );
-    }
+	for neighbour in [19u8, 20, 21, 27, 29, 35, 36, 37] {
+		let attacks = pos.is_square_attacked(neighbour, Side::Black).expect("Err");
+		assert!(attacks.is_some() && has_square(attacks.as_ref().unwrap(), 28), "black king on e4 should attack sq {neighbour}");
+	}
 }
 
 // ── is_king_in_check ──────────────────────────────────────────────────────────
 
 #[test]
 fn is_king_in_check_white_not_in_check() {
-    let mut pos = empty_position();
-    pos.king_squares = [4, 60];
-    pos.board[4] = Some(ColoredPiece {
-        piece: Piece::King,
-        side: Side::White,
-    });
+	let mut pos = empty_position();
+	pos.king_squares = [4, 60];
+	pos.board[4] = Some(ColoredPiece { piece: Piece::King, side: Side::White });
 
-    assert_eq!(pos.is_king_in_check(Side::White), Ok(None));
+	assert_eq!(pos.is_king_in_check(Side::White), Ok(None));
 }
 
 #[test]
 fn is_king_in_check_white_in_check_from_rook() {
-    let mut pos = empty_position();
-    pos.king_squares = [4, 60];
-    pos.board[4] = Some(ColoredPiece {
-        piece: Piece::King,
-        side: Side::White,
-    });
-    pos.board[60] = Some(ColoredPiece {
-        piece: Piece::Rook,
-        side: Side::Black,
-    }); // attacks e1
+	let mut pos = empty_position();
+	pos.king_squares = [4, 60];
+	pos.board[4] = Some(ColoredPiece { piece: Piece::King, side: Side::White });
+	pos.board[60] = Some(ColoredPiece { piece: Piece::Rook, side: Side::Black }); // attacks e1
 
-    let result = pos.is_king_in_check(Side::White).expect("Err");
-    assert!(result.is_some(), "white king should be in check");
-    assert!(has_square(result.as_ref().unwrap(), 60));
+	let result = pos.is_king_in_check(Side::White).expect("Err");
+	assert!(result.is_some(), "white king should be in check");
+	assert!(has_square(result.as_ref().unwrap(), 60));
 }
 
 #[test]
 fn is_king_in_check_black_not_in_check() {
-    let mut pos = empty_position();
-    pos.king_squares = [4, 60];
-    pos.board[60] = Some(ColoredPiece {
-        piece: Piece::King,
-        side: Side::Black,
-    });
+	let mut pos = empty_position();
+	pos.king_squares = [4, 60];
+	pos.board[60] = Some(ColoredPiece { piece: Piece::King, side: Side::Black });
 
-    assert_eq!(pos.is_king_in_check(Side::Black), Ok(None));
+	assert_eq!(pos.is_king_in_check(Side::Black), Ok(None));
 }
 
 #[test]
 fn is_king_in_check_black_in_check_from_knight() {
-    let mut pos = empty_position();
-    pos.king_squares = [4, 60];
-    pos.board[60] = Some(ColoredPiece {
-        piece: Piece::King,
-        side: Side::Black,
-    });
-    pos.board[43] = Some(ColoredPiece {
-        piece: Piece::Knight,
-        side: Side::White,
-    }); // attacks e8
+	let mut pos = empty_position();
+	pos.king_squares = [4, 60];
+	pos.board[60] = Some(ColoredPiece { piece: Piece::King, side: Side::Black });
+	pos.board[43] = Some(ColoredPiece { piece: Piece::Knight, side: Side::White }); // attacks e8
 
-    let result = pos.is_king_in_check(Side::Black).expect("Err");
-    assert!(result.is_some(), "black king should be in check");
-    assert!(has_square(result.as_ref().unwrap(), 43));
+	let result = pos.is_king_in_check(Side::Black).expect("Err");
+	assert!(result.is_some(), "black king should be in check");
+	assert!(has_square(result.as_ref().unwrap(), 43));
 }
 
 #[test]
 fn is_king_in_check_uses_king_squares_array() {
-    // king_squares[0] (White) is set to 27 (d4), not the standard e1.
-    // The check should look at sq 27, not sq 4.
-    let mut pos = empty_position();
-    pos.king_squares = [27, 60];
-    pos.board[27] = Some(ColoredPiece {
-        piece: Piece::King,
-        side: Side::White,
-    });
-    pos.board[3] = Some(ColoredPiece {
-        piece: Piece::Rook,
-        side: Side::Black,
-    }); // d1 attacks d4
+	// king_squares[0] (White) is set to 27 (d4), not the standard e1.
+	// The check should look at sq 27, not sq 4.
+	let mut pos = empty_position();
+	pos.king_squares = [27, 60];
+	pos.board[27] = Some(ColoredPiece { piece: Piece::King, side: Side::White });
+	pos.board[3] = Some(ColoredPiece { piece: Piece::Rook, side: Side::Black }); // d1 attacks d4
 
-    let result = pos.is_king_in_check(Side::White).expect("Err");
-    assert!(
-        result.is_some(),
-        "white king on d4 should be in check from rook on d1"
-    );
+	let result = pos.is_king_in_check(Side::White).expect("Err");
+	assert!(result.is_some(), "white king on d4 should be in check from rook on d1");
 }
 
 #[test]
 fn is_square_attacked_blocked_by_enemy_non_attacker() {
-    let mut pos = empty_position();
+	let mut pos = empty_position();
 
-    pos.board[28] = Some(ColoredPiece {
-        piece: Piece::King,
-        side: Side::White,
-    });
-    pos.board[60] = Some(ColoredPiece {
-        piece: Piece::Rook,
-        side: Side::Black,
-    });
-    pos.board[44] = Some(ColoredPiece {
-        piece: Piece::Knight,
-        side: Side::Black,
-    });
+	pos.board[28] = Some(ColoredPiece { piece: Piece::King, side: Side::White });
+	pos.board[60] = Some(ColoredPiece { piece: Piece::Rook, side: Side::Black });
+	pos.board[44] = Some(ColoredPiece { piece: Piece::Knight, side: Side::Black });
 
-    assert_eq!(pos.is_square_attacked(28, Side::White), Ok(None));
+	assert_eq!(pos.is_square_attacked(28, Side::White), Ok(None));
 }
 
 #[test]
 fn is_square_attacked_sliding_does_not_wrap_board_edge() {
-    // Rook on h4 should not wrap to attack a3 via horizontal ray
-    let mut pos = empty_position();
+	// Rook on h4 should not wrap to attack a3 via horizontal ray
+	let mut pos = empty_position();
 
-    pos.board[24] = Some(ColoredPiece {
-        piece: Piece::King,
-        side: Side::White,
-    }); // a4
-    pos.board[31] = Some(ColoredPiece {
-        piece: Piece::Rook,
-        side: Side::Black,
-    }); // h4
+	pos.board[24] = Some(ColoredPiece { piece: Piece::King, side: Side::White }); // a4
+	pos.board[31] = Some(ColoredPiece { piece: Piece::Rook, side: Side::Black }); // h4
 
-    // a4 should be attacked by rook on h4 (same rank)
-    let attacks = pos
-        .is_square_attacked(24, Side::Black)
-        .expect("is_square_attacked returned Err")
-        .unwrap();
+	// a4 should be attacked by rook on h4 (same rank)
+	let attacks = pos.is_square_attacked(24, Side::Black).expect("is_square_attacked returned Err").unwrap();
 
-    assert!(has_square(&attacks, 31));
+	assert!(has_square(&attacks, 31));
 
-    // a3 should NOT be attacked by rook on h4 (different rank, would require wrap)
-    assert_eq!(pos.is_square_attacked(16, Side::Black), Ok(None));
+	// a3 should NOT be attacked by rook on h4 (different rank, would require wrap)
+	assert_eq!(pos.is_square_attacked(16, Side::Black), Ok(None));
 }
 
 #[test]
 fn is_square_attacked_bishop_does_not_wrap_diagonally() {
-    // Bishop on a1 should not wrap to attack h2 via invalid diagonal
-    let mut pos = empty_position();
+	// Bishop on a1 should not wrap to attack h2 via invalid diagonal
+	let mut pos = empty_position();
 
-    pos.board[0] = Some(ColoredPiece {
-        piece: Piece::Bishop,
-        side: Side::Black,
-    }); // a1
+	pos.board[0] = Some(ColoredPiece { piece: Piece::Bishop, side: Side::Black }); // a1
 
-    // a1 bishop can attack b2, c3, etc on the valid diagonal
-    let attacks_b2 = pos.is_square_attacked(9, Side::Black).expect("Err");
-    assert!(attacks_b2.is_some()); // b2 is on valid diagonal
+	// a1 bishop can attack b2, c3, etc on the valid diagonal
+	let attacks_b2 = pos.is_square_attacked(9, Side::Black).expect("Err");
+	assert!(attacks_b2.is_some()); // b2 is on valid diagonal
 
-    // But should not wrap to attack invalid squares
-    // h2 (square 15) is not on a valid diagonal from a1
-    assert_eq!(pos.is_square_attacked(15, Side::Black), Ok(None));
+	// But should not wrap to attack invalid squares
+	// h2 (square 15) is not on a valid diagonal from a1
+	assert_eq!(pos.is_square_attacked(15, Side::Black), Ok(None));
 }
 
 #[test]
 fn is_square_attacked_queen_multiple_rays_with_blockers() {
-    // Queen with blockers in various directions
-    let mut pos = empty_position();
+	// Queen with blockers in various directions
+	let mut pos = empty_position();
 
-    pos.board[27] = Some(ColoredPiece {
-        piece: Piece::King,
-        side: Side::White,
-    }); // d4
-    pos.board[0] = Some(ColoredPiece {
-        piece: Piece::Queen,
-        side: Side::Black,
-    }); // a1
+	pos.board[27] = Some(ColoredPiece { piece: Piece::King, side: Side::White }); // d4
+	pos.board[0] = Some(ColoredPiece { piece: Piece::Queen, side: Side::Black }); // a1
 
-    // Queen on a1 can attack d4 along diagonal (a1-b2-c3-d4)
-    let attacks_d4 = pos.is_square_attacked(27, Side::Black).expect("Err");
-    assert!(attacks_d4.is_some()); // d4 attacked by queen on a1 (diagonal)
+	// Queen on a1 can attack d4 along diagonal (a1-b2-c3-d4)
+	let attacks_d4 = pos.is_square_attacked(27, Side::Black).expect("Err");
+	assert!(attacks_d4.is_some()); // d4 attacked by queen on a1 (diagonal)
 
-    // Add blocker on the diagonal
-    pos.board[18] = Some(ColoredPiece {
-        piece: Piece::Pawn,
-        side: Side::White,
-    }); // c3 blocks diagonal
+	// Add blocker on the diagonal
+	pos.board[18] = Some(ColoredPiece { piece: Piece::Pawn, side: Side::White }); // c3 blocks diagonal
 
-    // Now d4 should not be attacked
-    assert_eq!(pos.is_square_attacked(27, Side::Black), Ok(None));
+	// Now d4 should not be attacked
+	assert_eq!(pos.is_square_attacked(27, Side::Black), Ok(None));
 }
