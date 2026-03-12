@@ -217,3 +217,7 @@ Add a generate all moves function and cache the results
 10. [ ] Refactor move-gen APIs to reuse validated/colored piece context from callers where it actually reduces duplication
 11. [ ] Finish fen loading
 12. [ ] Add validation for things like halfmove clock
+
+
+## Small errors 
+- Slider.rs: Find a way to not return a queen when a faulty piece is provided

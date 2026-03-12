@@ -3,7 +3,7 @@ use crate::{ColoredPiece, Piece, Square, errors::ChessError, moves::make_move::M
 impl Position {
 	pub fn get_legal_moves(&mut self, from_square: Square) -> Result<Vec<Move>, ChessError> {
 		let mut target_moves: Vec<Move> = Vec::new();
-		let colored_piece = self.get_unvalidated_colored_piece_from_square(from_square)?;
+		let colored_piece = self.get_piece_from_square(from_square)?;
 		let pseudo_moves = self.get_pseduo_legal_moves(from_square, colored_piece)?;
 
 		for pseudo_move in pseudo_moves {
@@ -21,12 +21,12 @@ impl Position {
 
 	pub fn get_pseduo_legal_moves(&self, from_square: Square, colored_piece: ColoredPiece) -> Result<Vec<Move>, ChessError> {
 		match colored_piece.piece {
-			Piece::Rook => self.rook_targets(from_square),
-			Piece::Bishop => self.bishop_targets(from_square),
+			Piece::Rook => self.slider_targets(from_square),
+			Piece::Bishop => self.slider_targets(from_square),
 			Piece::King => self.king_targets(from_square),
 			Piece::Pawn => self.pawn_targets(from_square),
 			Piece::Knight => self.knight_targets(from_square),
-			Piece::Queen => self.queen_targets(from_square),
+			Piece::Queen => self.slider_targets(from_square),
 		}
 	}
 }

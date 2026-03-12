@@ -3,11 +3,8 @@ use std::{u8, usize};
 use crate::{
 	ColoredPiece, Piece, Side, Square,
 	errors::ChessError,
-	helper::{file, is_square_on_board, rank},
-	moves::{
-		make_move::{Move, MoveKind},
-		move_gen::rook,
-	},
+	helper::{file, rank},
+	moves::make_move::{Move, MoveKind},
 	position::Position,
 };
 

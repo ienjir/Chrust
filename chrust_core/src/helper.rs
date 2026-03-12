@@ -79,7 +79,7 @@ pub fn is_right_piece_side(from_piece: ColoredPiece, expected_side: Side) -> Res
 impl Position {
 	/// Gets a colored piece that is validated so that it acutually exists. Also validates the from_square
 	pub fn get_validated_colored_piece(&self, from_square: Square, expected_piece: Piece) -> Result<ColoredPiece, ChessError> {
-		let col_piece = match self.get_unvalidated_colored_piece_from_square(from_square) {
+		let col_piece = match self.get_piece_from_square(from_square) {
 			Ok(x) => x,
 			Err(x) => return Err(x),
 		};
@@ -103,7 +103,7 @@ impl Position {
 		Ok(())
 	}
 
-	pub fn get_unvalidated_colored_piece_from_square(&self, from_square: Square) -> Result<ColoredPiece, ChessError> {
+	pub fn get_piece_from_square(&self, from_square: Square) -> Result<ColoredPiece, ChessError> {
 		if let Err(x) = is_square_on_board(from_square) {
 			return Err(x);
 		}

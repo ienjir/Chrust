@@ -11,7 +11,7 @@ fn bishop_g7_empty_boad() {
 
 	pos.board[54] = Some(ColoredPiece { piece: Piece::Bishop, side: Side::White });
 
-	let moves = pos.bishop_targets(54).expect("bishop_targets returned Err");
+	let moves = pos.slider_targets(54).expect("slider_targets returned Err");
 
 	assert_eq!(moves.len(), 9);
 
@@ -28,7 +28,7 @@ fn bishop_h7_corner_test() {
 
 	pos.board[7] = Some(ColoredPiece { piece: Piece::Bishop, side: Side::White });
 
-	let moves = pos.bishop_targets(7).expect("bishop_targets returned Err");
+	let moves = pos.slider_targets(7).expect("slider_targets returned Err");
 
 	assert_eq!(moves.len(), 7);
 
@@ -47,7 +47,7 @@ fn bishop_c7_enemy_f4() {
 
 	pos.board[29] = Some(ColoredPiece { piece: Piece::Pawn, side: Side::Black });
 
-	let moves = pos.bishop_targets(50).expect("bishop_targets returned Err");
+	let moves = pos.slider_targets(50).expect("slider_targets returned Err");
 
 	assert_eq!(moves.len(), 7);
 
@@ -64,7 +64,7 @@ fn bishop_b3_friendly_e6() {
 
 	pos.board[44] = Some(ColoredPiece { piece: Piece::Pawn, side: Side::White });
 
-	let moves = pos.bishop_targets(17).expect("bishop_targets returned Err");
+	let moves = pos.slider_targets(17).expect("slider_targets returned Err");
 
 	assert_eq!(moves.len(), 6);
 
@@ -79,9 +79,9 @@ fn wrong_piece_e8() {
 	pos.board[60] = Some(ColoredPiece { piece: Piece::Knight, side: Side::White });
 
 	assert_eq!(
-		pos.bishop_targets(60),
+		pos.slider_targets(60),
 		Err(ChessError::WrongPieceType {
-			expected_piece: Piece::Bishop,
+			expected_piece: Piece::Queen,
 			found_piece: Piece::Knight
 		})
 	);
@@ -91,14 +91,14 @@ fn wrong_piece_e8() {
 fn no_piece_d5() {
 	let pos = empty_position();
 
-	assert_eq!(pos.bishop_targets(35), Err(ChessError::NoPieceOnSquare { square: 35 }))
+	assert_eq!(pos.slider_targets(35), Err(ChessError::NoPieceOnSquare { square: 35 }))
 }
 
 #[test]
 fn try_move_on_non_existing_square() {
 	let pos = empty_position();
 
-	assert_eq!(pos.bishop_targets(65), Err(ChessError::NotASquareOnBoard { square: 65 }))
+	assert_eq!(pos.slider_targets(65), Err(ChessError::NotASquareOnBoard { square: 65 }))
 }
 
 #[test]
@@ -109,7 +109,7 @@ fn wrong_side_returns_wrong_side_error() {
 	pos.board[0] = Some(ColoredPiece { piece: Piece::Bishop, side: Side::Black });
 
 	assert_eq!(
-		pos.bishop_targets(0),
+		pos.slider_targets(0),
 		Err(ChessError::WrongSide {
 			expected_side: Side::White,
 			found_side: Side::Black
@@ -124,7 +124,7 @@ fn black_bishop_d4_empty_board() {
 
 	pos.board[27] = Some(ColoredPiece { piece: Piece::Bishop, side: Side::Black });
 
-	let moves = pos.bishop_targets(27).expect("bishop_targets returned Err");
+	let moves = pos.slider_targets(27).expect("slider_targets returned Err");
 
 	// d4 bishop on an open board has 13 diagonal moves.
 	assert_eq!(moves.len(), 13);
@@ -141,7 +141,7 @@ fn bishop_a3_does_not_wrap_around_board_edge() {
 
 	pos.board[16] = Some(ColoredPiece { piece: Piece::Bishop, side: Side::White });
 
-	let moves = pos.bishop_targets(16).expect("bishop_targets returned Err");
+	let moves = pos.slider_targets(16).expect("slider_targets returned Err");
 
 	// Should not wrap to h-file
 	assert!(!has_to_square(&moves, 15)); // h2
@@ -159,7 +159,7 @@ fn bishop_h6_does_not_wrap_around_board_edge() {
 
 	pos.board[47] = Some(ColoredPiece { piece: Piece::Bishop, side: Side::White });
 
-	let moves = pos.bishop_targets(47).expect("bishop_targets returned Err");
+	let moves = pos.slider_targets(47).expect("slider_targets returned Err");
 
 	// Should not wrap to a-file
 	assert!(!has_to_square(&moves, 32)); // a5

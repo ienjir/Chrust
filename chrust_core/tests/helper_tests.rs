@@ -88,28 +88,28 @@ fn get_colored_piece_from_square_positive_test_for_both_sides() {
 
 	pos.board[63] = Some(ColoredPiece { piece: Piece::Rook, side: Side::Black });
 
-	assert_eq!(pos.get_unvalidated_colored_piece_from_square(0), Ok(ColoredPiece { piece: Piece::Rook, side: Side::White }));
+	assert_eq!(pos.get_piece_from_square(0), Ok(ColoredPiece { piece: Piece::Rook, side: Side::White }));
 
-	assert_eq!(pos.get_unvalidated_colored_piece_from_square(63), Ok(ColoredPiece { piece: Piece::Rook, side: Side::Black }));
+	assert_eq!(pos.get_piece_from_square(63), Ok(ColoredPiece { piece: Piece::Rook, side: Side::Black }));
 }
 
 #[test]
 fn get_colored_piece_from_square_negative_test_for_both_sides() {
 	let pos_white = empty_position();
 
-	assert_eq!(pos_white.get_unvalidated_colored_piece_from_square(10), Err(ChessError::NoPieceOnSquare { square: 10 }));
+	assert_eq!(pos_white.get_piece_from_square(10), Err(ChessError::NoPieceOnSquare { square: 10 }));
 
 	let mut pos_black = empty_position();
 	pos_black.side_to_move = Side::Black;
 
-	assert_eq!(pos_black.get_unvalidated_colored_piece_from_square(54), Err(ChessError::NoPieceOnSquare { square: 54 }));
+	assert_eq!(pos_black.get_piece_from_square(54), Err(ChessError::NoPieceOnSquare { square: 54 }));
 }
 
 #[test]
 fn get_colored_piece_from_square_invalid_square_test() {
 	let pos = empty_position();
 
-	assert_eq!(pos.get_unvalidated_colored_piece_from_square(64), Err(ChessError::NotASquareOnBoard { square: 64 }));
+	assert_eq!(pos.get_piece_from_square(64), Err(ChessError::NotASquareOnBoard { square: 64 }));
 }
 
 #[test]

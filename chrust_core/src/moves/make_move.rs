@@ -48,7 +48,7 @@ impl Position {
 	}
 
 	pub fn make_move_unvalidated(&mut self, mv: Move) -> Result<Undo, ChessError> {
-		let piece = self.get_unvalidated_colored_piece_from_square(mv.from_square)?;
+		let piece = self.get_piece_from_square(mv.from_square)?;
 		let mut undo = self.build_undo();
 
 		self.apply_move_to_board(mv, piece, &mut undo)?;

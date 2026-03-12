@@ -1,11 +1,40 @@
 use crate::{
-	ColoredPiece, Square,
-	helper::{file, rank},
+	ColoredPiece, Piece, Square,
+	errors::ChessError,
+	helper::{file, is_right_piece_side, rank},
 	moves::make_move::{Move, MoveKind},
 	position::Position,
 };
 
 impl Position {
+	pub fn slider_targets(&self, from_square: Square) -> Result<Vec<Move>, ChessError> {
+		let mut target_moves: Vec<Move> = Vec::with_capacity(27);
+		let colored_piece = self.get_piece_from_square(from_square)?;
+
+		is_right_piece_side(colored_piece, self.side_to_move)?;
+
+		match colored_piece.piece {
+			Piece::Queen => {
+				self.diagonal_slider(from_square, colored_piece, &mut target_moves);
+				self.horizontal_vertical_slider(from_square, colored_piece, &mut target_moves);
+			}
+			Piece::Rook => {
+				self.horizontal_vertical_slider(from_square, colored_piece, &mut target_moves);
+			}
+			Piece::Bishop => {
+				self.diagonal_slider(from_square, colored_piece, &mut target_moves);
+			}
+			_ => {
+				return Err(ChessError::WrongPieceType {
+					expected_piece: Piece::Queen,
+					found_piece: colored_piece.piece,
+				});
+			}
+		};
+
+		Ok(target_moves)
+	}
+
 	pub fn diagonal_slider(&self, from_square: Square, colored_piece: ColoredPiece, target_moves: &mut Vec<Move>) {
 		let directions: [i16; 4] = [-7, 7, -9, 9];
 
