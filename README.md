@@ -211,12 +211,13 @@ Add a generate all moves function and cache the results
 4. [x] Refactor make_move
 5. [x] Refactor check.rs + slider.rs shared ray logic
 6. [x] Refactor king.rs
-7. [ ] Unify slider pieces behind one shared function
-8. [ ] Unify repeated target-handling in king / knight / pawn 
-9. [ ] Clean up verbose match error handling with ?
-10. [ ] Refactor move-gen APIs to reuse validated/colored piece context from callers where it actually reduces duplication
-11. [ ] Finish fen loading
-12. [ ] Add validation for things like halfmove clock
+7. [x] Unify slider pieces behind one shared function
+8. [ ] Make non public functions not publicly accessable
+9. [ ] Unify repeated target-handling in king / knight / pawn 
+10. [ ] Clean up verbose match error handling with ?
+11. [ ] Refactor move-gen APIs to reuse validated/colored piece context from callers where it actually reduces duplication
+12. [ ] Finish fen loading
+13. [ ] Add validation for things like halfmove clock
 
 
 ## Small errors 
