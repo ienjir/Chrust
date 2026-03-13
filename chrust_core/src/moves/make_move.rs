@@ -83,10 +83,7 @@ impl Position {
 		self.castle = undo.previous_castling_rights;
 		self.en_passant = undo.previous_en_passant;
 		self.king_squares = undo.previous_king_squares;
-		self.side_to_move = match self.side_to_move {
-			Side::White => Side::Black,
-			Side::Black => Side::White,
-		};
+		self.side_to_move = self.side_to_move.opponent();
 	}
 
 	pub fn undo_move_on_board(&mut self, mv: Move, undo: Undo) {
