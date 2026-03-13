@@ -46,12 +46,24 @@ pub fn is_square_on_board(from_square: Square) -> Result<(), ChessError> {
 	}
 }
 
+pub fn in_bounds(candidate: i16) -> bool {
+	(0..=63).contains(&candidate)
+}
+
 pub fn is_valid_promomotion_piece(promotion_piece: Piece) -> Result<(), ChessError> {
 	if promotion_piece == Piece::Pawn {
 		return Err(ChessError::PromotionPieceCantBePawn);
 	}
 
 	Ok(())
+}
+
+pub fn file_diff(candidate: i16, from_square: Square) -> i16 {
+	(file(candidate as u8) as i16 - file(from_square) as i16).abs()
+}
+
+pub fn rank_diff(candidate: i16, from_square: Square) -> i16 {
+	(rank(candidate as u8) as i16 - rank(from_square) as i16).abs()
 }
 
 pub fn is_right_piece_type(from_piece: ColoredPiece, expected_piece: Piece) -> Result<(), ChessError> {

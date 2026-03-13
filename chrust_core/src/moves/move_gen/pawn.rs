@@ -1,7 +1,7 @@
 use crate::{
 	ColoredPiece, Piece, Side, Square,
 	errors::ChessError,
-	helper::{file, rank},
+	helper::{file_diff, in_bounds, rank},
 	moves::make_move::{Move, MoveKind},
 	position::Position,
 };
@@ -133,12 +133,4 @@ pub fn promotion_moves(target_moves: &mut Vec<Move>, colored_piece: ColoredPiece
 			move_kind: MoveKind::Promotion { promotion_piece: piece },
 		});
 	}
-}
-
-pub fn in_bounds(candidate: i16) -> bool {
-	(0..=63).contains(&candidate)
-}
-
-pub fn file_diff(candidate: i16, from: Square) -> i16 {
-	(file(candidate as u8) as i16 - file(from) as i16).abs()
 }

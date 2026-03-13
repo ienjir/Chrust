@@ -1,6 +1,7 @@
 mod common;
 
 use chrust_core::errors::ChessError;
+use chrust_core::helper::{file_diff, in_bounds};
 use chrust_core::moves::make_move::MoveKind;
 use chrust_core::{ColoredPiece, Piece, Side};
 use common::{empty_position, has_move, has_to_square};
@@ -296,8 +297,6 @@ fn b_pawn_d7_blocked_on_transit_square() {
 
 #[test]
 fn test_in_bounds() {
-	use chrust_core::moves::move_gen::pawn::in_bounds;
-
 	assert!(in_bounds(0));
 	assert!(in_bounds(32));
 	assert!(in_bounds(63));
@@ -308,8 +307,6 @@ fn test_in_bounds() {
 
 #[test]
 fn test_file_diff() {
-	use chrust_core::moves::move_gen::pawn::file_diff;
-
 	// Same file
 	assert_eq!(file_diff(0, 8), 0); // a1 to a2
 	assert_eq!(file_diff(7, 15), 0); // h1 to h2
