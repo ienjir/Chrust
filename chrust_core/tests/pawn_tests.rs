@@ -1,9 +1,8 @@
 mod common;
 
 use chrust_core::errors::ChessError;
-use chrust_core::moves::make_move::{Move, MoveKind};
-use chrust_core::position::Position;
-use chrust_core::{ColoredPiece, Piece, Side, Square};
+use chrust_core::moves::make_move::MoveKind;
+use chrust_core::{ColoredPiece, Piece, Side};
 use common::{empty_position, has_move, has_to_square};
 
 #[test]
@@ -291,4 +290,54 @@ fn b_pawn_d7_blocked_on_transit_square() {
 	let moves = pos.pawn_targets(51).expect("pawn_targets returned Err");
 
 	assert_eq!(moves.len(), 0);
+}
+
+// Tests for helper functions
+
+#[test]
+fn test_in_bounds() {
+	use chrust_core::moves::move_gen::pawn::in_bounds;
+
+	assert!(in_bounds(0));
+	assert!(in_bounds(32));
+	assert!(in_bounds(63));
+	assert!(!in_bounds(-1));
+	assert!(!in_bounds(64));
+	assert!(!in_bounds(100));
+}
+
+#[test]
+fn test_file_diff() {
+	use chrust_core::moves::move_gen::pawn::file_diff;
+
+	// Same file
+	assert_eq!(file_diff(0, 8), 0); // a1 to a2
+	assert_eq!(file_diff(7, 15), 0); // h1 to h2
+
+	// Adjacent files
+	assert_eq!(file_diff(1, 0), 1); // b1 to a1
+	assert_eq!(file_diff(0, 1), 1); // a1 to b1
+
+	// Diagonal moves
+	assert_eq!(file_diff(9, 0), 1); // b2 to a1
+	assert_eq!(file_diff(7, 0), 7); // h1 to a1
+
+	// Wrap-around edge case (should be 7, not 1)
+	assert_eq!(file_diff(8, 7), 7); // a2 to h1 (files 0 and 7)
+}
+
+#[test]
+fn test_promotion_moves() {
+	use chrust_core::moves::move_gen::pawn::promotion_moves;
+
+	let colored_piece = ColoredPiece { piece: Piece::Pawn, side: Side::White };
+	let mut moves = Vec::new();
+
+	promotion_moves(&mut moves, colored_piece, 48, 56); // a7 to a8
+
+	assert_eq!(moves.len(), 4);
+	assert!(has_move(&moves, 48, 56, MoveKind::Promotion { promotion_piece: Piece::Queen }));
+	assert!(has_move(&moves, 48, 56, MoveKind::Promotion { promotion_piece: Piece::Rook }));
+	assert!(has_move(&moves, 48, 56, MoveKind::Promotion { promotion_piece: Piece::Bishop }));
+	assert!(has_move(&moves, 48, 56, MoveKind::Promotion { promotion_piece: Piece::Knight }));
 }

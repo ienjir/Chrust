@@ -1,9 +1,7 @@
-use std::i16;
-
 use crate::{
-	Piece, Side, Square,
+	ColoredPiece, Piece, Side, Square,
 	errors::ChessError,
-	helper::{file, file_rank, rank},
+	helper::{file, rank},
 	moves::make_move::{Move, MoveKind},
 	position::Position,
 };
@@ -18,124 +16,129 @@ impl Position {
 			Err(x) => return Err(x),
 		};
 
-		let (forward, start_rank, capture_offsets, last_rank): (i16, i16, [i16; 2], i16) = match pawn.side {
-			Side::White => (8, 1, [7, 9], 7),
-			Side::Black => (-8, 6, [-7, -9], 0),
+		self.push_moves(&mut target_moves, pawn, from_square);
+
+		let (capture_offsets, last_rank): ([i16; 2], u8) = match pawn.side {
+			Side::White => ([7, 9], 7u8),
+			Side::Black => ([-7, -9], 0u8),
 		};
 
-		let (from_file_i, from_rank_i) = file_rank(from_square);
-		let from_file_i = from_file_i as i16;
-		let from_rank_i = from_rank_i as i16;
-
-		let mut forward_1_is_empty = false;
-		let forward_1_candidate_i = from_square as i16 + forward;
-
-		if (0..=63).contains(&forward_1_candidate_i) {
-			let file_difference_i = (file(forward_1_candidate_i as u8) as i16 - from_file_i).abs();
-
-			if file_difference_i == 0 {
-				if self.board[forward_1_candidate_i as usize].is_none() {
-					// Promotion check
-					let to_rank_i = rank(forward_1_candidate_i as u8) as i16;
-					if to_rank_i == last_rank {
-						for piece in [Piece::Queen, Piece::Rook, Piece::Bishop, Piece::Knight] {
-							target_moves.push(Move {
-								colored_piece: pawn,
-								from_square,
-								to_square: forward_1_candidate_i as u8,
-								move_kind: MoveKind::Promotion { promotion_piece: piece },
-							});
-						}
-					} else {
-						let single_move = Move {
-							colored_piece: pawn,
-							from_square: from_square,
-							to_square: forward_1_candidate_i as u8,
-							move_kind: MoveKind::Quiet,
-						};
-
-						target_moves.push(single_move);
-						forward_1_is_empty = true;
-					}
-				}
-			}
-		}
-
-		if from_rank_i == start_rank && forward_1_is_empty {
-			let forward_2_candidate_i = from_square as i16 + (forward * 2);
-			if (0..=63).contains(&forward_2_candidate_i) {
-				let file_difference_i = (file(forward_2_candidate_i as u8) as i16 - from_file_i).abs();
-				if file_difference_i == 0 {
-					if self.board[forward_2_candidate_i as usize].is_none() {
-						let double_move = Move {
-							colored_piece: pawn,
-							from_square: from_square,
-							to_square: forward_2_candidate_i as u8,
-							move_kind: MoveKind::DoublePawnPush {
-								passed_square: forward_1_candidate_i as u8,
-							},
-						};
-						target_moves.push(double_move);
-					}
-				}
-			}
-		}
-
 		for capture_offset in capture_offsets {
-			let capture_candidate = from_square as i16 + capture_offset;
+			let capture_candidate_i = from_square as i16 + capture_offset;
 
-			if !(0..=63).contains(&capture_candidate) {
+			if !in_bounds(capture_candidate_i) || file_diff(capture_candidate_i, from_square) != 1 {
 				continue;
 			}
 
-			let file_difference_i = (file(capture_candidate as u8) as i16 - from_file_i).abs();
-			if file_difference_i != 1 {
-				continue;
-			}
+			let capture_candidate_u = capture_candidate_i as u8;
 
+			// En passant
 			if let Some(en_passant_square) = self.en_passant {
-				if en_passant_square as i16 == capture_candidate {
+				if en_passant_square == capture_candidate_u {
 					let captured_square = match pawn.side {
 						Side::White => (en_passant_square as i16 - 8) as u8,
 						Side::Black => (en_passant_square as i16 + 8) as u8,
 					};
 
-					let en_passant_move = Move {
+					target_moves.push(Move {
 						colored_piece: pawn,
-						from_square: from_square,
-						to_square: capture_candidate as u8,
+						from_square,
+						to_square: capture_candidate_u,
 						move_kind: MoveKind::EnPassant { capture_square: captured_square },
-					};
-					target_moves.push(en_passant_move);
+					});
 				}
 			}
 
-			if let Some(piece) = self.board[capture_candidate as usize] {
-				if piece.side != pawn.side {
-					// Promotion capture
-					let to_rank_i = rank(capture_candidate as u8) as i16;
-					if to_rank_i == last_rank {
-						for piece in [Piece::Queen, Piece::Rook, Piece::Bishop, Piece::Knight] {
-							target_moves.push(Move {
-								colored_piece: pawn,
-								from_square,
-								to_square: capture_candidate as u8,
-								move_kind: MoveKind::Promotion { promotion_piece: piece },
-							});
-						}
-					} else {
-						// Capture
-						target_moves.push(Move {
-							colored_piece: pawn,
-							from_square: from_square,
-							to_square: capture_candidate as u8,
-							move_kind: MoveKind::Capture,
-						});
-					}
+			if let Some(piece) = self.board[capture_candidate_u as usize] {
+				if piece.side == pawn.side {
+					continue;
+				}
+
+				// Promotion capture
+				if rank(capture_candidate_u) == last_rank {
+					promotion_moves(&mut target_moves, pawn, from_square, capture_candidate_u);
+				} else {
+					// Capture
+					target_moves.push(Move {
+						colored_piece: pawn,
+						from_square,
+						to_square: capture_candidate_u as u8,
+						move_kind: MoveKind::Capture,
+					});
 				}
 			}
 		}
 
 		Ok(target_moves)
 	}
+
+	pub fn push_moves(&self, target_moves: &mut Vec<Move>, colored_piece: ColoredPiece, from_square: Square) {
+		let (push_offset, start_rank, last_rank) = match colored_piece.side {
+			Side::White => (8i16, 1u8, 7u8),
+			Side::Black => (-8i16, 6u8, 0u8),
+		};
+
+		let single_push_candidate_i = from_square as i16 + push_offset;
+		if !in_bounds(single_push_candidate_i) {
+			return;
+		}
+
+		let single_push_candidate_u = single_push_candidate_i as u8;
+		if self.board[single_push_candidate_u as usize].is_some() {
+			return;
+		}
+
+		// Promotion and quiet move
+		if rank(single_push_candidate_u) == last_rank {
+			promotion_moves(target_moves, colored_piece, from_square, single_push_candidate_u);
+		} else {
+			target_moves.push(Move {
+				colored_piece,
+				from_square,
+				to_square: single_push_candidate_u as u8,
+				move_kind: MoveKind::Quiet,
+			});
+		}
+
+		// Double push
+		if rank(from_square) != start_rank {
+			return;
+		}
+
+		let double_push_candidate_i = from_square as i16 + (push_offset * 2);
+		if !in_bounds(double_push_candidate_i) {
+			return;
+		}
+
+		let double_push_candidate_u = double_push_candidate_i as u8;
+		if self.board[double_push_candidate_u as usize].is_some() {
+			return;
+		}
+
+		target_moves.push(Move {
+			colored_piece,
+			from_square,
+			to_square: double_push_candidate_u,
+			move_kind: MoveKind::DoublePawnPush { passed_square: single_push_candidate_u },
+		});
+	}
+}
+
+pub fn promotion_moves(target_moves: &mut Vec<Move>, colored_piece: ColoredPiece, from_square: Square, to_square: Square) {
+	for piece in [Piece::Queen, Piece::Rook, Piece::Bishop, Piece::Knight] {
+		target_moves.push(Move {
+			colored_piece,
+			from_square,
+			to_square,
+			move_kind: MoveKind::Promotion { promotion_piece: piece },
+		});
+	}
+}
+
+pub fn in_bounds(candidate: i16) -> bool {
+	(0..=63).contains(&candidate)
+}
+
+pub fn file_diff(candidate: i16, from: Square) -> i16 {
+	(file(candidate as u8) as i16 - file(from) as i16).abs()
 }
