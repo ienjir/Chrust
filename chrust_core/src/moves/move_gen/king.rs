@@ -9,10 +9,8 @@ use crate::{
 };
 
 impl Position {
-	pub fn king_targets(&self, from_square: Square) -> Result<Vec<Move>, ChessError> {
+	pub fn king_targets(&self, king: ColoredPiece, from_square: Square) -> Result<Vec<Move>, ChessError> {
 		let mut target_moves: Vec<Move> = Vec::with_capacity(8);
-
-		let king = self.get_validated_colored_piece(from_square, Piece::King)?;
 
 		self.check_castling(&mut target_moves, from_square, king.side)?;
 

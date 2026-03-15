@@ -12,7 +12,8 @@ fn rook_h8_empty_board() {
 
 	pos.board[63] = Some(ColoredPiece { piece: Piece::Rook, side: Side::White });
 
-	let moves = pos.slider_targets(63).expect("slider_targets returned Err");
+	let piece = pos.board[63].unwrap();
+	let moves = pos.slider_targets(piece, 63).expect("slider_targets returned Err");
 
 	assert_eq!(moves.len(), 14);
 
@@ -28,7 +29,8 @@ fn rook_d4_empty_board() {
 
 	pos.board[27] = Some(ColoredPiece { piece: Piece::Rook, side: Side::White });
 
-	let moves = pos.slider_targets(27).expect("slider_targets returned Err");
+	let piece = pos.board[27].unwrap();
+	let moves = pos.slider_targets(piece, 27).expect("slider_targets returned Err");
 
 	assert_eq!(moves.len(), 14);
 
@@ -46,7 +48,8 @@ fn rook_d4_blocked_by_friendly_piece_f4() {
 
 	pos.board[29] = Some(ColoredPiece { piece: Piece::Knight, side: Side::White });
 
-	let moves = pos.slider_targets(27).expect("slider_targets returned Err");
+	let piece = pos.board[27].unwrap();
+	let moves = pos.slider_targets(piece, 27).expect("slider_targets returned Err");
 
 	assert!(has_move(&moves, 27, 28, MoveKind::Quiet));
 	assert!(!has_to_square(&moves, 29));
@@ -61,7 +64,8 @@ fn rook_d4_captures_enemy_f4_and_stops() {
 
 	pos.board[29] = Some(ColoredPiece { piece: Piece::Knight, side: Side::Black });
 
-	let moves = pos.slider_targets(27).expect("slider_targets returned Err");
+	let piece = pos.board[27].unwrap();
+	let moves = pos.slider_targets(piece, 27).expect("slider_targets returned Err");
 
 	assert!(has_move(&moves, 27, 28, MoveKind::Quiet));
 	assert!(has_move(&moves, 27, 29, MoveKind::Capture));
@@ -74,7 +78,8 @@ fn rook_a1_empty_board() {
 
 	pos.board[0] = Some(ColoredPiece { piece: Piece::Rook, side: Side::White });
 
-	let moves = pos.slider_targets(0).expect("slider_targets returned Err");
+	let piece = pos.board[0].unwrap();
+	let moves = pos.slider_targets(piece, 0).expect("slider_targets returned Err");
 
 	assert_eq!(moves.len(), 14);
 
@@ -96,7 +101,8 @@ fn rook_d4_blocked_by_adjacent_friendly_pieces() {
 	pos.board[26] = Some(ColoredPiece { piece: Piece::Pawn, side: Side::White });
 	pos.board[28] = Some(ColoredPiece { piece: Piece::Pawn, side: Side::White });
 
-	let moves = pos.slider_targets(27).expect("slider_targets returned Err");
+	let piece = pos.board[27].unwrap();
+	let moves = pos.slider_targets(piece, 27).expect("slider_targets returned Err");
 
 	assert!(moves.is_empty());
 }
@@ -112,7 +118,8 @@ fn rook_d4_captures_adjacent_enemy_pieces() {
 	pos.board[26] = Some(ColoredPiece { piece: Piece::Pawn, side: Side::Black });
 	pos.board[28] = Some(ColoredPiece { piece: Piece::Pawn, side: Side::Black });
 
-	let moves = pos.slider_targets(27).expect("slider_targets returned Err");
+	let piece = pos.board[27].unwrap();
+	let moves = pos.slider_targets(piece, 27).expect("slider_targets returned Err");
 
 	assert_eq!(moves.len(), 4);
 	assert!(has_move(&moves, 27, 35, MoveKind::Capture));
@@ -130,7 +137,8 @@ fn rook_d4_mixed_blockers() {
 	pos.board[43] = Some(ColoredPiece { piece: Piece::Pawn, side: Side::White });
 	pos.board[25] = Some(ColoredPiece { piece: Piece::Pawn, side: Side::Black });
 
-	let moves = pos.slider_targets(27).expect("slider_targets returned Err");
+	let piece = pos.board[27].unwrap();
+	let moves = pos.slider_targets(piece, 27).expect("slider_targets returned Err");
 
 	assert_eq!(moves.len(), 10);
 
@@ -155,9 +163,9 @@ fn wrong_piece_e8() {
 	pos.board[60] = Some(ColoredPiece { piece: Piece::Knight, side: Side::White });
 
 	assert_eq!(
-		pos.slider_targets(60),
+		pos.get_validated_colored_piece(60, Piece::Rook),
 		Err(ChessError::WrongPieceType {
-			expected_piece: Piece::Queen,
+			expected_piece: Piece::Rook,
 			found_piece: Piece::Knight
 		})
 	);
@@ -167,14 +175,14 @@ fn wrong_piece_e8() {
 fn no_piece_d5() {
 	let pos = empty_position();
 
-	assert_eq!(pos.slider_targets(35), Err(ChessError::NoPieceOnSquare { square: 35 }))
+	assert_eq!(pos.get_piece_from_square(35), Err(ChessError::NoPieceOnSquare { square: 35 }))
 }
 
 #[test]
 fn try_move_on_non_existing_square() {
 	let pos = empty_position();
 
-	assert_eq!(pos.slider_targets(65), Err(ChessError::NotASquareOnBoard { square: 65 }))
+	assert_eq!(pos.get_piece_from_square(65), Err(ChessError::NotASquareOnBoard { square: 65 }))
 }
 
 #[test]
@@ -185,7 +193,7 @@ fn wrong_side_returns_wrong_side_error() {
 	pos.board[0] = Some(ColoredPiece { piece: Piece::Rook, side: Side::Black });
 
 	assert_eq!(
-		pos.slider_targets(0),
+		pos.get_validated_colored_piece(0, Piece::Rook),
 		Err(ChessError::WrongSide {
 			expected_side: Side::White,
 			found_side: Side::Black
@@ -200,7 +208,8 @@ fn black_rook_d4_empty_board() {
 
 	pos.board[27] = Some(ColoredPiece { piece: Piece::Rook, side: Side::Black });
 
-	let moves = pos.slider_targets(27).expect("slider_targets returned Err");
+	let piece = pos.board[27].unwrap();
+	let moves = pos.slider_targets(piece, 27).expect("slider_targets returned Err");
 
 	assert_eq!(moves.len(), 14);
 	assert!(has_move(&moves, 27, 3, MoveKind::Quiet)); // d1
@@ -216,7 +225,8 @@ fn rook_a4_does_not_wrap_to_h_file() {
 
 	pos.board[24] = Some(ColoredPiece { piece: Piece::Rook, side: Side::White });
 
-	let moves = pos.slider_targets(24).expect("slider_targets returned Err");
+	let piece = pos.board[24].unwrap();
+	let moves = pos.slider_targets(piece, 24).expect("slider_targets returned Err");
 
 	assert_eq!(moves.len(), 14); // 7 vertical + 7 horizontal
 
@@ -236,7 +246,8 @@ fn rook_h4_does_not_wrap_to_a_file() {
 
 	pos.board[31] = Some(ColoredPiece { piece: Piece::Rook, side: Side::White });
 
-	let moves = pos.slider_targets(31).expect("slider_targets returned Err");
+	let piece = pos.board[31].unwrap();
+	let moves = pos.slider_targets(piece, 31).expect("slider_targets returned Err");
 
 	assert_eq!(moves.len(), 14); // 7 vertical + 7 horizontal
 

@@ -21,12 +21,12 @@ impl Position {
 
 	pub fn get_pseduo_legal_moves(&self, from_square: Square, colored_piece: ColoredPiece) -> Result<Vec<Move>, ChessError> {
 		match colored_piece.piece {
-			Piece::Rook => self.slider_targets(from_square),
-			Piece::Bishop => self.slider_targets(from_square),
-			Piece::King => self.king_targets(from_square),
-			Piece::Pawn => self.pawn_targets(from_square),
-			Piece::Knight => self.knight_targets(from_square),
-			Piece::Queen => self.slider_targets(from_square),
+			Piece::Rook => self.slider_targets(colored_piece, from_square),
+			Piece::Bishop => self.slider_targets(colored_piece, from_square),
+			Piece::King => self.king_targets(colored_piece, from_square),
+			Piece::Pawn => self.pawn_targets(colored_piece, from_square),
+			Piece::Knight => self.knight_targets(colored_piece, from_square),
+			Piece::Queen => self.slider_targets(colored_piece, from_square),
 		}
 	}
 }

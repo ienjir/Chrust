@@ -1,16 +1,10 @@
 use crate::{
-	Piece, Square,
-	errors::ChessError,
-	helper::{file_diff, in_bounds, rank_diff},
-	moves::make_move::{Move, MoveKind},
-	position::Position,
+	ColoredPiece, Square, errors::ChessError, helper::{file_diff, in_bounds, rank_diff}, moves::make_move::{Move, MoveKind}, position::Position
 };
 
 impl Position {
-	pub fn knight_targets(&self, from_square: Square) -> Result<Vec<Move>, ChessError> {
+	pub fn knight_targets(&self, knight: ColoredPiece, from_square: Square) -> Result<Vec<Move>, ChessError> {
 		let mut target_moves: Vec<Move> = Vec::with_capacity(8);
-
-		let knight = self.get_validated_colored_piece(from_square, Piece::Knight)?;
 
 		let directions: [i16; 8] = [-17, -15, -10, -6, 6, 10, 15, 17];
 

@@ -1,5 +1,5 @@
 use chrust_core::moves::make_move::{Move, MoveKind};
-use chrust_core::{Side, Square, position::Position};
+use chrust_core::{position::Position, Side, Square};
 
 pub fn empty_position() -> Position {
 	Position {

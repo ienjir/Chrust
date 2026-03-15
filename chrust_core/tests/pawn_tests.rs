@@ -12,7 +12,8 @@ fn w_pawn_c2() {
 
 	pos.board[10] = Some(ColoredPiece { piece: Piece::Pawn, side: Side::White });
 
-	let moves = pos.pawn_targets(10).expect("pawn_targets returned Err");
+	let pawn = pos.board[10].unwrap();
+	let moves = pos.pawn_targets(pawn, 10).expect("pawn_targets returned Err");
 
 	assert_eq!(moves.len(), 2);
 
@@ -29,7 +30,8 @@ fn b_pawn_c7() {
 
 	pos.board[50] = Some(ColoredPiece { piece: Piece::Pawn, side: Side::Black });
 
-	let moves = pos.pawn_targets(50).expect("pawn_targets returned Err");
+	let pawn = pos.board[50].unwrap();
+	let moves = pos.pawn_targets(pawn, 50).expect("pawn_targets returned Err");
 
 	assert_eq!(moves.len(), 2);
 
@@ -49,7 +51,8 @@ fn w_pawn_e4_enemy_f5_friendly_d5() {
 
 	pos.board[35] = Some(ColoredPiece { piece: Piece::Knight, side: Side::White });
 
-	let moves = pos.pawn_targets(28).expect("pawn_targets returned Err");
+	let pawn = pos.board[28].unwrap();
+	let moves = pos.pawn_targets(pawn, 28).expect("pawn_targets returned Err");
 
 	assert_eq!(moves.len(), 2);
 
@@ -66,7 +69,8 @@ fn w_pawn_d2_blocked_by_piece_d3() {
 
 	pos.board[19] = Some(ColoredPiece { piece: Piece::Knight, side: Side::White });
 
-	let moves = pos.pawn_targets(11).expect("pawn_targets returned Err");
+	let pawn = pos.board[11].unwrap();
+	let moves = pos.pawn_targets(pawn, 11).expect("pawn_targets returned Err");
 
 	assert_eq!(moves.len(), 0);
 }
@@ -79,7 +83,8 @@ fn w_pawn_d2_blocked_on_double_move() {
 
 	pos.board[27] = Some(ColoredPiece { piece: Piece::Knight, side: Side::Black });
 
-	let moves = pos.pawn_targets(11).expect("pawn_targets returned Err");
+	let pawn = pos.board[11].unwrap();
+	let moves = pos.pawn_targets(pawn, 11).expect("pawn_targets returned Err");
 
 	assert_eq!(moves.len(), 1);
 	assert!(has_move(&moves, 11, 19, MoveKind::Quiet));
@@ -94,7 +99,8 @@ fn w_pawn_a2_edge_capture_b3() {
 
 	pos.board[17] = Some(ColoredPiece { piece: Piece::Knight, side: Side::Black });
 
-	let moves = pos.pawn_targets(8).expect("pawn_targets returned Err");
+	let pawn = pos.board[8].unwrap();
+	let moves = pos.pawn_targets(pawn, 8).expect("pawn_targets returned Err");
 
 	assert_eq!(moves.len(), 3);
 	assert!(has_move(&moves, 8, 16, MoveKind::Quiet));
@@ -112,7 +118,8 @@ fn b_pawn_h7_edge_capture_g6() {
 
 	pos.board[46] = Some(ColoredPiece { piece: Piece::Knight, side: Side::White });
 
-	let moves = pos.pawn_targets(55).expect("pawn_targets returned Err");
+	let pawn = pos.board[55].unwrap();
+	let moves = pos.pawn_targets(pawn, 55).expect("pawn_targets returned Err");
 
 	assert_eq!(moves.len(), 3);
 	assert!(has_move(&moves, 55, 47, MoveKind::Quiet));
@@ -128,7 +135,7 @@ fn wrong_piece_e2() {
 	pos.board[12] = Some(ColoredPiece { piece: Piece::King, side: Side::White });
 
 	assert_eq!(
-		pos.pawn_targets(12),
+		pos.get_validated_colored_piece(12, Piece::Pawn),
 		Err(ChessError::WrongPieceType {
 			expected_piece: Piece::Pawn,
 			found_piece: Piece::King
@@ -140,14 +147,14 @@ fn wrong_piece_e2() {
 fn no_piece_e2() {
 	let pos = empty_position();
 
-	assert_eq!(pos.pawn_targets(12), Err(ChessError::NoPieceOnSquare { square: 12 }))
+	assert_eq!(pos.get_piece_from_square(12), Err(ChessError::NoPieceOnSquare { square: 12 }))
 }
 
 #[test]
 fn try_move_on_non_existing_square() {
 	let pos = empty_position();
 
-	assert_eq!(pos.pawn_targets(65), Err(ChessError::NotASquareOnBoard { square: 65 }))
+	assert_eq!(pos.get_piece_from_square(65), Err(ChessError::NotASquareOnBoard { square: 65 }))
 }
 
 #[test]
@@ -158,7 +165,7 @@ fn wrong_side_returns_wrong_side_error() {
 	pos.board[50] = Some(ColoredPiece { piece: Piece::Pawn, side: Side::Black });
 
 	assert_eq!(
-		pos.pawn_targets(50),
+		pos.get_validated_colored_piece(50, Piece::Pawn),
 		Err(ChessError::WrongSide {
 			expected_side: Side::White,
 			found_side: Side::Black
@@ -173,7 +180,8 @@ fn w_pawn_e5_en_passant_d6() {
 	pos.board[36] = Some(ColoredPiece { piece: Piece::Pawn, side: Side::White });
 	pos.en_passant = Some(43);
 
-	let moves = pos.pawn_targets(36).expect("pawn_targets returned Err");
+	let pawn = pos.board[36].unwrap();
+	let moves = pos.pawn_targets(pawn, 36).expect("pawn_targets returned Err");
 
 	assert!(has_move(&moves, 36, 44, MoveKind::Quiet));
 	assert!(has_move(&moves, 36, 43, MoveKind::EnPassant { capture_square: 35 }));
@@ -189,7 +197,8 @@ fn b_pawn_d4_en_passant_c3() {
 	pos.board[27] = Some(ColoredPiece { piece: Piece::Pawn, side: Side::Black });
 	pos.en_passant = Some(18); // c3
 
-	let moves = pos.pawn_targets(27).expect("pawn_targets returned Err");
+	let pawn = pos.board[27].unwrap();
+	let moves = pos.pawn_targets(pawn, 27).expect("pawn_targets returned Err");
 
 	assert!(has_move(
 		&moves,
@@ -207,7 +216,8 @@ fn w_pawn_a7_promotion() {
 
 	pos.board[48] = Some(ColoredPiece { piece: Piece::Pawn, side: Side::White });
 
-	let moves = pos.pawn_targets(48).expect("pawn_targets returned Err");
+	let pawn = pos.board[48].unwrap();
+	let moves = pos.pawn_targets(pawn, 48).expect("pawn_targets returned Err");
 
 	// The generator now emits 4 separate moves, one for each promotion piece type
 	assert_eq!(moves.len(), 4);
@@ -225,7 +235,8 @@ fn b_pawn_h2_promotion() {
 
 	pos.board[15] = Some(ColoredPiece { piece: Piece::Pawn, side: Side::Black });
 
-	let moves = pos.pawn_targets(15).expect("pawn_targets returned Err");
+	let pawn = pos.board[15].unwrap();
+	let moves = pos.pawn_targets(pawn, 15).expect("pawn_targets returned Err");
 
 	// The generator now emits 4 separate moves, one for each promotion piece type
 	assert_eq!(moves.len(), 4);
@@ -246,7 +257,8 @@ fn w_pawn_b7_promotion_capture_on_a8() {
 	pos.board[49] = Some(ColoredPiece { piece: Piece::Pawn, side: Side::White });
 	pos.board[56] = Some(ColoredPiece { piece: Piece::Knight, side: Side::Black });
 
-	let moves = pos.pawn_targets(49).expect("pawn_targets returned Err");
+	let pawn = pos.board[49].unwrap();
+	let moves = pos.pawn_targets(pawn, 49).expect("pawn_targets returned Err");
 
 	// Should have 8 total moves: 4 quiet promotions to b8 + 4 promotion captures to a8
 	assert_eq!(moves.len(), 8);
@@ -273,7 +285,8 @@ fn w_pawn_a7_promotion_blocked() {
 		side: Side::White, // own piece blocking
 	});
 
-	let moves = pos.pawn_targets(48).expect("pawn_targets returned Err");
+	let pawn = pos.board[48].unwrap();
+	let moves = pos.pawn_targets(pawn, 48).expect("pawn_targets returned Err");
 
 	assert_eq!(moves.len(), 0);
 }
@@ -288,7 +301,8 @@ fn b_pawn_d7_blocked_on_transit_square() {
 	pos.board[51] = Some(ColoredPiece { piece: Piece::Pawn, side: Side::Black });
 	pos.board[43] = Some(ColoredPiece { piece: Piece::Knight, side: Side::Black });
 
-	let moves = pos.pawn_targets(51).expect("pawn_targets returned Err");
+	let pawn = pos.board[51].unwrap();
+	let moves = pos.pawn_targets(pawn, 51).expect("pawn_targets returned Err");
 
 	assert_eq!(moves.len(), 0);
 }

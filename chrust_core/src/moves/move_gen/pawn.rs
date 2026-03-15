@@ -8,13 +8,8 @@ use crate::{
 
 impl Position {
 	// Without promotion
-	pub fn pawn_targets(&self, from_square: Square) -> Result<Vec<Move>, ChessError> {
+	pub fn pawn_targets(&self, pawn: ColoredPiece, from_square: Square) -> Result<Vec<Move>, ChessError> {
 		let mut target_moves: Vec<Move> = Vec::with_capacity(4);
-
-		let pawn = match self.get_validated_colored_piece(from_square, Piece::Pawn) {
-			Ok(x) => x,
-			Err(x) => return Err(x),
-		};
 
 		self.push_moves(&mut target_moves, pawn, from_square);
 

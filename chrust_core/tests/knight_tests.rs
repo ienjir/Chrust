@@ -13,7 +13,8 @@ fn knight_e4_empty_board() {
 
 	pos.board[28] = Some(ColoredPiece { piece: Piece::Knight, side: Side::Black });
 
-	let moves = pos.knight_targets(28).expect("knight_targets returned Err");
+	let knight = pos.board[28].unwrap();
+	let moves = pos.knight_targets(knight, 28).expect("knight_targets returned Err");
 
 	assert_eq!(moves.len(), 8);
 
@@ -29,7 +30,8 @@ fn knight_a8_corner_test() {
 
 	pos.board[56] = Some(ColoredPiece { piece: Piece::Knight, side: Side::White });
 
-	let moves = pos.knight_targets(56).expect("knight_targets returned Err");
+	let knight = pos.board[56].unwrap();
+	let moves = pos.knight_targets(knight, 56).expect("knight_targets returned Err");
 
 	assert_eq!(moves.len(), 2);
 
@@ -48,7 +50,8 @@ fn knight_g8_enemy_h6() {
 
 	pos.board[47] = Some(ColoredPiece { piece: Piece::Pawn, side: Side::White });
 
-	let moves = pos.knight_targets(62).expect("knight_targets returned Err");
+	let knight = pos.board[62].unwrap();
+	let moves = pos.knight_targets(knight, 62).expect("knight_targets returned Err");
 
 	assert_eq!(moves.len(), 3);
 
@@ -63,7 +66,8 @@ fn knight_d1_friendly_f2() {
 
 	pos.board[13] = Some(ColoredPiece { piece: Piece::Pawn, side: Side::White });
 
-	let moves = pos.knight_targets(3).expect("knight_targets returned Err");
+	let knight = pos.board[3].unwrap();
+	let moves = pos.knight_targets(knight, 3).expect("knight_targets returned Err");
 
 	assert_eq!(moves.len(), 3);
 
@@ -76,8 +80,9 @@ fn wrong_piece_e8() {
 
 	pos.board[60] = Some(ColoredPiece { piece: Piece::King, side: Side::White });
 
+	// get_validated_colored_piece validates piece type
 	assert_eq!(
-		pos.knight_targets(60),
+		pos.get_validated_colored_piece(60, Piece::Knight),
 		Err(ChessError::WrongPieceType {
 			expected_piece: Piece::Knight,
 			found_piece: Piece::King
@@ -89,25 +94,27 @@ fn wrong_piece_e8() {
 fn no_piece_d5() {
 	let pos = empty_position();
 
-	assert_eq!(pos.knight_targets(35), Err(ChessError::NoPieceOnSquare { square: 35 }))
+	assert_eq!(pos.get_piece_from_square(35), Err(ChessError::NoPieceOnSquare { square: 35 }))
 }
 
 #[test]
 fn try_move_on_non_existing_square() {
 	let pos = empty_position();
 
-	assert_eq!(pos.knight_targets(65), Err(ChessError::NotASquareOnBoard { square: 65 }))
+	assert_eq!(pos.get_piece_from_square(65), Err(ChessError::NotASquareOnBoard { square: 65 }))
 }
 
 #[test]
 fn wrong_side_returns_wrong_side_error() {
 	// Black knight on the board but it's White's turn.
+	// This validation happens via get_validated_colored_piece, not in knight_targets directly
 	let mut pos = empty_position(); // side_to_move = White
 
 	pos.board[28] = Some(ColoredPiece { piece: Piece::Knight, side: Side::Black });
 
+	// get_validated_colored_piece validates side and piece type
 	assert_eq!(
-		pos.knight_targets(28),
+		pos.get_validated_colored_piece(28, Piece::Knight),
 		Err(ChessError::WrongSide {
 			expected_side: Side::White,
 			found_side: Side::Black
@@ -121,7 +128,8 @@ fn white_knight_e4_empty_board() {
 
 	pos.board[28] = Some(ColoredPiece { piece: Piece::Knight, side: Side::White });
 
-	let moves = pos.knight_targets(28).expect("knight_targets returned Err");
+	let knight = pos.board[28].unwrap();
+	let moves = pos.knight_targets(knight, 28).expect("knight_targets returned Err");
 
 	assert_eq!(moves.len(), 8);
 	// Verify all 8 L-shapes from e4 (sq 28)

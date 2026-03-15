@@ -7,9 +7,8 @@ use crate::{
 };
 
 impl Position {
-	pub fn slider_targets(&self, from_square: Square) -> Result<Vec<Move>, ChessError> {
+	pub fn slider_targets(&self, colored_piece: ColoredPiece, from_square: Square) -> Result<Vec<Move>, ChessError> {
 		let mut target_moves: Vec<Move> = Vec::with_capacity(27);
-		let colored_piece = self.get_piece_from_square(from_square)?;
 
 		is_right_piece_side(colored_piece, self.side_to_move)?;
 
