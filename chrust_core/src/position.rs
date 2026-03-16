@@ -8,7 +8,7 @@ pub struct Position {
 	pub en_passant: Option<Square>,
 	pub king_squares: [Square; 2],
 	pub halfmove_clock: u32,
-	pub fullmove_number: u32,
+	pub fullmove_counter: u32,
 }
 
 #[derive(Copy, Clone)]
@@ -21,27 +21,36 @@ pub struct Undo {
 	pub previous_king_squares: [Square; 2],
 }
 
-pub fn convert_square_string_to_square(square_string: &str) -> Result<u8, FenError> {
-	if square_string.len() != 2 {
-		return Err(FenError::SquareLenghtIsnt2Wide(square_string.len()));
+pub fn load_position_from_fen(fen: &str) -> Result<Position, FenError> {
+	let mut position = Position {
+		board: [None; 64],
+		castle: [false; 4],
+		en_passant: None,
+		side_to_move: Side::White,
+		king_squares: [4, 60],
+		halfmove_clock: 0,
+		fullmove_counter: 0,
+	};
+
+	let fen_parts: Vec<&str> = fen.split_whitespace().collect();
+
+	if fen_parts.len() != 6 {
+		return Err(FenError::MissingFenParts);
 	}
 
-	let chars: Vec<char> = square_string.to_lowercase().chars().collect();
+	position.fullmove_counter = load_clock(fen_parts[5])?;
 
-	let file = (chars[0] as u8).wrapping_sub(b'a');
-	if file > 7 {
-		return Err(FenError::InvalidFile(chars[0]));
-	}
+	position.halfmove_clock = load_clock(fen_parts[4])?;
 
-	let rank = chars[1].to_digit(10).map(|d| d as u8).and_then(|d| d.checked_sub(1)).filter(|&d| d < 8).ok_or(FenError::InvalidRank(chars[1]))?;
+	load_en_passant(&mut position, fen_parts[3])?;
 
-	let square_index = rank * 8 + file;
+	load_castling_ability(&mut position, fen_parts[2])?;
 
-	if square_index > 63 {
-		return Err(FenError::OutOfBounds(square_index));
-	}
+	load_side_to_move(&mut position, fen_parts[1])?;
 
-	Ok(square_index)
+	load_piece_placement(&mut position, fen_parts[0])?;
+
+	Ok(position)
 }
 
 impl Position {
@@ -62,34 +71,9 @@ impl Position {
 	}
 }
 
-pub fn load_position_from_fen(fen: &str) -> Result<Position, FenError> {
-	let mut position = Position {
-		board: [None; 64],
-		castle: [false; 4],
-		en_passant: None,
-		side_to_move: Side::White,
-		king_squares: [4, 60],
-		halfmove_clock: 0,
-		fullmove_number: 0,
-	};
-
-	let fen_parts: Vec<&str> = fen.split_whitespace().collect();
-
-	if fen_parts.len() != 6 {
-		return Err(FenError::MissingFenParts);
-	}
-
-	let en_passant = fen_parts[3];
-	if en_passant != "-" {
-		let square = convert_square_string_to_square(en_passant);
-		match square {
-			Ok(x) => position.en_passant = Some(x),
-			Err(x) => return Err(x),
-		}
-	}
-
-	for c in fen_parts[2].chars() {
-		match c {
+pub fn load_castling_ability(position: &mut Position, castling_rules: &str) -> Result<(), FenError> {
+	for castle_char in castling_rules.chars() {
+		match castle_char {
 			'K' => position.castle[0] = true,
 			'Q' => position.castle[1] = true,
 			'k' => position.castle[2] = true,
@@ -99,15 +83,34 @@ pub fn load_position_from_fen(fen: &str) -> Result<Position, FenError> {
 		}
 	}
 
-	let side_to_move = fen_parts[1];
+	Ok(())
+}
+
+pub fn load_en_passant(position: &mut Position, en_passant_string: &str) -> Result<(), FenError> {
+	if en_passant_string == "-" {
+		return Ok(());
+	}
+
+	match convert_square_string_to_square(en_passant_string) {
+		Ok(x) => position.en_passant = Some(x),
+		Err(x) => return Err(x),
+	}
+
+	Ok(())
+}
+
+pub fn load_side_to_move(position: &mut Position, side_to_move: &str) -> Result<(), FenError> {
 	match side_to_move {
 		"b" => position.side_to_move = Side::Black,
 		"w" => position.side_to_move = Side::White,
 		_ => return Err(FenError::NotAValideSide),
 	};
 
-	let fen_board_normal = fen_parts[0];
-	let fen_ranks = fen_board_normal.split("/");
+	Ok(())
+}
+
+pub fn load_piece_placement(position: &mut Position, fen_board: &str) -> Result<(), FenError> {
+	let fen_ranks = fen_board.split("/");
 
 	let mut current_rank = 7;
 	for rank_str in fen_ranks {
@@ -146,5 +149,37 @@ pub fn load_position_from_fen(fen: &str) -> Result<Position, FenError> {
 		}
 	}
 
-	Ok(position)
+	Ok(())
+}
+
+pub fn load_clock(clock_string: &str) -> Result<u32, FenError> {
+	// please dont judge me i am to lazy to find a var name
+	let new_clock_string = clock_string.to_string();
+	match new_clock_string.parse::<u32>() {
+		Ok(x) => return Ok(x),
+		Err(_) => return Err(FenError::InvalidNumber(new_clock_string.to_string())),
+	};
+}
+
+pub fn convert_square_string_to_square(square_string: &str) -> Result<u8, FenError> {
+	if square_string.len() != 2 {
+		return Err(FenError::SquareLenghtIsnt2Wide(square_string.len()));
+	}
+
+	let chars: Vec<char> = square_string.to_lowercase().chars().collect();
+
+	let file = (chars[0] as u8).wrapping_sub(b'a');
+	if file > 7 {
+		return Err(FenError::InvalidFile(chars[0]));
+	}
+
+	let rank = chars[1].to_digit(10).map(|d| d as u8).and_then(|d| d.checked_sub(1)).filter(|&d| d < 8).ok_or(FenError::InvalidRank(chars[1]))?;
+
+	let square_index = rank * 8 + file;
+
+	if square_index > 63 {
+		return Err(FenError::OutOfBounds(square_index));
+	}
+
+	Ok(square_index)
 }

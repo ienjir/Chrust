@@ -398,23 +398,23 @@ fn halfmove_clock_increments_on_quiet_non_pawn_move() {
 
 #[test]
 fn fullmove_number_increments_only_after_black_move() {
-	// Per chess rules, fullmove_number increments after Black's move only.
+	// Per chess rules, fullmove_counter increments after Black's move only.
 	let mut pos = empty_position();
-	assert_eq!(pos.fullmove_number, 0);
+	assert_eq!(pos.fullmove_counter, 0);
 
-	// White's move — fullmove_number should NOT change.
+	// White's move — fullmove_counter should NOT change.
 	let white_pawn = ColoredPiece { piece: Piece::Pawn, side: Side::White };
 	pos.board[8] = Some(white_pawn); // a2
 	let m1 = mv(&pos, 8, 16, MoveKind::Quiet);
 	pos.make_move_unvalidated(m1).unwrap();
-	assert_eq!(pos.fullmove_number, 0, "fullmove_number should not change after White moves");
+	assert_eq!(pos.fullmove_counter, 0, "fullmove_counter should not change after White moves");
 
-	// Black's move — fullmove_number should increment.
+	// Black's move — fullmove_counter should increment.
 	let black_pawn = ColoredPiece { piece: Piece::Pawn, side: Side::Black };
 	pos.board[48] = Some(black_pawn); // a7
 	let m2 = mv(&pos, 48, 40, MoveKind::Quiet);
 	pos.make_move_unvalidated(m2).unwrap();
-	assert_eq!(pos.fullmove_number, 1, "fullmove_number should increment after Black moves");
+	assert_eq!(pos.fullmove_counter, 1, "fullmove_counter should increment after Black moves");
 }
 
 // ── en_passant state ──────────────────────────────────────────────────────────
@@ -784,7 +784,7 @@ fn undo_restores_all_metadata() {
 	pos.en_passant = Some(16);
 	pos.castle = [true, false, true, false];
 	pos.king_squares = [4, 60];
-	pos.fullmove_number = 42;
+	pos.fullmove_counter = 42;
 	pos.halfmove_clock = 7;
 
 	let knight = ColoredPiece { piece: Piece::Knight, side: Side::Black };
@@ -799,7 +799,7 @@ fn undo_restores_all_metadata() {
 	assert_eq!(pos.en_passant, Some(16));
 	assert_eq!(pos.castle, [true, false, true, false]);
 	assert_eq!(pos.king_squares, [4, 60]);
-	assert_eq!(pos.fullmove_number, 42);
+	assert_eq!(pos.fullmove_counter, 42);
 	assert_eq!(pos.halfmove_clock, 7);
 }
 
@@ -1252,7 +1252,7 @@ fn update_clocks_toggles_side_white_to_black() {
 fn update_clocks_toggles_side_black_to_white_and_increments_fullmove() {
 	let mut pos = empty_position();
 	pos.side_to_move = Side::Black;
-	pos.fullmove_number = 10;
+	pos.fullmove_counter = 10;
 
 	let rook = ColoredPiece { piece: Piece::Rook, side: Side::Black };
 	let m = Move {
@@ -1265,7 +1265,7 @@ fn update_clocks_toggles_side_black_to_white_and_increments_fullmove() {
 	pos.update_clocks(m);
 
 	assert_eq!(pos.side_to_move, Side::White);
-	assert_eq!(pos.fullmove_number, 11);
+	assert_eq!(pos.fullmove_counter, 11);
 }
 
 // ── update_king_positions tests ───────────────────────────────────────────────

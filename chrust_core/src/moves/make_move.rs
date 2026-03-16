@@ -73,13 +73,13 @@ impl Position {
 			previous_king_squares: self.king_squares,
 			previous_halfway_clock: self.halfmove_clock,
 			previous_castling_rights: self.castle,
-			fullmove_number: self.fullmove_number,
+			fullmove_number: self.fullmove_counter,
 		}
 	}
 
 	pub fn apply_undo(&mut self, undo: Undo) {
 		self.halfmove_clock = undo.previous_halfway_clock;
-		self.fullmove_number = undo.fullmove_number;
+		self.fullmove_counter = undo.fullmove_number;
 		self.castle = undo.previous_castling_rights;
 		self.en_passant = undo.previous_en_passant;
 		self.king_squares = undo.previous_king_squares;
@@ -144,7 +144,7 @@ impl Position {
 			Side::White => self.side_to_move = Side::Black,
 			Side::Black => {
 				self.side_to_move = Side::White;
-				self.fullmove_number += 1;
+				self.fullmove_counter += 1;
 			}
 		}
 	}

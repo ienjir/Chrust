@@ -35,6 +35,7 @@ pub enum FenError {
 	InvalidCastlingRights(char),
 	MissingFenParts,
 	NotAValideSide,
+	InvalidNumber(String),
 }
 
 impl fmt::Display for ChessError {

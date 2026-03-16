@@ -1,5 +1,9 @@
 use crate::{
-	ColoredPiece, Square, errors::ChessError, helper::{file_diff, in_bounds, rank_diff}, moves::make_move::{Move, MoveKind}, position::Position
+	ColoredPiece, Square,
+	errors::ChessError,
+	helper::{file_diff, in_bounds, rank_diff},
+	moves::make_move::{Move, MoveKind},
+	position::Position,
 };
 
 impl Position {

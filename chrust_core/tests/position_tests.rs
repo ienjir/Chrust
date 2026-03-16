@@ -318,14 +318,96 @@ fn fen_king_squares_default_on_starting_position() {
 	assert_eq!(pos.king_squares, [4, 60]);
 }
 
-// ── load_position_from_fen — halfmove_clock / fullmove_number (known bug) ────
+// ── load_position_from_fen — halfmove_clock / fullmove_counter ──────────────
 
 #[test]
-fn fen_halfmove_clock_is_not_parsed_stays_zero() {
-	// BUG: fields 4 (halfmove clock) and 5 (fullmove number) are not yet read
-	// by the parser.  These tests document the current behaviour so they will
-	// break (and need updating) once the bug is fixed.
+fn fen_halfmove_clock_parsed_correctly() {
 	let pos = load_position_from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 7 42").unwrap();
-	assert_eq!(pos.halfmove_clock, 0, "halfmove_clock is not parsed (known bug)");
-	assert_eq!(pos.fullmove_number, 0, "fullmove_number is not parsed (known bug)");
+	assert_eq!(pos.halfmove_clock, 7);
+}
+
+#[test]
+fn fen_fullmove_counter_parsed_correctly() {
+	let pos = load_position_from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 7 42").unwrap();
+	assert_eq!(pos.fullmove_counter, 42);
+}
+
+#[test]
+fn fen_halfmove_clock_zero() {
+	let pos = load_position_from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1").unwrap();
+	assert_eq!(pos.halfmove_clock, 0);
+}
+
+#[test]
+fn fen_fullmove_counter_starting_position() {
+	let pos = load_position_from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1").unwrap();
+	assert_eq!(pos.fullmove_counter, 1);
+}
+
+#[test]
+fn fen_invalid_halfmove_clock_returns_error() {
+	assert!(matches!(load_position_from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - abc 1"), Err(FenError::InvalidNumber(_))));
+}
+
+#[test]
+fn fen_invalid_fullmove_counter_returns_error() {
+	assert!(matches!(load_position_from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 xyz"), Err(FenError::InvalidNumber(_))));
+}
+
+#[test]
+fn fen_large_halfmove_clock_parsed_correctly() {
+	let pos = load_position_from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 99 1").unwrap();
+	assert_eq!(pos.halfmove_clock, 99);
+}
+
+#[test]
+fn fen_large_fullmove_counter_parsed_correctly() {
+	let pos = load_position_from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 999").unwrap();
+	assert_eq!(pos.fullmove_counter, 999);
+}
+
+// ── load_position_from_fen — complete position tests ─────────────────────────
+
+#[test]
+fn fen_complex_middlegame_position() {
+	// A more complex position from a real game
+	let fen = "r1bqkb1r/pppp1ppp/2n2n2/1B2p3/4P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 4 4";
+	let pos = load_position_from_fen(fen).unwrap();
+
+	assert_eq!(pos.side_to_move, Side::White);
+	assert_eq!(pos.castle, [true, true, true, true]);
+	assert_eq!(pos.en_passant, None);
+	assert_eq!(pos.halfmove_clock, 4);
+	assert_eq!(pos.fullmove_counter, 4);
+}
+
+#[test]
+fn fen_position_with_partial_castling_rights() {
+	// Position where only some castling rights remain
+	let fen = "r3k2r/8/8/8/8/8/8/R3K2R w Kq - 0 1";
+	let pos = load_position_from_fen(fen).unwrap();
+
+	assert!(pos.castle[0], "white kingside should be set");
+	assert!(!pos.castle[1], "white queenside should be unset");
+	assert!(!pos.castle[2], "black kingside should be unset");
+	assert!(pos.castle[3], "black queenside should be set");
+}
+
+#[test]
+fn fen_endgame_position() {
+	// King and pawn endgame
+	let fen = "8/5k2/8/8/3K4/8/4P3/8 w - - 10 50";
+	let pos = load_position_from_fen(fen).unwrap();
+
+	assert_eq!(pos.side_to_move, Side::White);
+	assert_eq!(pos.castle, [false, false, false, false]);
+	assert_eq!(pos.en_passant, None);
+	assert_eq!(pos.halfmove_clock, 10);
+	assert_eq!(pos.fullmove_counter, 50);
+
+	// Check that pieces are placed correctly
+	assert_eq!(pos.board[27], Some(ColoredPiece { piece: Piece::King, side: Side::White })); // d4
+	assert_eq!(pos.board[12], Some(ColoredPiece { piece: Piece::Pawn, side: Side::White })); // e2
+	assert_eq!(pos.board[53], Some(ColoredPiece { piece: Piece::King, side: Side::Black }));
+	// f7
 }

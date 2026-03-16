@@ -213,9 +213,10 @@ Add a generate all moves function and cache the results
 6. [x] Refactor king.rs
 7. [x] Unify slider pieces behind one shared function
 8. [x] Clean up verbose match error handling with ?
-9. [ ] Refactor move-gen APIs to reuse validated/colored piece context from callers where it actually reduces duplication
-10. [ ] Finish fen loading
+9. [x] Refactor move-gen APIs to reuse validated/colored piece context from callers where it actually reduces duplication
+10. [x] Finish fen loading
 11. [ ] Add validation for things like halfmove clock
+12. [ ] Use private functions and test over public functions 
 
 
 ## Small errors 
