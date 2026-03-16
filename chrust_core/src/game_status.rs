@@ -12,24 +12,29 @@ pub enum GameStatus {
 
 impl Position {
 	pub fn is_draw_by_fifty_moves(&self) -> bool {
-		if self.halfmove_clock <= 100 {
-			return true;
-		}
-
-		false
+		self.halfmove_clock >= 100
 	}
 
-	pub fn get_all_legal_moves(&mut self) -> Result<Vec<Move>, ChessError> {
-		let squares: Vec<Square> = self.board.iter().enumerate().
-			filter_map(|(sq, piece)| {
-				piece.filter(|p| p.side == self.side_to_move).map(|_| sq as u8)
-			}).collect();
+	pub fn get_all_legal_moves_for_side(&mut self, side: Side) -> Result<Vec<Move>, ChessError> {
+		let squares: Vec<Square> = self.board.iter().enumerate().filter_map(|(sq, piece)| piece.filter(|p| p.side == side).map(|_| sq as u8)).collect();
 
-		let mut legal_moves: Vec<Move> = Vec::new();	
+		let mut legal_moves: Vec<Move> = Vec::new();
 		for square in squares {
-			legal_moves.extend(self.get_legal_moves(square)?);
+			legal_moves.extend(self.get_legal_moves(square, side)?);
 		}
 
 		Ok(legal_moves)
+	}
+
+	pub fn is_checkmate_for_side(&mut self, side: Side) -> Result<bool, ChessError> {
+		if self.is_king_in_check(side)?.is_none() {
+			return Ok(false);
+		}
+
+		if !self.get_all_legal_moves_for_side(side)?.is_empty() {
+			return Ok(false);
+		}
+
+		Ok(true)
 	}
 }

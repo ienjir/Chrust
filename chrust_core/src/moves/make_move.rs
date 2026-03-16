@@ -36,7 +36,7 @@ pub enum MoveKind {
 
 impl Position {
 	pub fn make_move(&mut self, mv: &Move) -> Result<Undo, ChessError> {
-		let legal_moves = self.get_legal_moves(mv.from_square)?;
+		let legal_moves = self.get_legal_moves(mv.from_square, self.side_to_move)?;
 
 		is_square_on_board(mv.to_square)?;
 

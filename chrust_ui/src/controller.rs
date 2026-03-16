@@ -74,7 +74,7 @@ pub fn click_square(game_state: &mut GameState, from_square: Square) {
 			return;
 		}
 
-		match game_state.position.get_legal_moves(from_square) {
+		match game_state.position.get_legal_moves(from_square, game_state.position.side_to_move) {
 			Ok(moves) => {
 				game_state.selected = Some(from_square);
 				game_state.possible_moves = moves;
@@ -125,7 +125,7 @@ pub fn click_square(game_state: &mut GameState, from_square: Square) {
 
 		if let Some(piece) = clicked_occupant {
 			if piece.side == game_state.position.side_to_move {
-				match game_state.position.get_legal_moves(from_square) {
+				match game_state.position.get_legal_moves(from_square, game_state.position.side_to_move) {
 					Ok(moves) => {
 						game_state.selected = Some(from_square);
 						game_state.possible_moves = moves;

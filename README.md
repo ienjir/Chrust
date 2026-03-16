@@ -234,3 +234,28 @@ get_game_status() -> GameStatus
 
 ## Small errors 
     - Slider.rs: Find a way to not return a queen when a faulty piece is provided
+
+
+## Important info
+- king_squares[0]  is white and [1] is black
+
+
+is_draw_by_fifty_moves:
+- check with number over 100
+- check with number under 100
+- check with excatly 100
+
+get_legal_moves_for_side:
+- all tests for white and black
+- test 2 position with different moves from different pieces
+- test with no moves available (no check)
+- test with no moves available (with check so)
+- test in check with moves available that woulnt lift check
+- test in check with moves available that would lift check
+
+is_checkmate_for_side:
+- all tests for both sides
+- check with positions that are not check
+- check with positions that are check but not checkmate (caputre or similar can lift check)
+- check with position with no check but no moves (should be stalemate which will be checked/implemented later)
+- check with positions that are acutal checkmates

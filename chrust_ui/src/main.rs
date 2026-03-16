@@ -38,26 +38,11 @@ async fn main() {
 		ui_state: None,
 	};
 
-	game_state.position.print_board();
-	println!("");
-	println!("");
-
-	let mv = Move {
-		from_square: 48,
-		to_square: 56,
-		colored_piece: ColoredPiece { piece: Piece::Pawn, side: Side::White },
-		move_kind: MoveKind::Promotion { promotion_piece: Piece::Queen },
+	let skd = match game_state.position.is_checkmate_for_side(Side::Black) {
+		Ok(x) => x,
+		Err(_x) => return,
 	};
-
-	let undo = game_state.position.make_move(&mv);
-	match undo {
-		Ok(_x) => {
-			println!("Ok")
-		}
-		Err(x) => {
-			println!("Error: {}", x);
-		}
-	}
+	println!("checkmate: {skd}");
 
 	game_state.position.print_board();
 

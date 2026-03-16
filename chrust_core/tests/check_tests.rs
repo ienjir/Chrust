@@ -341,3 +341,22 @@ fn is_square_attacked_queen_multiple_rays_with_blockers() {
 	// Now d4 should not be attacked
 	assert_eq!(pos.is_square_attacked(27, Side::Black), Ok(None));
 }
+
+#[test]
+fn is_square_attacked_queen_on_h6_attacks_h8() {
+	// Reproducing issue: white queen on h6 should attack black king on h8
+	let mut pos = empty_position();
+
+	pos.board[63] = Some(ColoredPiece { piece: Piece::King, side: Side::Black }); // h8
+	pos.board[47] = Some(ColoredPiece { piece: Piece::Queen, side: Side::White }); // h6
+	pos.board[0] = Some(ColoredPiece { piece: Piece::King, side: Side::White }); // a1
+
+	println!("Testing h8 (63) attacked by White queen on h6 (47)");
+	println!("h8 board: {:?}", pos.board[63]);
+	println!("h6 board: {:?}", pos.board[47]);
+
+	let attacks = pos.is_square_attacked(63, Side::White).expect("is_square_attacked returned Err");
+
+	assert!(attacks.is_some(), "h8 should be attacked by white queen on h6");
+	assert!(has_square(attacks.as_ref().unwrap(), 47), "attacking square should be 47 (h6)");
+}

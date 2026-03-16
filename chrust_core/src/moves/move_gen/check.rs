@@ -12,9 +12,7 @@ impl Position {
 			Side::Black => (self.king_squares[1], Side::White),
 		};
 
-		let attacking_squares = self.is_square_attacked(king_square, attack_side);
-
-		attacking_squares
+		return self.is_square_attacked(king_square, attack_side);
 	}
 
 	pub fn is_square_attacked(&self, from_square: Square, attacking_side: Side) -> Result<Option<Vec<Square>>, ChessError> {

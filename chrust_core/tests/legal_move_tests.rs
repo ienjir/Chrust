@@ -28,7 +28,7 @@ fn pinned_rook_only_gets_moves_along_the_pin_line() {
 	pos.board[60] = Some(black_rook); // e8
 	pos.king_squares = [4, 56];
 
-	let moves = pos.get_legal_moves(12).expect("get_legal_moves returned Err");
+	let moves = pos.get_legal_moves(12, pos.side_to_move).expect("get_legal_moves returned Err");
 
 	assert_eq!(moves.len(), 6);
 	assert!(has_move(&moves, 12, 20, MoveKind::Quiet));
@@ -56,7 +56,7 @@ fn checked_rook_only_gets_blocking_move() {
 	pos.board[60] = Some(black_rook); // e8
 	pos.king_squares = [4, 56];
 
-	let moves = pos.get_legal_moves(11).expect("get_legal_moves returned Err");
+	let moves = pos.get_legal_moves(11, pos.side_to_move).expect("get_legal_moves returned Err");
 
 	assert_eq!(moves.len(), 1);
 	assert!(has_move(&moves, 11, 12, MoveKind::Quiet));
@@ -75,7 +75,7 @@ fn king_in_check_cannot_step_forward_into_attacked_square() {
 	pos.board[60] = Some(black_rook); // e8
 	pos.king_squares = [4, 56];
 
-	let moves = pos.get_legal_moves(4).expect("get_legal_moves returned Err");
+	let moves = pos.get_legal_moves(4, pos.side_to_move).expect("get_legal_moves returned Err");
 
 	assert_eq!(moves.len(), 4);
 	assert!(has_move(&moves, 4, 3, MoveKind::Quiet));
@@ -103,7 +103,7 @@ fn en_passant_is_filtered_out_when_it_exposes_the_king() {
 	pos.en_passant = Some(43); // d6
 	pos.king_squares = [4, 56];
 
-	let moves = pos.get_legal_moves(36).expect("get_legal_moves returned Err");
+	let moves = pos.get_legal_moves(36, pos.side_to_move).expect("get_legal_moves returned Err");
 
 	assert_eq!(moves.len(), 1);
 	assert!(has_move(&moves, 36, 44, MoveKind::Quiet));

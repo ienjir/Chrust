@@ -50,6 +50,17 @@ pub fn load_position_from_fen(fen: &str) -> Result<Position, FenError> {
 
 	load_piece_placement(&mut position, fen_parts[0])?;
 
+	for (square, piece) in position.board.iter().enumerate() {
+		if let Some(colored_piece) = piece {
+			if colored_piece.piece == Piece::King {
+				match colored_piece.side {
+					Side::White => position.king_squares[0] = square as u8,
+					Side::Black => position.king_squares[1] = square as u8,
+				}
+			}
+		}
+	}
+
 	Ok(position)
 }
 
