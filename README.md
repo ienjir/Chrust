@@ -204,16 +204,18 @@ Later for engine:
 Add a generate all moves function and cache the results 
 
 ## Is game over checks
-Threefold repetition (after a position happend 3 times, a draw can be claimed). Use zobrist hashing 
-Insufficient material 
-    - King vs King                                                                                 
-    - King + Knight vs King                                                                        
-    - King + Bishop vs King                                                                        
-    - King + Bishop vs King + Bishop (same color bishops) 
-Stalemate
-Check
-Checkmate
-Draw by 50 move rule
+get_all_legal_moves()
+    Loop throug all 64 squares. If piece = side to move -> get legal moves -> add to vector
+is_checkmate()
+    King needs to be in check, no legal moves exist
+is_stalemate()
+    King cant be in check, no legal moves exist
+is_insufficient_material()
+    if only kings, knight/bishop + 2 kings, 2 bishops on same square color + 2 kings. Bishop color: (file + rank) % 2
+is_draw_by_repetition()
+    after each move make hash of position -> hashmap key = position hash, value = how many position were the same i		
+get_game_status() -> GameStatus
+
 
 ## Next steps
     1. [x] Add undo_move 
