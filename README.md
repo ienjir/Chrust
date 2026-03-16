@@ -203,21 +203,32 @@ Then check for things like halfmove clock etc (need to be expaned)
 Later for engine:
 Add a generate all moves function and cache the results 
 
+## Is game over checks
+Threefold repetition (after a position happend 3 times, a draw can be claimed). Use zobrist hashing 
+Insufficient material 
+    - King vs King                                                                                 
+    - King + Knight vs King                                                                        
+    - King + Bishop vs King                                                                        
+    - King + Bishop vs King + Bishop (same color bishops) 
+Stalemate
+Check
+Checkmate
+Draw by 50 move rule
 
 ## Next steps
-1. [x] Add undo_move 
-2. [x] Add legality filtering to move gen 
-3. [x] Add a promotion-capture move kind 
-4. [x] Refactor make_move
-5. [x] Refactor check.rs + slider.rs shared ray logic
-6. [x] Refactor king.rs
-7. [x] Unify slider pieces behind one shared function
-8. [x] Clean up verbose match error handling with ?
-9. [x] Refactor move-gen APIs to reuse validated/colored piece context from callers where it actually reduces duplication
-10. [x] Finish fen loading
-11. [ ] Add validation for things like halfmove clock
-12. [ ] Use private functions and test over public functions 
+    1. [x] Add undo_move 
+    2. [x] Add legality filtering to move gen 
+    3. [x] Add a promotion-capture move kind 
+    4. [x] Refactor make_move
+    5. [x] Refactor check.rs + slider.rs shared ray logic
+    6. [x] Refactor king.rs
+    7. [x] Unify slider pieces behind one shared function
+    8. [x] Clean up verbose match error handling with ?
+    9. [x] Refactor move-gen APIs to reuse validated/colored piece context from callers where it actually reduces duplication
+    10. [x] Finish fen loading
+    11. [ ] Add validation for things like halfmove clock
+    12. [ ] Use private functions and test over public functions 
 
 
 ## Small errors 
-- Slider.rs: Find a way to not return a queen when a faulty piece is provided
+    - Slider.rs: Find a way to not return a queen when a faulty piece is provided

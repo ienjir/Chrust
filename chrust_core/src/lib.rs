@@ -4,6 +4,7 @@ pub mod errors;
 pub mod helper;
 pub mod moves;
 pub mod position;
+pub mod game_state;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub enum Side {
