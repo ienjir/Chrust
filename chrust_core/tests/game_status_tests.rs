@@ -556,3 +556,234 @@ fn is_checkmate_for_side_black_two_bishops_mate() {
 
 	assert!(is_mate, "two bishops mate should be checkmate");
 }
+
+// ══════════════════════════════════════════════════════════════════════════════
+// is_stalemate_for_side tests
+// ══════════════════════════════════════════════════════════════════════════════
+
+#[test]
+fn is_stalemate_for_side_white_classic_corner_stalemate() {
+	// White king on a1, black king on b3, black queen on c2 - classic stalemate
+	let mut pos = empty_position();
+
+	pos.board[0] = Some(ColoredPiece { piece: Piece::King, side: Side::White }); // a1
+	pos.board[17] = Some(ColoredPiece { piece: Piece::King, side: Side::Black }); // b3
+	pos.board[10] = Some(ColoredPiece { piece: Piece::Queen, side: Side::Black }); // c2
+	pos.king_squares = [0, 17];
+	pos.side_to_move = Side::White;
+
+	let is_stalemate = pos.is_stalemate_for_side(Side::White).expect("is_stalemate failed");
+
+	assert!(is_stalemate, "white should be in stalemate");
+}
+
+#[test]
+fn is_stalemate_for_side_black_classic_corner_stalemate() {
+	// Black king on h8, white king on g6, white queen on f7 - classic stalemate
+	let mut pos = empty_position();
+
+	pos.board[63] = Some(ColoredPiece { piece: Piece::King, side: Side::Black }); // h8
+	pos.board[46] = Some(ColoredPiece { piece: Piece::King, side: Side::White }); // g6
+	pos.board[53] = Some(ColoredPiece { piece: Piece::Queen, side: Side::White }); // f7
+	pos.king_squares = [46, 63];
+	pos.side_to_move = Side::Black;
+
+	let is_stalemate = pos.is_stalemate_for_side(Side::Black).expect("is_stalemate failed");
+
+	assert!(is_stalemate, "black should be in stalemate");
+}
+
+#[test]
+fn is_stalemate_for_side_white_in_check_with_no_moves_not_stalemate() {
+	// White king in checkmate - should return false (it's checkmate, not stalemate)
+	let mut pos = empty_position();
+
+	pos.board[4] = Some(ColoredPiece { piece: Piece::King, side: Side::White }); // e1
+	pos.board[12] = Some(ColoredPiece { piece: Piece::Queen, side: Side::Black }); // e2 (checking)
+	pos.board[20] = Some(ColoredPiece { piece: Piece::Rook, side: Side::Black }); // e3 (protects queen)
+	pos.board[3] = Some(ColoredPiece { piece: Piece::Rook, side: Side::Black }); // d1
+	pos.board[5] = Some(ColoredPiece { piece: Piece::Rook, side: Side::Black }); // f1
+	pos.board[60] = Some(ColoredPiece { piece: Piece::King, side: Side::Black }); // e8
+	pos.king_squares = [4, 60];
+	pos.side_to_move = Side::White;
+
+	let is_stalemate = pos.is_stalemate_for_side(Side::White).expect("is_stalemate failed");
+
+	assert!(!is_stalemate, "checkmate position should not be stalemate");
+}
+
+#[test]
+fn is_stalemate_for_side_black_in_check_with_no_moves_not_stalemate() {
+	// Black king in checkmate - should return false
+	let mut pos = empty_position();
+
+	pos.board[60] = Some(ColoredPiece { piece: Piece::King, side: Side::Black }); // e8
+	pos.board[52] = Some(ColoredPiece { piece: Piece::Queen, side: Side::White }); // e7 (checking)
+	pos.board[4] = Some(ColoredPiece { piece: Piece::Rook, side: Side::White }); // e1 (controls e-file)
+	pos.board[57] = Some(ColoredPiece { piece: Piece::Rook, side: Side::White }); // b8 (controls d8/f8)
+	pos.board[0] = Some(ColoredPiece { piece: Piece::King, side: Side::White }); // a1
+	pos.king_squares = [0, 60];
+	pos.side_to_move = Side::Black;
+
+	let is_stalemate = pos.is_stalemate_for_side(Side::Black).expect("is_stalemate failed");
+
+	assert!(!is_stalemate, "checkmate position should not be stalemate");
+}
+
+#[test]
+fn is_stalemate_for_side_white_not_in_check_with_moves_available() {
+	// White has moves available - should return false
+	let mut pos = empty_position();
+
+	pos.board[4] = Some(ColoredPiece { piece: Piece::King, side: Side::White }); // e1
+	pos.board[60] = Some(ColoredPiece { piece: Piece::King, side: Side::Black }); // e8
+	pos.king_squares = [4, 60];
+	pos.side_to_move = Side::White;
+
+	let is_stalemate = pos.is_stalemate_for_side(Side::White).expect("is_stalemate failed");
+
+	assert!(!is_stalemate, "position with available moves should not be stalemate");
+}
+
+#[test]
+fn is_stalemate_for_side_black_not_in_check_with_moves_available() {
+	// Black has moves available - should return false
+	let mut pos = empty_position();
+
+	pos.board[4] = Some(ColoredPiece { piece: Piece::King, side: Side::White }); // e1
+	pos.board[60] = Some(ColoredPiece { piece: Piece::King, side: Side::Black }); // e8
+	pos.king_squares = [4, 60];
+	pos.side_to_move = Side::Black;
+
+	let is_stalemate = pos.is_stalemate_for_side(Side::Black).expect("is_stalemate failed");
+
+	assert!(!is_stalemate, "position with available moves should not be stalemate");
+}
+
+#[test]
+fn is_stalemate_for_side_white_in_check_with_moves_available() {
+	// White in check but can escape - should return false
+	let mut pos = empty_position();
+
+	pos.board[4] = Some(ColoredPiece { piece: Piece::King, side: Side::White }); // e1
+	pos.board[60] = Some(ColoredPiece { piece: Piece::Rook, side: Side::Black }); // e8 (checking)
+	pos.board[56] = Some(ColoredPiece { piece: Piece::King, side: Side::Black }); // a8
+	pos.king_squares = [4, 56];
+	pos.side_to_move = Side::White;
+
+	let is_stalemate = pos.is_stalemate_for_side(Side::White).expect("is_stalemate failed");
+
+	assert!(!is_stalemate, "check with escape moves should not be stalemate");
+}
+
+#[test]
+fn is_stalemate_for_side_black_in_check_with_moves_available() {
+	// Black in check but can escape - should return false
+	let mut pos = empty_position();
+
+	pos.board[60] = Some(ColoredPiece { piece: Piece::King, side: Side::Black }); // e8
+	pos.board[4] = Some(ColoredPiece { piece: Piece::Rook, side: Side::White }); // e1 (checking)
+	pos.board[0] = Some(ColoredPiece { piece: Piece::King, side: Side::White }); // a1
+	pos.king_squares = [0, 60];
+	pos.side_to_move = Side::Black;
+
+	let is_stalemate = pos.is_stalemate_for_side(Side::Black).expect("is_stalemate failed");
+
+	assert!(!is_stalemate, "check with escape moves should not be stalemate");
+}
+
+#[test]
+fn is_stalemate_for_side_white_pawn_stalemate() {
+	// White king on a8, white pawn on a7, black king on c7 - white is stalemated
+	let mut pos = empty_position();
+
+	pos.board[56] = Some(ColoredPiece { piece: Piece::King, side: Side::White }); // a8
+	pos.board[48] = Some(ColoredPiece { piece: Piece::Pawn, side: Side::White }); // a7
+	pos.board[50] = Some(ColoredPiece { piece: Piece::King, side: Side::Black }); // c7
+	pos.king_squares = [56, 50];
+	pos.side_to_move = Side::White;
+
+	let is_stalemate = pos.is_stalemate_for_side(Side::White).expect("is_stalemate failed");
+
+	assert!(is_stalemate, "white should be in stalemate (blocked by own pawn)");
+}
+
+#[test]
+fn is_stalemate_for_side_black_pawn_stalemate() {
+	// Black king on h1, black pawn on h2, white king on f2 - black is stalemated
+	let mut pos = empty_position();
+
+	pos.board[7] = Some(ColoredPiece { piece: Piece::King, side: Side::Black }); // h1
+	pos.board[15] = Some(ColoredPiece { piece: Piece::Pawn, side: Side::Black }); // h2
+	pos.board[13] = Some(ColoredPiece { piece: Piece::King, side: Side::White }); // f2
+	pos.king_squares = [13, 7];
+	pos.side_to_move = Side::Black;
+
+	let is_stalemate = pos.is_stalemate_for_side(Side::Black).expect("is_stalemate failed");
+
+	assert!(is_stalemate, "black should be in stalemate (blocked by own pawn)");
+}
+
+#[test]
+fn is_stalemate_for_side_white_king_vs_multiple_pieces() {
+	// White has only king, surrounded but not in check - stalemate
+	let mut pos = empty_position();
+
+	pos.board[0] = Some(ColoredPiece { piece: Piece::King, side: Side::White }); // a1
+	pos.board[17] = Some(ColoredPiece { piece: Piece::King, side: Side::Black }); // b3
+	pos.board[10] = Some(ColoredPiece { piece: Piece::Bishop, side: Side::Black }); // c2
+	pos.king_squares = [0, 17];
+	pos.side_to_move = Side::White;
+
+	let is_stalemate = pos.is_stalemate_for_side(Side::White).expect("is_stalemate failed");
+
+	assert!(is_stalemate, "white king trapped should be stalemate");
+}
+
+#[test]
+fn is_stalemate_for_side_black_king_vs_multiple_pieces() {
+	// Black has only king, surrounded but not in check - stalemate
+	let mut pos = empty_position();
+
+	pos.board[63] = Some(ColoredPiece { piece: Piece::King, side: Side::Black }); // h8
+	pos.board[46] = Some(ColoredPiece { piece: Piece::King, side: Side::White }); // g6
+	pos.board[53] = Some(ColoredPiece { piece: Piece::Bishop, side: Side::White }); // f7
+	pos.king_squares = [46, 63];
+	pos.side_to_move = Side::Black;
+
+	let is_stalemate = pos.is_stalemate_for_side(Side::Black).expect("is_stalemate failed");
+
+	assert!(is_stalemate, "black king trapped should be stalemate");
+}
+
+#[test]
+fn is_stalemate_for_side_white_rook_stalemate_pattern() {
+	// White king on a8, black king on c7, black queen on b6 - stalemate
+	let mut pos = empty_position();
+
+	pos.board[56] = Some(ColoredPiece { piece: Piece::King, side: Side::White }); // a8
+	pos.board[50] = Some(ColoredPiece { piece: Piece::King, side: Side::Black }); // c7
+	pos.board[41] = Some(ColoredPiece { piece: Piece::Queen, side: Side::Black }); // b6
+	pos.king_squares = [56, 50];
+	pos.side_to_move = Side::White;
+
+	let is_stalemate = pos.is_stalemate_for_side(Side::White).expect("is_stalemate failed");
+
+	assert!(is_stalemate, "white should be in stalemate");
+}
+
+#[test]
+fn is_stalemate_for_side_black_rook_stalemate_pattern() {
+	// Black king on h1, white king on f2, white queen on g3 - stalemate
+	let mut pos = empty_position();
+
+	pos.board[7] = Some(ColoredPiece { piece: Piece::King, side: Side::Black }); // h1
+	pos.board[13] = Some(ColoredPiece { piece: Piece::King, side: Side::White }); // f2
+	pos.board[22] = Some(ColoredPiece { piece: Piece::Queen, side: Side::White }); // g3
+	pos.king_squares = [13, 7];
+	pos.side_to_move = Side::Black;
+
+	let is_stalemate = pos.is_stalemate_for_side(Side::Black).expect("is_stalemate failed");
+
+	assert!(is_stalemate, "black should be in stalemate");
+}

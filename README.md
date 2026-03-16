@@ -204,12 +204,6 @@ Later for engine:
 Add a generate all moves function and cache the results 
 
 ## Is game over checks
-get_all_legal_moves()
-    Loop throug all 64 squares. If piece = side to move -> get legal moves -> add to vector
-is_checkmate()
-    King needs to be in check, no legal moves exist
-is_stalemate()
-    King cant be in check, no legal moves exist
 is_insufficient_material()
     if only kings, knight/bishop + 2 kings, 2 bishops on same square color + 2 kings. Bishop color: (file + rank) % 2
 is_draw_by_repetition()
@@ -238,24 +232,3 @@ get_game_status() -> GameStatus
 
 ## Important info
 - king_squares[0]  is white and [1] is black
-
-
-is_draw_by_fifty_moves:
-- check with number over 100
-- check with number under 100
-- check with excatly 100
-
-get_legal_moves_for_side:
-- all tests for white and black
-- test 2 position with different moves from different pieces
-- test with no moves available (no check)
-- test with no moves available (with check so)
-- test in check with moves available that woulnt lift check
-- test in check with moves available that would lift check
-
-is_checkmate_for_side:
-- all tests for both sides
-- check with positions that are not check
-- check with positions that are check but not checkmate (caputre or similar can lift check)
-- check with position with no check but no moves (should be stalemate which will be checked/implemented later)
-- check with positions that are acutal checkmates

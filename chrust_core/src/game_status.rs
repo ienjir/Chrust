@@ -37,4 +37,16 @@ impl Position {
 
 		Ok(true)
 	}
+
+	pub fn is_stalemate_for_side(&mut self, side: Side) -> Result<bool, ChessError> {
+		if self.is_king_in_check(side)?.is_some() {
+			return Ok(false);
+		}
+
+		if !self.get_all_legal_moves_for_side(side)?.is_empty() {
+			return Ok(false);
+		}
+
+		Ok(true)
+	}
 }
