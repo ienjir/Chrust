@@ -787,3 +787,274 @@ fn is_stalemate_for_side_black_rook_stalemate_pattern() {
 
 	assert!(is_stalemate, "black should be in stalemate");
 }
+
+// ══════════════════════════════════════════════════════════════════════════════
+// is_insufficient_material tests
+// ══════════════════════════════════════════════════════════════════════════════
+
+#[test]
+fn is_insufficient_material_only_kings() {
+	let mut pos = empty_position();
+
+	pos.board[4] = Some(ColoredPiece { piece: Piece::King, side: Side::White }); // e1
+	pos.board[60] = Some(ColoredPiece { piece: Piece::King, side: Side::Black }); // e8
+	pos.king_squares = [4, 60];
+
+	assert!(pos.is_insufficient_material(), "king vs king should be insufficient material");
+}
+
+#[test]
+fn is_insufficient_material_king_and_bishop_vs_king_white() {
+	let mut pos = empty_position();
+
+	pos.board[4] = Some(ColoredPiece { piece: Piece::King, side: Side::White }); // e1
+	pos.board[12] = Some(ColoredPiece { piece: Piece::Bishop, side: Side::White }); // e2
+	pos.board[60] = Some(ColoredPiece { piece: Piece::King, side: Side::Black }); // e8
+	pos.king_squares = [4, 60];
+
+	assert!(pos.is_insufficient_material(), "king + bishop vs king should be insufficient material");
+}
+
+#[test]
+fn is_insufficient_material_king_and_bishop_vs_king_black() {
+	let mut pos = empty_position();
+
+	pos.board[4] = Some(ColoredPiece { piece: Piece::King, side: Side::White }); // e1
+	pos.board[60] = Some(ColoredPiece { piece: Piece::King, side: Side::Black }); // e8
+	pos.board[52] = Some(ColoredPiece { piece: Piece::Bishop, side: Side::Black }); // e7
+	pos.king_squares = [4, 60];
+
+	assert!(pos.is_insufficient_material(), "king vs king + bishop should be insufficient material");
+}
+
+#[test]
+fn is_insufficient_material_two_bishops_same_side() {
+	let mut pos = empty_position();
+
+	pos.board[4] = Some(ColoredPiece { piece: Piece::King, side: Side::White }); // e1
+	pos.board[12] = Some(ColoredPiece { piece: Piece::Bishop, side: Side::White }); // e2 (light square)
+	pos.board[13] = Some(ColoredPiece { piece: Piece::Bishop, side: Side::White }); // f2 (dark square)
+	pos.board[60] = Some(ColoredPiece { piece: Piece::King, side: Side::Black }); // e8
+	pos.king_squares = [4, 60];
+
+	assert!(!pos.is_insufficient_material(), "king + 2 bishops vs king should be sufficient material");
+}
+
+#[test]
+fn is_insufficient_material_two_bishops_different_sides_same_square_color() {
+	let mut pos = empty_position();
+
+	pos.board[4] = Some(ColoredPiece { piece: Piece::King, side: Side::White }); // e1
+	pos.board[0] = Some(ColoredPiece { piece: Piece::Bishop, side: Side::White }); // a1 (dark square: (0+0)%2 = 0)
+	pos.board[60] = Some(ColoredPiece { piece: Piece::King, side: Side::Black }); // e8
+	pos.board[63] = Some(ColoredPiece { piece: Piece::Bishop, side: Side::Black }); // h8 (dark square: (7+7)%2 = 0)
+	pos.king_squares = [4, 60];
+
+	assert!(pos.is_insufficient_material(), "king + bishop vs king + bishop (same color) should be insufficient material");
+}
+
+#[test]
+fn is_insufficient_material_two_bishops_different_sides_different_square_color() {
+	let mut pos = empty_position();
+
+	pos.board[4] = Some(ColoredPiece { piece: Piece::King, side: Side::White }); // e1
+	pos.board[0] = Some(ColoredPiece { piece: Piece::Bishop, side: Side::White }); // a1 (dark square: (0+0)%2 = 0)
+	pos.board[60] = Some(ColoredPiece { piece: Piece::King, side: Side::Black }); // e8
+	pos.board[56] = Some(ColoredPiece { piece: Piece::Bishop, side: Side::Black }); // a8 (light square: (0+7)%2 = 1)
+	pos.king_squares = [4, 60];
+
+	assert!(!pos.is_insufficient_material(), "king + bishop vs king + bishop (different color) should be sufficient material");
+}
+
+#[test]
+fn is_insufficient_material_king_and_knight_vs_king_white() {
+	let mut pos = empty_position();
+
+	pos.board[4] = Some(ColoredPiece { piece: Piece::King, side: Side::White }); // e1
+	pos.board[12] = Some(ColoredPiece { piece: Piece::Knight, side: Side::White }); // e2
+	pos.board[60] = Some(ColoredPiece { piece: Piece::King, side: Side::Black }); // e8
+	pos.king_squares = [4, 60];
+
+	assert!(pos.is_insufficient_material(), "king + knight vs king should be insufficient material");
+}
+
+#[test]
+fn is_insufficient_material_king_and_knight_vs_king_black() {
+	let mut pos = empty_position();
+
+	pos.board[4] = Some(ColoredPiece { piece: Piece::King, side: Side::White }); // e1
+	pos.board[60] = Some(ColoredPiece { piece: Piece::King, side: Side::Black }); // e8
+	pos.board[52] = Some(ColoredPiece { piece: Piece::Knight, side: Side::Black }); // e7
+	pos.king_squares = [4, 60];
+
+	assert!(pos.is_insufficient_material(), "king vs king + knight should be insufficient material");
+}
+
+#[test]
+fn is_insufficient_material_one_knight_each_side() {
+	let mut pos = empty_position();
+
+	pos.board[4] = Some(ColoredPiece { piece: Piece::King, side: Side::White }); // e1
+	pos.board[12] = Some(ColoredPiece { piece: Piece::Knight, side: Side::White }); // e2
+	pos.board[60] = Some(ColoredPiece { piece: Piece::King, side: Side::Black }); // e8
+	pos.board[52] = Some(ColoredPiece { piece: Piece::Knight, side: Side::Black }); // e7
+	pos.king_squares = [4, 60];
+
+	assert!(!pos.is_insufficient_material(), "king + knight vs king + knight should be sufficient material");
+}
+
+#[test]
+fn is_insufficient_material_two_knights_same_side_white() {
+	let mut pos = empty_position();
+
+	pos.board[4] = Some(ColoredPiece { piece: Piece::King, side: Side::White }); // e1
+	pos.board[12] = Some(ColoredPiece { piece: Piece::Knight, side: Side::White }); // e2
+	pos.board[13] = Some(ColoredPiece { piece: Piece::Knight, side: Side::White }); // f2
+	pos.board[60] = Some(ColoredPiece { piece: Piece::King, side: Side::Black }); // e8
+	pos.king_squares = [4, 60];
+
+	assert!(!pos.is_insufficient_material(), "king + 2 knights vs king should be sufficient material");
+}
+
+#[test]
+fn is_insufficient_material_two_knights_same_side_black() {
+	let mut pos = empty_position();
+
+	pos.board[4] = Some(ColoredPiece { piece: Piece::King, side: Side::White }); // e1
+	pos.board[60] = Some(ColoredPiece { piece: Piece::King, side: Side::Black }); // e8
+	pos.board[52] = Some(ColoredPiece { piece: Piece::Knight, side: Side::Black }); // e7
+	pos.board[53] = Some(ColoredPiece { piece: Piece::Knight, side: Side::Black }); // f7
+	pos.king_squares = [4, 60];
+
+	assert!(!pos.is_insufficient_material(), "king vs king + 2 knights should be sufficient material");
+}
+
+#[test]
+fn is_insufficient_material_knight_and_bishop_same_side_white() {
+	let mut pos = empty_position();
+
+	pos.board[4] = Some(ColoredPiece { piece: Piece::King, side: Side::White }); // e1
+	pos.board[12] = Some(ColoredPiece { piece: Piece::Knight, side: Side::White }); // e2
+	pos.board[13] = Some(ColoredPiece { piece: Piece::Bishop, side: Side::White }); // f2
+	pos.board[60] = Some(ColoredPiece { piece: Piece::King, side: Side::Black }); // e8
+	pos.king_squares = [4, 60];
+
+	assert!(!pos.is_insufficient_material(), "king + knight + bishop vs king should be sufficient material");
+}
+
+#[test]
+fn is_insufficient_material_knight_and_bishop_same_side_black() {
+	let mut pos = empty_position();
+
+	pos.board[4] = Some(ColoredPiece { piece: Piece::King, side: Side::White }); // e1
+	pos.board[60] = Some(ColoredPiece { piece: Piece::King, side: Side::Black }); // e8
+	pos.board[52] = Some(ColoredPiece { piece: Piece::Knight, side: Side::Black }); // e7
+	pos.board[53] = Some(ColoredPiece { piece: Piece::Bishop, side: Side::Black }); // f7
+	pos.king_squares = [4, 60];
+
+	assert!(!pos.is_insufficient_material(), "king vs king + knight + bishop should be sufficient material");
+}
+
+#[test]
+fn is_insufficient_material_knight_and_bishop_different_sides() {
+	let mut pos = empty_position();
+
+	pos.board[4] = Some(ColoredPiece { piece: Piece::King, side: Side::White }); // e1
+	pos.board[12] = Some(ColoredPiece { piece: Piece::Knight, side: Side::White }); // e2
+	pos.board[60] = Some(ColoredPiece { piece: Piece::King, side: Side::Black }); // e8
+	pos.board[52] = Some(ColoredPiece { piece: Piece::Bishop, side: Side::Black }); // e7
+	pos.king_squares = [4, 60];
+
+	assert!(!pos.is_insufficient_material(), "king + knight vs king + bishop should be sufficient material");
+}
+
+#[test]
+fn is_insufficient_material_with_pawn() {
+	let mut pos = empty_position();
+
+	pos.board[4] = Some(ColoredPiece { piece: Piece::King, side: Side::White }); // e1
+	pos.board[12] = Some(ColoredPiece { piece: Piece::Pawn, side: Side::White }); // e2
+	pos.board[60] = Some(ColoredPiece { piece: Piece::King, side: Side::Black }); // e8
+	pos.king_squares = [4, 60];
+
+	assert!(!pos.is_insufficient_material(), "pawn present should be sufficient material");
+}
+
+#[test]
+fn is_insufficient_material_with_rook() {
+	let mut pos = empty_position();
+
+	pos.board[4] = Some(ColoredPiece { piece: Piece::King, side: Side::White }); // e1
+	pos.board[0] = Some(ColoredPiece { piece: Piece::Rook, side: Side::White }); // a1
+	pos.board[60] = Some(ColoredPiece { piece: Piece::King, side: Side::Black }); // e8
+	pos.king_squares = [4, 60];
+
+	assert!(!pos.is_insufficient_material(), "rook present should be sufficient material");
+}
+
+#[test]
+fn is_insufficient_material_with_queen() {
+	let mut pos = empty_position();
+
+	pos.board[4] = Some(ColoredPiece { piece: Piece::King, side: Side::White }); // e1
+	pos.board[3] = Some(ColoredPiece { piece: Piece::Queen, side: Side::White }); // d1
+	pos.board[60] = Some(ColoredPiece { piece: Piece::King, side: Side::Black }); // e8
+	pos.king_squares = [4, 60];
+
+	assert!(!pos.is_insufficient_material(), "queen present should be sufficient material");
+}
+
+#[test]
+fn is_insufficient_material_with_multiple_pieces() {
+	let mut pos = empty_position();
+
+	pos.board[4] = Some(ColoredPiece { piece: Piece::King, side: Side::White }); // e1
+	pos.board[0] = Some(ColoredPiece { piece: Piece::Rook, side: Side::White }); // a1
+	pos.board[1] = Some(ColoredPiece { piece: Piece::Knight, side: Side::White }); // b1
+	pos.board[60] = Some(ColoredPiece { piece: Piece::King, side: Side::Black }); // e8
+	pos.board[63] = Some(ColoredPiece { piece: Piece::Rook, side: Side::Black }); // h8
+	pos.king_squares = [4, 60];
+
+	assert!(!pos.is_insufficient_material(), "multiple pieces should be sufficient material");
+}
+
+#[test]
+fn is_insufficient_material_three_knights_same_side() {
+	let mut pos = empty_position();
+
+	pos.board[4] = Some(ColoredPiece { piece: Piece::King, side: Side::White }); // e1
+	pos.board[12] = Some(ColoredPiece { piece: Piece::Knight, side: Side::White }); // e2
+	pos.board[13] = Some(ColoredPiece { piece: Piece::Knight, side: Side::White }); // f2
+	pos.board[14] = Some(ColoredPiece { piece: Piece::Knight, side: Side::White }); // g2
+	pos.board[60] = Some(ColoredPiece { piece: Piece::King, side: Side::Black }); // e8
+	pos.king_squares = [4, 60];
+
+	assert!(!pos.is_insufficient_material(), "king + 3 knights vs king should be sufficient material");
+}
+
+#[test]
+fn is_insufficient_material_multiple_bishops_same_side() {
+	let mut pos = empty_position();
+
+	pos.board[4] = Some(ColoredPiece { piece: Piece::King, side: Side::White }); // e1
+	pos.board[0] = Some(ColoredPiece { piece: Piece::Bishop, side: Side::White }); // a1 (dark)
+	pos.board[2] = Some(ColoredPiece { piece: Piece::Bishop, side: Side::White }); // c1 (dark)
+	pos.board[5] = Some(ColoredPiece { piece: Piece::Bishop, side: Side::White }); // f1 (light)
+	pos.board[60] = Some(ColoredPiece { piece: Piece::King, side: Side::Black }); // e8
+	pos.king_squares = [4, 60];
+
+	assert!(!pos.is_insufficient_material(), "king + 3 bishops vs king should be sufficient material");
+}
+
+#[test]
+fn is_insufficient_material_king_and_bishop_vs_king_and_knight() {
+	let mut pos = empty_position();
+
+	pos.board[4] = Some(ColoredPiece { piece: Piece::King, side: Side::White }); // e1
+	pos.board[12] = Some(ColoredPiece { piece: Piece::Bishop, side: Side::White }); // e2
+	pos.board[60] = Some(ColoredPiece { piece: Piece::King, side: Side::Black }); // e8
+	pos.board[52] = Some(ColoredPiece { piece: Piece::Knight, side: Side::Black }); // e7
+	pos.king_squares = [4, 60];
+
+	assert!(!pos.is_insufficient_material(), "king + bishop vs king + knight should be sufficient material");
+}

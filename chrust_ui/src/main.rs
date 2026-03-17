@@ -12,11 +12,7 @@ use crate::{
 	layout::TEST_FEN_STRING,
 	renderer::{handle_ui_state, render_chess_pieces, render_chessboard_without_pieces, render_possible_moves},
 };
-use chrust_core::{
-	ColoredPiece, Piece, Side,
-	moves::make_move::{Move, MoveKind},
-	position::load_position_from_fen,
-};
+use chrust_core::position::load_position_from_fen;
 use macroquad::file::set_pc_assets_folder;
 use macroquad::prelude::*;
 
@@ -38,11 +34,11 @@ async fn main() {
 		ui_state: None,
 	};
 
-	let skd = match game_state.position.is_checkmate_for_side(Side::Black) {
-		Ok(x) => x,
-		Err(_x) => return,
-	};
-	println!("checkmate: {skd}");
+	if game_state.position.is_insufficient_material() {
+		println!("Not enough material");
+	} else {
+		println!("Enough material");
+	}
 
 	game_state.position.print_board();
 
