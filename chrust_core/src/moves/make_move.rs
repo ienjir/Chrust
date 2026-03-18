@@ -4,7 +4,7 @@ use crate::{
 	ColoredPiece, Piece, Side, Square,
 	errors::ChessError,
 	helper::{is_square_on_board, is_valid_promomotion_piece},
-	position::{Position, Undo},
+	position::{Position, Undo}, zobrist::{ZobristTable, piece_index, zobrist},
 };
 
 #[derive(PartialEq, Debug, Clone, Copy)]
@@ -51,11 +51,31 @@ impl Position {
 		let piece = self.get_piece_from_square(mv.from_square)?;
 		let mut undo = self.build_undo();
 
-		self.apply_move_to_board(mv, piece, &mut undo)?;
+		let zobrist = zobrist();
+
+		for i in 0..4 {
+			if self.castle[i] {
+				self.zobrist_hash ^= zobrist.castling[i];
+			}
+		}
+		if let Some(ep) = self.en_passant {
+			self.zobrist_hash ^= zobrist.enpassant[(ep % 8) as usize];
+		}
+
+		self.apply_move_to_board(mv, piece, &mut undo, zobrist)?;
 		self.update_en_passant(mv);
-		self.update_clocks(mv);
+		self.update_clocks_and_side(mv, zobrist);
 		self.update_king_positions(mv);
 		self.set_castle_rights(mv);
+
+		for i in 0..4 {
+			if self.castle[i] {
+				self.zobrist_hash ^= zobrist.castling[i];
+			}
+		}
+		if let Some(ep) = self.en_passant {
+			self.zobrist_hash ^= zobrist.enpassant[(ep % 8) as usize];
+		}
 
 		Ok(undo)
 	}
@@ -102,7 +122,15 @@ impl Position {
 		}
 	}
 
-	pub fn apply_move_to_board(&mut self, mv: Move, piece: ColoredPiece, undo: &mut Undo) -> Result<(), ChessError> {
+	pub fn apply_move_to_board(&mut self, mv: Move, piece: ColoredPiece, undo: &mut Undo, zobrist: &ZobristTable) -> Result<(), ChessError> {
+		self.zobrist_hash ^= zobrist.pieces[piece_index(piece)][mv.from_square as usize];
+		self.zobrist_hash ^= zobrist.pieces[piece_index(piece)][mv.to_square as usize];
+
+		// Remove piece from hash for caputre and promotion capture
+		if self.board[mv.to_square as usize].is_some() {
+			self.zobrist_hash ^= zobrist.pieces[piece_index(self.board[mv.to_square as usize].unwrap())][mv.to_square as usize]
+		}
+
 		self.board[mv.from_square as usize] = None;
 		undo.captured_piece = self.board[mv.to_square as usize];
 		self.board[mv.to_square as usize] = Some(piece);
@@ -111,15 +139,30 @@ impl Position {
 			MoveKind::EnPassant { capture_square } => {
 				undo.captured_piece = self.board[capture_square as usize];
 				self.board[capture_square as usize] = None;
+
+				self.zobrist_hash ^= zobrist.pieces[piece_index(undo.captured_piece.unwrap())][capture_square as usize];
 			}
+
 			MoveKind::Promotion { promotion_piece } => {
 				is_valid_promomotion_piece(promotion_piece)?;
+				let promotion_colored_piece = ColoredPiece { piece: promotion_piece, side: piece.side };
+
+				self.zobrist_hash ^= zobrist.pieces[piece_index(piece)][mv.to_square as usize];
+				self.zobrist_hash ^= zobrist.pieces[piece_index(promotion_colored_piece)][mv.to_square as usize];
+
 				self.board[mv.to_square as usize] = Some(ColoredPiece { piece: promotion_piece, side: piece.side });
 			}
+
 			MoveKind::Castling { rook_from, rook_to } => {
+				let rook = self.board[rook_from as usize].unwrap();
+
+				self.zobrist_hash ^= zobrist.pieces[piece_index(rook)][rook_from as usize];
+				self.zobrist_hash ^= zobrist.pieces[piece_index(rook)][rook_to as usize];
+
 				self.board[rook_from as usize] = None;
 				self.board[rook_to as usize] = Some(ColoredPiece { piece: Piece::Rook, side: piece.side });
 			}
+
 			_ => {}
 		}
 
@@ -134,12 +177,15 @@ impl Position {
 		}
 	}
 
-	pub fn update_clocks(&mut self, mv: Move) {
+	pub fn update_clocks_and_side(&mut self, mv: Move, zobrist: &ZobristTable) {
 		if mv.colored_piece.piece == Piece::Pawn || matches!(mv.move_kind, MoveKind::Capture | MoveKind::EnPassant { .. }) {
 			self.halfmove_clock = 0;
 		} else {
 			self.halfmove_clock += 1;
 		}
+
+		self.zobrist_hash ^= zobrist.side;
+
 		match self.side_to_move {
 			Side::White => self.side_to_move = Side::Black,
 			Side::Black => {

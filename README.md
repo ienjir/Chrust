@@ -204,11 +204,9 @@ Then check for things like halfmove clock etc (need to be expaned)
     Add a generate all moves function and cache the results 
 
 ## Is game over checks
-is_insufficient_material()
-    if only kings, knight/bishop + 2 kings, 2 bishops on same square color + 2 kings. Bishop color: (file + rank) % 2
 is_draw_by_repetition()
     after each move make hash of position -> hashmap key = position hash, value = how many position were the same i		
-    get_game_status() -> GameStatus
+get_game_status() -> GameStatus
 
 
 ## Next steps

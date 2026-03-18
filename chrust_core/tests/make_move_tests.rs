@@ -2,6 +2,7 @@ mod common;
 
 use chrust_core::moves::make_move::{Move, MoveKind};
 use chrust_core::position::Position;
+use chrust_core::zobrist::zobrist;
 use chrust_core::{ColoredPiece, Piece, Side, errors::ChessError};
 use common::empty_position;
 
@@ -979,7 +980,7 @@ fn apply_move_to_board_quiet_move() {
 	};
 	let mut undo = pos.build_undo();
 
-	pos.apply_move_to_board(m, knight, &mut undo).unwrap();
+	pos.apply_move_to_board(m, knight, &mut undo, zobrist()).unwrap();
 
 	assert_eq!(pos.board[1], None);
 	assert_eq!(pos.board[18], Some(knight));
@@ -1002,7 +1003,7 @@ fn apply_move_to_board_capture() {
 	};
 	let mut undo = pos.build_undo();
 
-	pos.apply_move_to_board(m, white_bishop, &mut undo).unwrap();
+	pos.apply_move_to_board(m, white_bishop, &mut undo, zobrist()).unwrap();
 
 	assert_eq!(pos.board[10], None);
 	assert_eq!(pos.board[28], Some(white_bishop));
@@ -1025,7 +1026,7 @@ fn apply_move_to_board_en_passant() {
 	};
 	let mut undo = pos.build_undo();
 
-	pos.apply_move_to_board(m, white_pawn, &mut undo).unwrap();
+	pos.apply_move_to_board(m, white_pawn, &mut undo, zobrist()).unwrap();
 
 	assert_eq!(pos.board[33], None);
 	assert_eq!(pos.board[34], None);
@@ -1047,7 +1048,7 @@ fn apply_move_to_board_promotion() {
 	};
 	let mut undo = pos.build_undo();
 
-	pos.apply_move_to_board(m, white_pawn, &mut undo).unwrap();
+	pos.apply_move_to_board(m, white_pawn, &mut undo, zobrist()).unwrap();
 
 	assert_eq!(pos.board[48], None);
 	assert_eq!(pos.board[56], Some(ColoredPiece { piece: Piece::Queen, side: Side::White }));
@@ -1070,7 +1071,7 @@ fn apply_move_to_board_promotion_capture() {
 	};
 	let mut undo = pos.build_undo();
 
-	pos.apply_move_to_board(m, white_pawn, &mut undo).unwrap();
+	pos.apply_move_to_board(m, white_pawn, &mut undo, zobrist()).unwrap();
 
 	assert_eq!(pos.board[48], None);
 	assert_eq!(pos.board[57], Some(ColoredPiece { piece: Piece::Rook, side: Side::White }));
@@ -1093,7 +1094,7 @@ fn apply_move_to_board_castling() {
 	};
 	let mut undo = pos.build_undo();
 
-	pos.apply_move_to_board(m, king, &mut undo).unwrap();
+	pos.apply_move_to_board(m, king, &mut undo, zobrist()).unwrap();
 
 	assert_eq!(pos.board[4], None);
 	assert_eq!(pos.board[6], Some(king));
@@ -1115,7 +1116,7 @@ fn apply_move_to_board_rejects_pawn_promotion() {
 	};
 	let mut undo = pos.build_undo();
 
-	assert!(matches!(pos.apply_move_to_board(m, white_pawn, &mut undo), Err(ChessError::PromotionPieceCantBePawn)));
+	assert!(matches!(pos.apply_move_to_board(m, white_pawn, &mut undo, zobrist()), Err(ChessError::PromotionPieceCantBePawn)));
 }
 
 // ── update_en_passant tests ───────────────────────────────────────────────────
@@ -1189,7 +1190,7 @@ fn update_clocks_resets_halfmove_on_pawn_move() {
 		colored_piece: pawn,
 	};
 
-	pos.update_clocks(m);
+	pos.update_clocks_and_side(m, zobrist());
 
 	assert_eq!(pos.halfmove_clock, 0);
 }
@@ -1207,7 +1208,7 @@ fn update_clocks_resets_halfmove_on_capture() {
 		colored_piece: rook,
 	};
 
-	pos.update_clocks(m);
+	pos.update_clocks_and_side(m, zobrist());
 
 	assert_eq!(pos.halfmove_clock, 0);
 }
@@ -1225,7 +1226,7 @@ fn update_clocks_increments_halfmove_on_quiet_non_pawn() {
 		colored_piece: knight,
 	};
 
-	pos.update_clocks(m);
+	pos.update_clocks_and_side(m, zobrist());
 
 	assert_eq!(pos.halfmove_clock, 3);
 }
@@ -1243,7 +1244,7 @@ fn update_clocks_toggles_side_white_to_black() {
 		colored_piece: rook,
 	};
 
-	pos.update_clocks(m);
+	pos.update_clocks_and_side(m, zobrist());
 
 	assert_eq!(pos.side_to_move, Side::Black);
 }
@@ -1262,7 +1263,7 @@ fn update_clocks_toggles_side_black_to_white_and_increments_fullmove() {
 		colored_piece: rook,
 	};
 
-	pos.update_clocks(m);
+	pos.update_clocks_and_side(m, zobrist());
 
 	assert_eq!(pos.side_to_move, Side::White);
 	assert_eq!(pos.fullmove_counter, 11);

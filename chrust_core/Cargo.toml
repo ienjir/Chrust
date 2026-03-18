@@ -2,3 +2,10 @@
 name = "chrust_core"
 version = "0.1.0"
 edition = "2024"
+
+[dev-dependencies]
+criterion = "0.5"
+
+[[bench]]
+name = "zobrist_bench"
+harness = false

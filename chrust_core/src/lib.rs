@@ -1,6 +1,7 @@
 use core::fmt;
 
 pub mod errors;
+pub mod zobrist;
 pub mod game_status;
 pub mod helper;
 pub mod moves;

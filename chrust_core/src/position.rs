@@ -9,6 +9,7 @@ pub struct Position {
 	pub king_squares: [Square; 2],
 	pub halfmove_clock: u32,
 	pub fullmove_counter: u32,
+	pub zobrist_hash: u64,
 }
 
 #[derive(Copy, Clone)]
@@ -30,6 +31,7 @@ pub fn load_position_from_fen(fen: &str) -> Result<Position, FenError> {
 		king_squares: [4, 60],
 		halfmove_clock: 0,
 		fullmove_counter: 0,
+		zobrist_hash: 0,
 	};
 
 	let fen_parts: Vec<&str> = fen.split_whitespace().collect();

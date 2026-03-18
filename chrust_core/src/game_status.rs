@@ -1,4 +1,4 @@
-use crate::{ColoredPiece, Piece, Side, Square, errors::ChessError, helper::file_rank, moves::make_move::Move, position::Position};
+use crate::{Piece, Side, Square, errors::ChessError, helper::file_rank, moves::make_move::Move, position::Position};
 
 pub enum GameStatus {
 	Playing,
@@ -9,6 +9,8 @@ pub enum GameStatus {
 	DrawByRepetition,
 	DrawByInsufficientMaterial,
 }
+
+
 
 impl Position {
 	pub fn is_draw_by_fifty_moves(&self) -> bool {
