@@ -4,7 +4,7 @@ use chrust_core::moves::make_move::{Move, MoveKind};
 use chrust_core::position::Position;
 use chrust_core::zobrist::zobrist;
 use chrust_core::{ColoredPiece, Piece, Side};
-use common::{assert_hash_matches_computed, empty_position, make_move_and_verify_hash, position_with_hash};
+use common::{assert_hash_matches_computed, empty_position, make_move_and_verify_hash, make_then_undo_and_verify_hash, position_with_hash};
 
 // ══════════════════════════════════════════════════════════════════════════════
 // compute_hash() Basic Tests
@@ -947,4 +947,212 @@ fn hash_edge_case_all_features_combined() {
 	// Verify en passant was cleared and side changed
 	assert_eq!(pos.en_passant, None);
 	assert_eq!(pos.side_to_move, Side::Black);
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// Undo Move - Hash Restoration
+// ══════════════════════════════════════════════════════════════════════════════
+
+#[test]
+fn undo_quiet_move_restores_hash() {
+	let mut pos = position_with_hash("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+
+	let mv = Move {
+		from_square: 1,
+		to_square: 18,
+		move_kind: MoveKind::Quiet,
+		colored_piece: ColoredPiece { piece: Piece::Knight, side: Side::White },
+	};
+
+	make_then_undo_and_verify_hash(&mut pos, mv);
+}
+
+#[test]
+fn undo_capture_restores_hash() {
+	let mut pos = position_with_hash("rnbqkbnr/pppp1ppp/8/4p3/3P4/8/PPP1PPPP/RNBQKBNR w KQkq - 0 1");
+
+	let mv = Move {
+		from_square: 27, // d4
+		to_square: 36,   // e5
+		move_kind: MoveKind::Capture,
+		colored_piece: ColoredPiece { piece: Piece::Pawn, side: Side::White },
+	};
+
+	make_then_undo_and_verify_hash(&mut pos, mv);
+}
+
+#[test]
+fn undo_double_pawn_push_restores_hash() {
+	let mut pos = position_with_hash("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+
+	let mv = Move {
+		from_square: 12,
+		to_square: 28,
+		move_kind: MoveKind::DoublePawnPush { passed_square: 20 },
+		colored_piece: ColoredPiece { piece: Piece::Pawn, side: Side::White },
+	};
+
+	make_then_undo_and_verify_hash(&mut pos, mv);
+}
+
+#[test]
+fn undo_en_passant_restores_hash() {
+	let mut pos = position_with_hash("r3k2r/8/8/pP6/8/8/8/R3K2R w KQkq a6 0 1");
+
+	let mv = Move {
+		from_square: 33,
+		to_square: 40,
+		move_kind: MoveKind::EnPassant { capture_square: 32 },
+		colored_piece: ColoredPiece { piece: Piece::Pawn, side: Side::White },
+	};
+
+	make_then_undo_and_verify_hash(&mut pos, mv);
+}
+
+#[test]
+fn undo_promotion_to_queen_restores_hash() {
+	let mut pos = position_with_hash("4k3/4P3/8/8/8/8/8/4K3 w - - 0 1");
+
+	let mv = Move {
+		from_square: 52,
+		to_square: 60,
+		move_kind: MoveKind::Promotion { promotion_piece: Piece::Queen },
+		colored_piece: ColoredPiece { piece: Piece::Pawn, side: Side::White },
+	};
+
+	make_then_undo_and_verify_hash(&mut pos, mv);
+}
+
+#[test]
+fn undo_promotion_to_knight_restores_hash() {
+	let mut pos = position_with_hash("4k3/4P3/8/8/8/8/8/4K3 w - - 0 1");
+
+	let mv = Move {
+		from_square: 52,
+		to_square: 60,
+		move_kind: MoveKind::Promotion { promotion_piece: Piece::Knight },
+		colored_piece: ColoredPiece { piece: Piece::Pawn, side: Side::White },
+	};
+
+	make_then_undo_and_verify_hash(&mut pos, mv);
+}
+
+#[test]
+fn undo_capture_promotion_restores_hash() {
+	let mut pos = position_with_hash("4k3/4P3/8/8/8/8/8/4K3 w - - 0 1");
+	pos.board[59] = Some(ColoredPiece { piece: Piece::Rook, side: Side::Black }); // d8
+	pos.zobrist_hash = pos.compute_hash();
+
+	let mv = Move {
+		from_square: 52,
+		to_square: 59,
+		move_kind: MoveKind::Promotion { promotion_piece: Piece::Queen },
+		colored_piece: ColoredPiece { piece: Piece::Pawn, side: Side::White },
+	};
+
+	make_then_undo_and_verify_hash(&mut pos, mv);
+}
+
+#[test]
+fn undo_white_kingside_castle_restores_hash() {
+	let mut pos = position_with_hash("r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1");
+
+	let mv = Move {
+		from_square: 4,
+		to_square: 6,
+		move_kind: MoveKind::Castling { rook_from: 7, rook_to: 5 },
+		colored_piece: ColoredPiece { piece: Piece::King, side: Side::White },
+	};
+
+	make_then_undo_and_verify_hash(&mut pos, mv);
+}
+
+#[test]
+fn undo_white_queenside_castle_restores_hash() {
+	let mut pos = position_with_hash("r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1");
+
+	let mv = Move {
+		from_square: 4,
+		to_square: 2,
+		move_kind: MoveKind::Castling { rook_from: 0, rook_to: 3 },
+		colored_piece: ColoredPiece { piece: Piece::King, side: Side::White },
+	};
+
+	make_then_undo_and_verify_hash(&mut pos, mv);
+}
+
+#[test]
+fn undo_black_kingside_castle_restores_hash() {
+	let mut pos = position_with_hash("r3k2r/8/8/8/8/8/8/R3K2R b KQkq - 0 1");
+
+	let mv = Move {
+		from_square: 60,
+		to_square: 62,
+		move_kind: MoveKind::Castling { rook_from: 63, rook_to: 61 },
+		colored_piece: ColoredPiece { piece: Piece::King, side: Side::Black },
+	};
+
+	make_then_undo_and_verify_hash(&mut pos, mv);
+}
+
+#[test]
+fn undo_restores_castling_rights_in_hash() {
+	// King move removes castling rights; undo should restore them
+	let mut pos = position_with_hash("r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1");
+
+	let mv = Move {
+		from_square: 4,
+		to_square: 12,
+		move_kind: MoveKind::Quiet,
+		colored_piece: ColoredPiece { piece: Piece::King, side: Side::White },
+	};
+
+	make_then_undo_and_verify_hash(&mut pos, mv);
+	assert!(pos.castle[0] && pos.castle[1], "castling rights should be restored after undo");
+}
+
+#[test]
+fn undo_restores_en_passant_in_hash() {
+	// Undoing a move should restore the previous en passant square in the hash
+	let mut pos = position_with_hash("rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1");
+
+	let mv = Move {
+		from_square: 57,
+		to_square: 42,
+		move_kind: MoveKind::Quiet,
+		colored_piece: ColoredPiece { piece: Piece::Knight, side: Side::Black },
+	};
+
+	make_then_undo_and_verify_hash(&mut pos, mv);
+	assert_eq!(pos.en_passant, Some(20)); // e3
+}
+
+#[test]
+fn undo_multiple_moves_restores_starting_hash() {
+	let mut pos = position_with_hash("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+	let starting_hash = pos.zobrist_hash;
+
+	let mv1 = Move {
+		from_square: 12,
+		to_square: 28,
+		move_kind: MoveKind::DoublePawnPush { passed_square: 20 },
+		colored_piece: ColoredPiece { piece: Piece::Pawn, side: Side::White },
+	};
+	let mv2 = Move {
+		from_square: 52,
+		to_square: 36,
+		move_kind: MoveKind::DoublePawnPush { passed_square: 44 },
+		colored_piece: ColoredPiece { piece: Piece::Pawn, side: Side::Black },
+	};
+
+	let undo1 = pos.make_move_unvalidated(mv1).unwrap();
+	let undo2 = pos.make_move_unvalidated(mv2).unwrap();
+
+	pos.undo_move(undo2, mv2).unwrap();
+	assert_hash_matches_computed(&pos);
+
+	pos.undo_move(undo1, mv1).unwrap();
+	assert_hash_matches_computed(&pos);
+
+	assert_eq!(pos.zobrist_hash, starting_hash);
 }

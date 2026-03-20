@@ -46,3 +46,12 @@ pub fn make_move_and_verify_hash(pos: &mut Position, mv: Move) {
 	pos.make_move_unvalidated(mv).unwrap();
 	assert_hash_matches_computed(pos);
 }
+
+/// Make a move then undo it; verify hash is restored to the original
+pub fn make_then_undo_and_verify_hash(pos: &mut Position, mv: Move) {
+	let hash_before = pos.zobrist_hash;
+	let undo = pos.make_move_unvalidated(mv).unwrap();
+	pos.undo_move(undo, mv).unwrap();
+	assert_hash_matches_computed(pos);
+	assert_eq!(pos.zobrist_hash, hash_before, "hash after undo doesn't match original");
+}
