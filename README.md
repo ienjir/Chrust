@@ -209,6 +209,8 @@ is_draw_by_repetition()
 get_game_status() -> GameStatus
 
 
+
+
 ## Next steps
     1. [x] Add undo_move 
     2. [x] Add legality filtering to move gen 
@@ -221,7 +223,8 @@ get_game_status() -> GameStatus
     9. [x] Refactor move-gen APIs to reuse validated/colored piece context from callers where it actually reduces duplication
     10. [x] Finish fen loading
     11. [ ] Add validation for things like halfmove clock
-    12. [ ] Use private functions and test over public functions 
+    12. [ ] Use new Game struct in make move validated
+    13. [ ] Use private functions and test over public functions 
 
 
 ## Small errors 

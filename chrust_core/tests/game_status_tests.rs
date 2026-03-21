@@ -1,6 +1,8 @@
 mod common;
 
+use chrust_core::game_status::GameStatus;
 use chrust_core::moves::make_move::MoveKind;
+use chrust_core::position::Game;
 use chrust_core::{ColoredPiece, Piece, Side};
 use common::empty_position;
 
@@ -801,6 +803,102 @@ fn is_insufficient_material_only_kings() {
 	pos.king_squares = [4, 60];
 
 	assert!(pos.is_insufficient_material(), "king vs king should be insufficient material");
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// is_draw_by_repetition tests
+// ══════════════════════════════════════════════════════════════════════════════
+
+fn empty_game(hash: u64, halfmove_clock: u32) -> Game {
+	let mut pos = empty_position();
+	pos.zobrist_hash = hash;
+	pos.halfmove_clock = halfmove_clock;
+	Game {
+		position: pos,
+		hash_history: Vec::new(),
+		move_history: Vec::new(),
+		undo_history: Vec::new(),
+		game_status: GameStatus::Playing,
+	}
+}
+
+#[test]
+fn is_draw_by_repetition_no_history() {
+	let game = empty_game(0xABCD, 0);
+
+	assert!(!game.is_draw_by_repetition(), "no history means no repetition");
+}
+
+#[test]
+fn is_draw_by_repetition_one_prior_occurrence() {
+	// Hash appears once in history: position has occurred twice total — not yet a draw
+	let hash = 0xDEADBEEF;
+	let mut game = empty_game(hash, 4);
+	game.hash_history = vec![0x1111, 0x2222, hash, 0x3333];
+
+	assert!(!game.is_draw_by_repetition(), "two occurrences (1 in history + current) is not yet a draw");
+}
+
+#[test]
+fn is_draw_by_repetition_two_prior_occurrences() {
+	// Hash appears twice in history: position has occurred three times total — draw
+	let hash = 0xDEADBEEF;
+	let mut game = empty_game(hash, 6);
+	game.hash_history = vec![0x1111, hash, 0x2222, hash, 0x3333, 0x4444];
+
+	assert!(game.is_draw_by_repetition(), "three occurrences (2 in history + current) should be a draw");
+}
+
+#[test]
+fn is_draw_by_repetition_occurrences_outside_halfmove_window_not_counted() {
+	// Two occurrences exist in history but both are outside the halfmove_clock window
+	let hash = 0xDEADBEEF;
+	let mut game = empty_game(hash, 2);
+	// history has 6 entries; halfmove_clock is 2, so only the last 2 are examined
+	game.hash_history = vec![hash, hash, 0x1111, 0x2222, 0x3333, 0x4444];
+
+	assert!(!game.is_draw_by_repetition(), "occurrences outside the halfmove window should not count");
+}
+
+#[test]
+fn is_draw_by_repetition_one_occurrence_in_window_one_outside() {
+	// Only one prior occurrence falls inside the window
+	let hash = 0xCAFE;
+	let mut game = empty_game(hash, 3);
+	// history has 5 entries; window covers last 3: [0x2222, hash, 0x3333]
+	game.hash_history = vec![hash, 0x1111, 0x2222, hash, 0x3333];
+
+	assert!(!game.is_draw_by_repetition(), "only one in-window occurrence is not a draw");
+}
+
+#[test]
+fn is_draw_by_repetition_hash_zero_not_special_cased() {
+	// hash 0 should behave like any other hash value
+	let hash = 0u64;
+	let mut game = empty_game(hash, 4);
+	game.hash_history = vec![hash, 0x1111, hash, 0x2222];
+
+	assert!(game.is_draw_by_repetition(), "hash 0 with two prior occurrences should be a draw");
+}
+
+#[test]
+fn is_draw_by_repetition_halfmove_clock_zero_checks_nothing() {
+	// halfmove_clock of 0 means the window is empty — no history to search
+	let hash = 0xBEEF;
+	let mut game = empty_game(hash, 0);
+	game.hash_history = vec![hash, hash, hash];
+
+	assert!(!game.is_draw_by_repetition(), "halfmove_clock 0 means empty window, so no repetition");
+}
+
+#[test]
+fn is_draw_by_repetition_exactly_two_in_window_is_draw() {
+	// Window exactly contains two prior occurrences
+	let hash = 0x1234;
+	let mut game = empty_game(hash, 4);
+	game.hash_history = vec![hash, 0xAAAA, hash, 0xBBBB];
+
+	assert!(game.is_draw_by_repetition(), "two prior occurrences within window is a draw");
 }
 
 #[test]

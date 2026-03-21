@@ -1,4 +1,4 @@
-use crate::{Piece, Side, Square, errors::ChessError, helper::file_rank, moves::make_move::Move, position::Position};
+use crate::{Piece, Side, Square, errors::ChessError, helper::file_rank, moves::make_move::Move, position::{Game, Position}};
 
 pub enum GameStatus {
 	Playing,
@@ -9,8 +9,6 @@ pub enum GameStatus {
 	DrawByRepetition,
 	DrawByInsufficientMaterial,
 }
-
-
 
 impl Position {
 	pub fn is_draw_by_fifty_moves(&self) -> bool {
@@ -121,5 +119,27 @@ impl Position {
 		}
 
 		true
+	}
+}
+
+impl Game {
+	pub fn is_draw_by_repetition(&self) -> bool {
+		let current_hash = self.position.zobrist_hash;
+		let lookback = self.position.halfmove_clock as usize;
+		let history_len = self.hash_history.len();
+
+		let mut count = 0;
+		for i in (history_len.saturating_sub(lookback) .. history_len).rev() {
+			if self.hash_history[i] == current_hash{
+				count += 1;
+
+				// Current hash isnt in history yet
+				if count >= 2 {
+					return true;
+				}
+			}
+		}
+
+		false
 	}
 }

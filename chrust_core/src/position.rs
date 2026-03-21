@@ -1,4 +1,12 @@
-use crate::{ColoredPiece, Piece, Side, Square, errors::FenError, helper::square};
+use crate::{ColoredPiece, Piece, Side, Square, errors::FenError, game_status::GameStatus, helper::square, moves::make_move::Move};
+
+pub struct Game {
+	pub position: Position,
+	pub hash_history: Vec<u64>,
+	pub move_history: Vec<Move>,
+	pub undo_history: Vec<Undo>,
+	pub game_status: GameStatus,
+}
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub struct Position {
