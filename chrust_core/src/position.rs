@@ -63,6 +63,8 @@ pub fn load_position_from_fen(fen: &str) -> Result<Position, FenError> {
 		}
 	}
 
+	position.zobrist_hash = position.compute_hash(); 
+
 	Ok(position)
 }
 
