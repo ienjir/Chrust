@@ -3,11 +3,70 @@ use crate::{Piece, Side, Square, errors::ChessError, helper::file_rank, moves::m
 pub enum GameStatus {
 	Playing,
 	InCheck,
-	Checkmate(Side),
+	CheckmateForSide(Side),
 	Stalemate,
 	DrawByFiftyMoves,
 	DrawByRepetition,
 	DrawByInsufficientMaterial,
+}
+
+impl Game {
+	pub fn update_game_status(&mut self) -> Result<(), ChessError> {
+		if self.is_draw_by_repetition() {
+			self.game_status = GameStatus::DrawByRepetition;
+			return Ok(());
+		}
+
+		if self.position.is_draw_by_fifty_moves() {
+			self.game_status = GameStatus::DrawByFiftyMoves;
+			return Ok(());
+		}
+
+
+		if self.position.is_checkmate_for_side(self.position.side_to_move)? {
+			self.game_status = GameStatus::CheckmateForSide(self.position.side_to_move.opponent());
+			return Ok(());
+		}
+
+		if self.position.is_stalemate_for_side(self.position.side_to_move)? {
+			self.game_status = GameStatus::Stalemate;
+			return Ok(());
+		}
+
+		if self.position.is_insufficient_material() {
+			self.game_status = GameStatus::DrawByInsufficientMaterial;
+			return Ok(());
+		}
+
+		if self.position.is_king_in_check(self.position.side_to_move)?.is_some() {
+			self.game_status = GameStatus::InCheck;
+			return Ok(());
+		} 
+
+		self.game_status = GameStatus::Playing;
+
+		Ok(())
+	}
+
+	pub fn is_draw_by_repetition(&self) -> bool {
+		let current_hash = self.position.zobrist_hash;
+		let lookback = self.position.halfmove_clock as usize;
+		let history_len = self.hash_history.len();
+
+		let mut count = 0;
+		for i in (history_len.saturating_sub(lookback) .. history_len).rev() {
+			if self.hash_history[i] == current_hash{
+				count += 1;
+
+				// Current hash isnt in history yet
+				if count >= 2 {
+					return true;
+				}
+			}
+		}
+
+		false
+	}
 }
 
 impl Position {
@@ -122,24 +181,3 @@ impl Position {
 	}
 }
 
-impl Game {
-	pub fn is_draw_by_repetition(&self) -> bool {
-		let current_hash = self.position.zobrist_hash;
-		let lookback = self.position.halfmove_clock as usize;
-		let history_len = self.hash_history.len();
-
-		let mut count = 0;
-		for i in (history_len.saturating_sub(lookback) .. history_len).rev() {
-			if self.hash_history[i] == current_hash{
-				count += 1;
-
-				// Current hash isnt in history yet
-				if count >= 2 {
-					return true;
-				}
-			}
-		}
-
-		false
-	}
-}

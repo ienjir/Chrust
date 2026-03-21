@@ -154,7 +154,7 @@ impl Position {
 
 				self.zobrist_hash ^= zobrist.pieces[piece_index(undo.captured_piece.unwrap())][capture_square as usize];
 			}
-			MoveKind::Promotion { promotion_piece } => {
+			MoveKind::Promotion { promotion_piece: _ } => {
 				self.zobrist_hash ^= zobrist.pieces[piece_index(piece)][mv.from_square as usize];       
 				self.zobrist_hash ^= zobrist.pieces[piece_index(mv.colored_piece)][mv.from_square as usize]; 
 			}

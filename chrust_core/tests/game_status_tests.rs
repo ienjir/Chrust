@@ -1156,3 +1156,316 @@ fn is_insufficient_material_king_and_bishop_vs_king_and_knight() {
 
 	assert!(!pos.is_insufficient_material(), "king + bishop vs king + knight should be sufficient material");
 }
+
+// ══════════════════════════════════════════════════════════════════════════════
+// update_game_status tests
+// ══════════════════════════════════════════════════════════════════════════════
+
+#[test]
+fn update_game_status_playing() {
+	// Position with rooks: no check, no draw conditions — normal game in progress
+	let mut pos = empty_position();
+	pos.board[4] = Some(ColoredPiece { piece: Piece::King, side: Side::White });  // e1
+	pos.board[0] = Some(ColoredPiece { piece: Piece::Rook, side: Side::White });  // a1
+	pos.board[60] = Some(ColoredPiece { piece: Piece::King, side: Side::Black }); // e8
+	pos.board[63] = Some(ColoredPiece { piece: Piece::Rook, side: Side::Black }); // h8
+	pos.king_squares = [4, 60];
+	pos.side_to_move = Side::White;
+
+	let mut game = Game {
+		position: pos,
+		hash_history: Vec::new(),
+		move_history: Vec::new(),
+		undo_history: Vec::new(),
+		game_status: GameStatus::Playing,
+	};
+
+	game.update_game_status().expect("update_game_status failed");
+
+	assert!(matches!(game.game_status, GameStatus::Playing), "normal position should be Playing");
+}
+
+#[test]
+fn update_game_status_in_check() {
+	// White king on e1, black rook on e8 (gives check), black king on a8
+	// White is in check but has escape moves — not checkmate
+	let mut pos = empty_position();
+	pos.board[4] = Some(ColoredPiece { piece: Piece::King, side: Side::White }); // e1
+	pos.board[60] = Some(ColoredPiece { piece: Piece::Rook, side: Side::Black }); // e8
+	pos.board[56] = Some(ColoredPiece { piece: Piece::King, side: Side::Black }); // a8
+	pos.king_squares = [4, 56];
+	pos.side_to_move = Side::White;
+
+	let mut game = Game {
+		position: pos,
+		hash_history: Vec::new(),
+		move_history: Vec::new(),
+		undo_history: Vec::new(),
+		game_status: GameStatus::Playing,
+	};
+
+	game.update_game_status().expect("update_game_status failed");
+
+	assert!(matches!(game.game_status, GameStatus::InCheck), "king in check with escape moves should be InCheck");
+}
+
+#[test]
+fn update_game_status_checkmate_black_wins() {
+	// Back-rank mate: white king on h1, pawns on g2/h2 block escape,
+	// black rook on h8 controls h-file, black rook on a1 delivers check along rank 1
+	// White to move, is in checkmate — black wins
+	let mut pos = empty_position();
+	pos.board[7] = Some(ColoredPiece { piece: Piece::King, side: Side::White });  // h1
+	pos.board[14] = Some(ColoredPiece { piece: Piece::Pawn, side: Side::White }); // g2
+	pos.board[15] = Some(ColoredPiece { piece: Piece::Pawn, side: Side::White }); // h2
+	pos.board[63] = Some(ColoredPiece { piece: Piece::Rook, side: Side::Black }); // h8
+	pos.board[0] = Some(ColoredPiece { piece: Piece::Rook, side: Side::Black });  // a1
+	pos.board[56] = Some(ColoredPiece { piece: Piece::King, side: Side::Black }); // a8
+	pos.king_squares = [7, 56];
+	pos.side_to_move = Side::White;
+
+	let mut game = Game {
+		position: pos,
+		hash_history: Vec::new(),
+		move_history: Vec::new(),
+		undo_history: Vec::new(),
+		game_status: GameStatus::Playing,
+	};
+
+	game.update_game_status().expect("update_game_status failed");
+
+	assert!(
+		matches!(game.game_status, GameStatus::CheckmateForSide(Side::Black)),
+		"white checkmated should set CheckmateForSide(Black)"
+	);
+}
+
+#[test]
+fn update_game_status_checkmate_white_wins() {
+	// Black king on e8, white queen on e7 (check), white rook on e1 (controls e-file),
+	// white rook on b8 (controls d8/f8), white king on a1
+	// Black to move, is in checkmate — white wins
+	let mut pos = empty_position();
+	pos.board[60] = Some(ColoredPiece { piece: Piece::King, side: Side::Black });  // e8
+	pos.board[52] = Some(ColoredPiece { piece: Piece::Queen, side: Side::White }); // e7
+	pos.board[4] = Some(ColoredPiece { piece: Piece::Rook, side: Side::White });   // e1
+	pos.board[57] = Some(ColoredPiece { piece: Piece::Rook, side: Side::White });  // b8
+	pos.board[0] = Some(ColoredPiece { piece: Piece::King, side: Side::White });   // a1
+	pos.king_squares = [0, 60];
+	pos.side_to_move = Side::Black;
+
+	let mut game = Game {
+		position: pos,
+		hash_history: Vec::new(),
+		move_history: Vec::new(),
+		undo_history: Vec::new(),
+		game_status: GameStatus::Playing,
+	};
+
+	game.update_game_status().expect("update_game_status failed");
+
+	assert!(
+		matches!(game.game_status, GameStatus::CheckmateForSide(Side::White)),
+		"black checkmated should set CheckmateForSide(White)"
+	);
+}
+
+#[test]
+fn update_game_status_stalemate() {
+	// White king on a1, black king on c2, black queen on b3
+	// White to move: king is not in check but has no legal moves
+	let mut pos = empty_position();
+	pos.board[0] = Some(ColoredPiece { piece: Piece::King, side: Side::White });   // a1
+	pos.board[10] = Some(ColoredPiece { piece: Piece::King, side: Side::Black });  // c2
+	pos.board[17] = Some(ColoredPiece { piece: Piece::Queen, side: Side::Black }); // b3
+	pos.king_squares = [0, 10];
+	pos.side_to_move = Side::White;
+
+	let mut game = Game {
+		position: pos,
+		hash_history: Vec::new(),
+		move_history: Vec::new(),
+		undo_history: Vec::new(),
+		game_status: GameStatus::Playing,
+	};
+
+	game.update_game_status().expect("update_game_status failed");
+
+	assert!(matches!(game.game_status, GameStatus::Stalemate), "no legal moves and not in check should be Stalemate");
+}
+
+#[test]
+fn update_game_status_draw_by_repetition() {
+	// Position hash appears twice in history (three-fold repetition)
+	let hash = 0xDEADBEEF_u64;
+	let mut pos = empty_position();
+	pos.board[4] = Some(ColoredPiece { piece: Piece::King, side: Side::White });
+	pos.board[60] = Some(ColoredPiece { piece: Piece::King, side: Side::Black });
+	pos.king_squares = [4, 60];
+	pos.zobrist_hash = hash;
+	pos.halfmove_clock = 6;
+
+	let mut game = Game {
+		position: pos,
+		hash_history: vec![0x1111, hash, 0x2222, hash, 0x3333, 0x4444],
+		move_history: Vec::new(),
+		undo_history: Vec::new(),
+		game_status: GameStatus::Playing,
+	};
+
+	game.update_game_status().expect("update_game_status failed");
+
+	assert!(
+		matches!(game.game_status, GameStatus::DrawByRepetition),
+		"three-fold repetition should set DrawByRepetition"
+	);
+}
+
+#[test]
+fn update_game_status_draw_by_fifty_moves() {
+	// halfmove_clock has reached 100 (fifty full moves without capture or pawn move)
+	// Kings only, no check, no repetition — should be draw by fifty-move rule
+	let mut pos = empty_position();
+	pos.board[4] = Some(ColoredPiece { piece: Piece::King, side: Side::White });
+	pos.board[60] = Some(ColoredPiece { piece: Piece::King, side: Side::Black });
+	pos.king_squares = [4, 60];
+	pos.halfmove_clock = 100;
+	pos.zobrist_hash = 0xABCDEF;
+	pos.side_to_move = Side::White;
+
+	let mut game = Game {
+		position: pos,
+		// No repeated hashes — distinct entries only
+		hash_history: (0..100).map(|i| i as u64).collect(),
+		move_history: Vec::new(),
+		undo_history: Vec::new(),
+		game_status: GameStatus::Playing,
+	};
+
+	game.update_game_status().expect("update_game_status failed");
+
+	assert!(
+		matches!(game.game_status, GameStatus::DrawByFiftyMoves),
+		"halfmove_clock == 100 should set DrawByFiftyMoves"
+	);
+}
+
+#[test]
+fn update_game_status_draw_by_insufficient_material_kings_only() {
+	// K vs K — neither side can force checkmate
+	let mut pos = empty_position();
+	pos.board[4] = Some(ColoredPiece { piece: Piece::King, side: Side::White });
+	pos.board[60] = Some(ColoredPiece { piece: Piece::King, side: Side::Black });
+	pos.king_squares = [4, 60];
+	pos.side_to_move = Side::White;
+
+	let mut game = Game {
+		position: pos,
+		hash_history: Vec::new(),
+		move_history: Vec::new(),
+		undo_history: Vec::new(),
+		game_status: GameStatus::Playing,
+	};
+
+	game.update_game_status().expect("update_game_status failed");
+
+	assert!(
+		matches!(game.game_status, GameStatus::DrawByInsufficientMaterial),
+		"K vs K should set DrawByInsufficientMaterial"
+	);
+}
+
+#[test]
+fn update_game_status_draw_by_insufficient_material_kb_vs_k() {
+	// K+B vs K — bishop cannot force checkmate alone
+	let mut pos = empty_position();
+	pos.board[4] = Some(ColoredPiece { piece: Piece::King, side: Side::White });
+	pos.board[12] = Some(ColoredPiece { piece: Piece::Bishop, side: Side::White }); // e2
+	pos.board[60] = Some(ColoredPiece { piece: Piece::King, side: Side::Black });
+	pos.king_squares = [4, 60];
+	pos.side_to_move = Side::White;
+
+	let mut game = Game {
+		position: pos,
+		hash_history: Vec::new(),
+		move_history: Vec::new(),
+		undo_history: Vec::new(),
+		game_status: GameStatus::Playing,
+	};
+
+	game.update_game_status().expect("update_game_status failed");
+
+	assert!(
+		matches!(game.game_status, GameStatus::DrawByInsufficientMaterial),
+		"K+B vs K should set DrawByInsufficientMaterial"
+	);
+}
+
+#[test]
+fn update_game_status_draw_by_insufficient_material_kn_vs_k() {
+	// K+N vs K — knight cannot force checkmate alone
+	let mut pos = empty_position();
+	pos.board[4] = Some(ColoredPiece { piece: Piece::King, side: Side::White });
+	pos.board[11] = Some(ColoredPiece { piece: Piece::Knight, side: Side::White }); // d2
+	pos.board[60] = Some(ColoredPiece { piece: Piece::King, side: Side::Black });
+	pos.king_squares = [4, 60];
+	pos.side_to_move = Side::White;
+
+	let mut game = Game {
+		position: pos,
+		hash_history: Vec::new(),
+		move_history: Vec::new(),
+		undo_history: Vec::new(),
+		game_status: GameStatus::Playing,
+	};
+
+	game.update_game_status().expect("update_game_status failed");
+
+	assert!(
+		matches!(game.game_status, GameStatus::DrawByInsufficientMaterial),
+		"K+N vs K should set DrawByInsufficientMaterial"
+	);
+}
+
+#[test]
+fn update_game_status_repetition_has_priority_over_fifty_moves() {
+	// When both repetition and fifty-move conditions hold, repetition takes priority
+	let hash = 0xCAFEBABE_u64;
+	let mut pos = empty_position();
+	pos.board[4] = Some(ColoredPiece { piece: Piece::King, side: Side::White });
+	pos.board[60] = Some(ColoredPiece { piece: Piece::King, side: Side::Black });
+	pos.king_squares = [4, 60];
+	pos.zobrist_hash = hash;
+	pos.halfmove_clock = 100;
+
+	let mut game = Game {
+		position: pos,
+		hash_history: vec![hash, 0xAAAA, hash, 0xBBBB, 0xCCCC, 0xDDDD,
+		                   0xEEEE, 0xFFFF, 0x1010, 0x2020, 0x3030, 0x4040,
+		                   0x5050, 0x6060, 0x7070, 0x8080, 0x9090, 0xA0A0,
+		                   0xB0B0, 0xC0C0, 0xD0D0, 0xE0E0, 0xF0F0, 0x0101,
+		                   0x0202, 0x0303, 0x0404, 0x0505, 0x0606, 0x0707,
+		                   0x0808, 0x0909, 0x1111, 0x1212, 0x1313, 0x1414,
+		                   0x1515, 0x1616, 0x1717, 0x1818, 0x1919, 0x2121,
+		                   0x2222, 0x2323, 0x2424, 0x2525, 0x2626, 0x2727,
+		                   0x2828, 0x2929, 0x3131, 0x3232, 0x3333, 0x3434,
+		                   0x3535, 0x3636, 0x3737, 0x3838, 0x3939, 0x4141,
+		                   0x4242, 0x4343, 0x4444, 0x4545, 0x4646, 0x4747,
+		                   0x4848, 0x4949, 0x5151, 0x5252, 0x5353, 0x5454,
+		                   0x5555, 0x5656, 0x5757, 0x5858, 0x5959, 0x6161,
+		                   0x6262, 0x6363, 0x6464, 0x6565, 0x6666, 0x6767,
+		                   0x6868, 0x6969, 0x7171, 0x7272, 0x7373, 0x7474,
+		                   0x7575, 0x7676, 0x7777, 0x7878, 0x7979, 0x8181,
+		                   0x8282, 0x8383, 0x8484, 0x8585],
+		move_history: Vec::new(),
+		undo_history: Vec::new(),
+		game_status: GameStatus::Playing,
+	};
+
+	game.update_game_status().expect("update_game_status failed");
+
+	assert!(
+		matches!(game.game_status, GameStatus::DrawByRepetition),
+		"repetition check runs first and should set DrawByRepetition"
+	);
+}
