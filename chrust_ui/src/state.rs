@@ -1,8 +1,8 @@
 use crate::assets::Assets;
-use chrust_core::{Square, moves::make_move::Move, position::Position};
+use chrust_core::{Square, moves::make_move::Move, position::Game};
 
 pub struct GameState {
-	pub position: Position,
+	pub game: Game,
 	pub assets: Assets,
 	pub selected: Option<Square>,
 	pub possible_moves: Vec<Move>,

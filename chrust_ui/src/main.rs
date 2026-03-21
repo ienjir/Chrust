@@ -12,7 +12,8 @@ use crate::{
 	layout::TEST_FEN_STRING,
 	renderer::{handle_ui_state, render_chess_pieces, render_chessboard_without_pieces, render_possible_moves},
 };
-use chrust_core::position::load_position_from_fen;
+use chrust_core::game_status::GameStatus;
+use chrust_core::position::{Game, load_position_from_fen};
 use macroquad::file::set_pc_assets_folder;
 use macroquad::prelude::*;
 
@@ -27,20 +28,26 @@ async fn main() {
 	};
 
 	let mut game_state = GameState {
-		position: default_position,
+		game: Game {
+			position: default_position,
+			hash_history: Vec::new(),
+			move_history: Vec::new(),
+			undo_history: Vec::new(),
+			game_status: GameStatus::Playing,
+		},
 		assets: assets,
 		selected: None,
 		possible_moves: Vec::new(),
 		ui_state: None,
 	};
 
-	if game_state.position.is_insufficient_material() {
+	if game_state.game.position.is_insufficient_material() {
 		println!("Not enough material");
 	} else {
 		println!("Enough material");
 	}
 
-	game_state.position.print_board();
+	game_state.game.position.print_board();
 
 	if 1 == 1 {
 		return;

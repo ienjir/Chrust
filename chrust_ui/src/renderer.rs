@@ -65,7 +65,7 @@ pub async fn render_chess_pieces(game_state: &GameState) {
 	for square in 0..64 {
 		let rect = get_square_rectangle(square);
 
-		let Some(piece) = game_state.position.board[square as usize] else {
+		let Some(piece) = game_state.game.position.board[square as usize] else {
 			continue;
 		};
 		let texture = game_state.assets.pieces.get(&(piece.side, piece.piece)).expect("missing texture");
@@ -118,7 +118,7 @@ pub fn render_promotion_modal(game_state: &GameState) {
 		draw_rectangle(rect.x, rect.y, rect.w, rect.h, color);
 
 		let piece = PROMOTION_PIECES[piece_index];
-		let texture = game_state.assets.pieces.get(&(game_state.position.side_to_move, piece)).expect("missing texture");
+		let texture = game_state.assets.pieces.get(&(game_state.game.position.side_to_move, piece)).expect("missing texture");
 
 		draw_texture_ex(
 			&texture,

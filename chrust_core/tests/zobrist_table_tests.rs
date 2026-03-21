@@ -1,4 +1,4 @@
-use chrust_core::zobrist::{piece_index, zobrist, ZobristTable};
+use chrust_core::zobrist::{ZobristTable, piece_index, zobrist};
 use chrust_core::{ColoredPiece, Piece, Side};
 use std::collections::HashSet;
 

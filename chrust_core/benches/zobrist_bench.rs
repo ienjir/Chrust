@@ -2,7 +2,7 @@ use chrust_core::moves::make_move::{Move, MoveKind};
 use chrust_core::position::load_position_from_fen;
 use chrust_core::zobrist::{piece_index, zobrist};
 use chrust_core::{ColoredPiece, Piece, Side};
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use criterion::{Criterion, black_box, criterion_group, criterion_main};
 
 fn bench_zobrist_table_access(c: &mut Criterion) {
 	c.bench_function("zobrist_table_access", |b| {

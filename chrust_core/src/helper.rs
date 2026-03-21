@@ -1,6 +1,12 @@
 use std::u8;
 
-use crate::{ColoredPiece, Piece, Side, Square, errors::ChessError, position::Position};
+use crate::{
+	ColoredPiece, Piece, Side, Square,
+	errors::ChessError,
+	game_status::GameStatus,
+	moves::make_move::Move,
+	position::{Game, Position, Undo},
+};
 
 pub fn file(square: Square) -> u8 {
 	square % 8
@@ -34,6 +40,16 @@ impl ColoredPiece {
 		}
 
 		piece_char
+	}
+}
+
+impl Game {
+	pub fn is_legal_game_state(&self) -> bool {
+		if self.game_status == GameStatus::Playing || self.game_status == GameStatus::InCheck {
+			return true;
+		}
+
+		false
 	}
 }
 

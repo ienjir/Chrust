@@ -4,7 +4,8 @@ use crate::{
 	ColoredPiece, Piece, Side, Square,
 	errors::ChessError,
 	helper::{is_square_on_board, is_valid_promomotion_piece},
-	position::{Position, Undo}, zobrist::{ZobristTable, piece_index, zobrist},
+	position::{Game, Position, Undo},
+	zobrist::{ZobristTable, piece_index, zobrist},
 };
 
 #[derive(PartialEq, Debug, Clone, Copy)]
@@ -34,9 +35,13 @@ pub enum MoveKind {
 	},
 }
 
-impl Position {
+impl Game {
 	pub fn make_move(&mut self, mv: &Move) -> Result<Undo, ChessError> {
-		let legal_moves = self.get_legal_moves(mv.from_square, self.side_to_move)?;
+		if !self.is_legal_game_state() {
+			return Err(ChessError::GameIsFinished);
+		}
+
+		let legal_moves = self.position.get_legal_moves(mv.from_square, self.position.side_to_move)?;
 
 		is_square_on_board(mv.to_square)?;
 
@@ -44,9 +49,19 @@ impl Position {
 			return Err(ChessError::NotAValidMove);
 		}
 
-		self.make_move_unvalidated(*mv)
-	}
+		let undo = self.position.make_move_unvalidated(*mv)?;
 
+		self.hash_history.push(self.position.zobrist_hash);
+		self.undo_history.push(undo);
+		self.move_history.push(*mv);
+
+		self.update_game_status()?;
+
+		Ok(undo)
+	}
+}
+
+impl Position {
 	pub fn make_move_unvalidated(&mut self, mv: Move) -> Result<Undo, ChessError> {
 		let piece = self.get_piece_from_square(mv.from_square)?;
 		let mut undo = self.build_undo();
@@ -73,6 +88,7 @@ impl Position {
 				self.zobrist_hash ^= zobrist.castling[i];
 			}
 		}
+
 		if let Some(ep) = self.en_passant {
 			self.zobrist_hash ^= zobrist.enpassant[(ep % 8) as usize];
 		}
@@ -94,14 +110,13 @@ impl Position {
 		}
 
 		self.undo_move_on_board(mv, undo, zobrist);
-		self.apply_undo(undo); 
+		self.apply_undo(undo);
 
 		for i in 0..4 {
 			if self.castle[i] {
 				self.zobrist_hash ^= zobrist.castling[i];
 			}
 		}
-
 
 		if let Some(ep) = self.en_passant {
 			self.zobrist_hash ^= zobrist.enpassant[(ep % 8) as usize];
@@ -155,12 +170,12 @@ impl Position {
 				self.zobrist_hash ^= zobrist.pieces[piece_index(undo.captured_piece.unwrap())][capture_square as usize];
 			}
 			MoveKind::Promotion { promotion_piece: _ } => {
-				self.zobrist_hash ^= zobrist.pieces[piece_index(piece)][mv.from_square as usize];       
-				self.zobrist_hash ^= zobrist.pieces[piece_index(mv.colored_piece)][mv.from_square as usize]; 
+				self.zobrist_hash ^= zobrist.pieces[piece_index(piece)][mv.from_square as usize];
+				self.zobrist_hash ^= zobrist.pieces[piece_index(mv.colored_piece)][mv.from_square as usize];
 			}
 			MoveKind::Castling { rook_from, rook_to } => {
 				let rook = self.board[rook_to as usize].unwrap(); // rook is currently at rook_to
-																  //
+				//
 				self.zobrist_hash ^= zobrist.pieces[piece_index(rook)][rook_to as usize];
 				self.zobrist_hash ^= zobrist.pieces[piece_index(rook)][rook_from as usize];
 

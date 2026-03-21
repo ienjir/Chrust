@@ -1,5 +1,12 @@
-use crate::{Piece, Side, Square, errors::ChessError, helper::file_rank, moves::make_move::Move, position::{Game, Position}};
+use crate::{
+	Piece, Side, Square,
+	errors::ChessError,
+	helper::file_rank,
+	moves::make_move::Move,
+	position::{Game, Position},
+};
 
+#[derive(PartialEq, Eq)]
 pub enum GameStatus {
 	Playing,
 	InCheck,
@@ -22,7 +29,6 @@ impl Game {
 			return Ok(());
 		}
 
-
 		if self.position.is_checkmate_for_side(self.position.side_to_move)? {
 			self.game_status = GameStatus::CheckmateForSide(self.position.side_to_move.opponent());
 			return Ok(());
@@ -41,7 +47,7 @@ impl Game {
 		if self.position.is_king_in_check(self.position.side_to_move)?.is_some() {
 			self.game_status = GameStatus::InCheck;
 			return Ok(());
-		} 
+		}
 
 		self.game_status = GameStatus::Playing;
 
@@ -54,8 +60,8 @@ impl Game {
 		let history_len = self.hash_history.len();
 
 		let mut count = 0;
-		for i in (history_len.saturating_sub(lookback) .. history_len).rev() {
-			if self.hash_history[i] == current_hash{
+		for i in (history_len.saturating_sub(lookback)..history_len).rev() {
+			if self.hash_history[i] == current_hash {
 				count += 1;
 
 				// Current hash isnt in history yet
@@ -180,4 +186,3 @@ impl Position {
 		true
 	}
 }
-

@@ -40,7 +40,7 @@ pub fn click_promotion(game_state: &mut GameState, piece: Piece) {
 
 	mv.move_kind = MoveKind::Promotion { promotion_piece: piece };
 
-	match game_state.position.make_move(&mv) {
+	match game_state.game.make_move(&mv) {
 		Ok(_undo) => {
 			game_state.possible_moves.clear();
 			game_state.selected = None;
@@ -61,7 +61,7 @@ pub fn click_square(game_state: &mut GameState, from_square: Square) {
 	}
 
 	if game_state.selected.is_none() {
-		let square_occupant = match game_state.position.board[from_square as usize] {
+		let square_occupant = match game_state.game.position.board[from_square as usize] {
 			Some(p) => p,
 			None => {
 				game_state.possible_moves.clear();
@@ -69,12 +69,12 @@ pub fn click_square(game_state: &mut GameState, from_square: Square) {
 			}
 		};
 
-		if square_occupant.side != game_state.position.side_to_move {
+		if square_occupant.side != game_state.game.position.side_to_move {
 			game_state.possible_moves.clear();
 			return;
 		}
 
-		match game_state.position.get_legal_moves(from_square, game_state.position.side_to_move) {
+		match game_state.game.position.get_legal_moves(from_square, game_state.game.position.side_to_move) {
 			Ok(moves) => {
 				game_state.selected = Some(from_square);
 				game_state.possible_moves = moves;
@@ -91,7 +91,7 @@ pub fn click_square(game_state: &mut GameState, from_square: Square) {
 		let Some(selected_square) = game_state.selected else {
 			return;
 		};
-		let clicked_occupant = game_state.position.board[from_square as usize];
+		let clicked_occupant = game_state.game.position.board[from_square as usize];
 
 		if from_square == selected_square {
 			game_state.possible_moves.clear();
@@ -108,7 +108,7 @@ pub fn click_square(game_state: &mut GameState, from_square: Square) {
 				return;
 			}
 
-			match game_state.position.make_move(&chosen_move) {
+			match game_state.game.make_move(&chosen_move) {
 				Ok(_undo) => {
 					game_state.possible_moves.clear();
 					game_state.selected = None;
@@ -124,8 +124,8 @@ pub fn click_square(game_state: &mut GameState, from_square: Square) {
 		}
 
 		if let Some(piece) = clicked_occupant {
-			if piece.side == game_state.position.side_to_move {
-				match game_state.position.get_legal_moves(from_square, game_state.position.side_to_move) {
+			if piece.side == game_state.game.position.side_to_move {
+				match game_state.game.position.get_legal_moves(from_square, game_state.game.position.side_to_move) {
 					Ok(moves) => {
 						game_state.selected = Some(from_square);
 						game_state.possible_moves = moves;

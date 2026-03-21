@@ -1,8 +1,30 @@
 use chrust_core::moves::make_move::{Move, MoveKind};
 use chrust_core::{
-	position::{load_position_from_fen, Position},
 	Side, Square,
+	game_status::GameStatus,
+	position::{Game, Position, load_position_from_fen},
 };
+
+pub fn game_from_fen(fen: &str) -> Game {
+	let position = position_with_hash(fen);
+	Game {
+		position,
+		hash_history: Vec::new(),
+		move_history: Vec::new(),
+		undo_history: Vec::new(),
+		game_status: GameStatus::Playing,
+	}
+}
+
+pub fn empty_game() -> Game {
+	Game {
+		position: empty_position(),
+		hash_history: Vec::new(),
+		move_history: Vec::new(),
+		undo_history: Vec::new(),
+		game_status: GameStatus::Playing,
+	}
+}
 
 pub fn empty_position() -> Position {
 	Position {

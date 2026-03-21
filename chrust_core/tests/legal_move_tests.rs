@@ -2,7 +2,7 @@ mod common;
 
 use chrust_core::moves::make_move::{Move, MoveKind};
 use chrust_core::{ColoredPiece, Piece, Side, errors::ChessError};
-use common::{empty_position, has_move, has_to_square};
+use common::{empty_game, empty_position, has_move, has_to_square};
 
 fn mv(from_square: u8, to_square: u8, move_kind: MoveKind, colored_piece: ColoredPiece) -> Move {
 	Move {
@@ -112,20 +112,20 @@ fn en_passant_is_filtered_out_when_it_exposes_the_king() {
 
 #[test]
 fn make_move_rejects_pinned_rook_sidestep() {
-	let mut pos = empty_position();
+	let mut game = empty_game();
 
 	let white_king = ColoredPiece { piece: Piece::King, side: Side::White };
 	let white_rook = ColoredPiece { piece: Piece::Rook, side: Side::White };
 	let black_king = ColoredPiece { piece: Piece::King, side: Side::Black };
 	let black_rook = ColoredPiece { piece: Piece::Rook, side: Side::Black };
 
-	pos.board[4] = Some(white_king); // e1
-	pos.board[12] = Some(white_rook); // e2
-	pos.board[56] = Some(black_king); // a8
-	pos.board[60] = Some(black_rook); // e8
-	pos.king_squares = [4, 56];
+	game.position.board[4] = Some(white_king); // e1
+	game.position.board[12] = Some(white_rook); // e2
+	game.position.board[56] = Some(black_king); // a8
+	game.position.board[60] = Some(black_rook); // e8
+	game.position.king_squares = [4, 56];
 
 	let illegal_move = mv(12, 13, MoveKind::Quiet, white_rook);
 
-	assert!(matches!(pos.make_move(&illegal_move), Err(ChessError::NotAValidMove)));
+	assert!(matches!(game.make_move(&illegal_move), Err(ChessError::NotAValidMove)));
 }

@@ -19,7 +19,7 @@ pub fn zobrist() -> &'static ZobristTable {
 
 impl ZobristTable {
 	pub fn new() -> Self {
-		let mut rng = Splitmix64 (6769420);
+		let mut rng = Splitmix64(6769420);
 
 		let mut pieces = [[0u64; 64]; 12];
 		for piece in 0..12 {
@@ -32,7 +32,7 @@ impl ZobristTable {
 			pieces,
 			side: rng.next_u64(),
 			castling: std::array::from_fn(|_| rng.next_u64()),
-			enpassant: std::array::from_fn(|_| rng.next_u64()) ,
+			enpassant: std::array::from_fn(|_| rng.next_u64()),
 		}
 	}
 }
@@ -49,12 +49,12 @@ impl Splitmix64 {
 
 pub fn piece_index(colored_piece: ColoredPiece) -> usize {
 	let piece_idx = match colored_piece.piece {
-		Piece::Pawn   => 0,
+		Piece::Pawn => 0,
 		Piece::Knight => 1,
 		Piece::Bishop => 2,
-		Piece::Rook   => 3,
-		Piece::Queen  => 4,
-		Piece::King   => 5,
+		Piece::Rook => 3,
+		Piece::Queen => 4,
+		Piece::King => 5,
 	};
 	let side_offset = match colored_piece.side {
 		Side::White => 0,

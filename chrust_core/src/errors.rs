@@ -5,6 +5,7 @@ use core::fmt;
 pub enum ChessError {
 	NotImplemented,
 	PromotionPieceCantBePawn,
+	GameIsFinished,
 	NotASquareOnBoard {
 		square: i16,
 	},
@@ -41,6 +42,7 @@ pub enum FenError {
 impl fmt::Display for ChessError {
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
 		match self {
+			ChessError::GameIsFinished => write!(f, "Game is finished"),
 			ChessError::NotAValidMove => write!(f, "Not a valid move"),
 			ChessError::NotImplemented => write!(f, "Not implemented"),
 			ChessError::KingIsAttacked { squares: _ } => write!(f, "King is attacked"),

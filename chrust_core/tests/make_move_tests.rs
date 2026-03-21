@@ -1,10 +1,11 @@
 mod common;
 
+use chrust_core::game_status::GameStatus;
 use chrust_core::moves::make_move::{Move, MoveKind};
-use chrust_core::position::Position;
+use chrust_core::position::{Game, Position};
 use chrust_core::zobrist::zobrist;
 use chrust_core::{ColoredPiece, Piece, Side, errors::ChessError};
-use common::empty_position;
+use common::{empty_game, empty_position, game_from_fen};
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -24,7 +25,7 @@ fn mv(pos: &Position, from: u8, to: u8, kind: MoveKind) -> Move {
 
 #[test]
 fn make_move_errors_if_initial_square_empty() {
-	let mut pos = empty_position();
+	let mut game = empty_game();
 
 	let mv = Move {
 		from_square: 0,
@@ -32,12 +33,12 @@ fn make_move_errors_if_initial_square_empty() {
 		move_kind: MoveKind::Quiet,
 		colored_piece: ColoredPiece { piece: Piece::Pawn, side: Side::White },
 	};
-	assert!(matches!(pos.make_move(&mv), Err(ChessError::NoPieceOnSquare { square: 0 })));
+	assert!(matches!(game.make_move(&mv), Err(ChessError::NoPieceOnSquare { square: 0 })));
 }
 
 #[test]
 fn make_move_errors_if_from_square_out_of_bounds() {
-	let mut pos = empty_position();
+	let mut game = empty_game();
 
 	let pawn = ColoredPiece { piece: Piece::Pawn, side: Side::White };
 	let mv1 = Move {
@@ -53,16 +54,16 @@ fn make_move_errors_if_from_square_out_of_bounds() {
 		colored_piece: pawn,
 	};
 
-	assert!(matches!(pos.make_move(&mv1), Err(ChessError::NotASquareOnBoard { square: 64 })));
-	assert!(matches!(pos.make_move(&mv3), Err(ChessError::NotASquareOnBoard { square: 200 })));
+	assert!(matches!(game.make_move(&mv1), Err(ChessError::NotASquareOnBoard { square: 64 })));
+	assert!(matches!(game.make_move(&mv3), Err(ChessError::NotASquareOnBoard { square: 200 })));
 }
 
 #[test]
 fn make_move_errors_if_to_square_out_of_bounds() {
-	let mut pos = empty_position();
+	let mut game = empty_game();
 
 	let pawn = ColoredPiece { piece: Piece::Pawn, side: Side::White };
-	pos.board[0] = Some(pawn);
+	game.position.board[0] = Some(pawn);
 	let mv2 = Move {
 		from_square: 0,
 		to_square: 64,
@@ -70,16 +71,16 @@ fn make_move_errors_if_to_square_out_of_bounds() {
 		colored_piece: pawn,
 	};
 
-	assert!(matches!(pos.make_move(&mv2), Err(ChessError::NotASquareOnBoard { square: 64 })));
+	assert!(matches!(game.make_move(&mv2), Err(ChessError::NotASquareOnBoard { square: 64 })));
 }
 
 #[test]
 fn make_move_errors_if_move_not_in_legal_list() {
-	let mut pos = empty_position();
+	let mut game = empty_game();
 
 	// A rook on a1 cannot move diagonally to h8.
 	let rook = ColoredPiece { piece: Piece::Rook, side: Side::White };
-	pos.board[0] = Some(rook);
+	game.position.board[0] = Some(rook);
 
 	let illegal = Move {
 		from_square: 0,
@@ -87,15 +88,15 @@ fn make_move_errors_if_move_not_in_legal_list() {
 		move_kind: MoveKind::Quiet,
 		colored_piece: rook,
 	};
-	assert!(matches!(pos.make_move(&illegal), Err(ChessError::NotAValidMove)));
+	assert!(matches!(game.make_move(&illegal), Err(ChessError::NotAValidMove)));
 }
 
 #[test]
 fn promotion_errors_if_promotion_piece_is_none() {
-	let mut pos = empty_position();
+	let mut game = empty_game();
 
 	let pawn = ColoredPiece { piece: Piece::Pawn, side: Side::White };
-	pos.board[48] = Some(pawn); // a7
+	game.position.board[48] = Some(pawn); // a7
 
 	// The pawn generator emits Promotion { promotion_piece: Some(Piece::Pawn) }
 	// as a sentinel.  A None promotion_piece is never in the legal list so the
@@ -106,7 +107,7 @@ fn promotion_errors_if_promotion_piece_is_none() {
 		move_kind: MoveKind::Promotion { promotion_piece: Piece::Pawn },
 		colored_piece: pawn,
 	};
-	assert!(matches!(pos.make_move(&mv), Err(_)));
+	assert!(matches!(game.make_move(&mv), Err(_)));
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -1522,4 +1523,268 @@ fn set_castle_rights_capture_on_a8_revokes_black_queenside() {
 
 	assert!(pos.castle[2], "black kingside should be untouched");
 	assert!(!pos.castle[3], "black queenside should be revoked");
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// Game::make_move — history tracking
+// ══════════════════════════════════════════════════════════════════════════════
+
+// Square helpers for readability:
+//   a1=0 … h1=7 | a2=8 … h2=15 | … | a8=56 … h8=63
+
+#[test]
+fn make_move_pushes_to_hash_history() {
+	// After a successful move the current position hash must be recorded.
+	// Position: white rook a1, kings on e1/e8. White plays Ra1-a2.
+	let mut game = game_from_fen("4k3/8/8/8/8/8/8/R3K3 w - - 0 1");
+	assert_eq!(game.hash_history.len(), 0);
+
+	let rook = ColoredPiece { piece: Piece::Rook, side: Side::White };
+	let mv = Move {
+		from_square: 0, // a1
+		to_square: 8,   // a2
+		move_kind: MoveKind::Quiet,
+		colored_piece: rook,
+	};
+	game.make_move(&mv).unwrap();
+
+	assert_eq!(game.hash_history.len(), 1, "hash_history should have one entry after one move");
+}
+
+#[test]
+fn make_move_pushes_to_move_history() {
+	let mut game = game_from_fen("4k3/8/8/8/8/8/8/R3K3 w - - 0 1");
+
+	let rook = ColoredPiece { piece: Piece::Rook, side: Side::White };
+	let mv = Move {
+		from_square: 0, // a1
+		to_square: 8,   // a2
+		move_kind: MoveKind::Quiet,
+		colored_piece: rook,
+	};
+	game.make_move(&mv).unwrap();
+
+	assert_eq!(game.move_history.len(), 1, "move_history should have one entry after one move");
+	assert_eq!(game.move_history[0], mv);
+}
+
+#[test]
+fn make_move_pushes_to_undo_history() {
+	let mut game = game_from_fen("4k3/8/8/8/8/8/8/R3K3 w - - 0 1");
+
+	let rook = ColoredPiece { piece: Piece::Rook, side: Side::White };
+	let mv = Move {
+		from_square: 0, // a1
+		to_square: 8,   // a2
+		move_kind: MoveKind::Quiet,
+		colored_piece: rook,
+	};
+	game.make_move(&mv).unwrap();
+
+	assert_eq!(game.undo_history.len(), 1, "undo_history should have one entry after one move");
+}
+
+#[test]
+fn make_move_hash_in_history_matches_position_hash() {
+	// The hash stored in hash_history must equal the position hash after the move.
+	let mut game = game_from_fen("4k3/8/8/8/8/8/8/R3K3 w - - 0 1");
+
+	let rook = ColoredPiece { piece: Piece::Rook, side: Side::White };
+	let mv = Move {
+		from_square: 0, // a1
+		to_square: 8,   // a2
+		move_kind: MoveKind::Quiet,
+		colored_piece: rook,
+	};
+	game.make_move(&mv).unwrap();
+
+	assert_eq!(game.hash_history[0], game.position.zobrist_hash, "hash_history entry must equal the position's zobrist hash after the move",);
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// Game::make_move — game-over guard
+// ══════════════════════════════════════════════════════════════════════════════
+
+#[test]
+fn make_move_rejected_when_game_is_stalemate() {
+	let mut game = empty_game();
+	game.game_status = GameStatus::Stalemate;
+
+	let white_king = ColoredPiece { piece: Piece::King, side: Side::White };
+	game.position.board[4] = Some(white_king); // e1
+
+	let mv = Move {
+		from_square: 4,
+		to_square: 5,
+		move_kind: MoveKind::Quiet,
+		colored_piece: white_king,
+	};
+	assert!(matches!(game.make_move(&mv), Err(ChessError::GameIsFinished)), "make_move must return GameIsFinished when the game is drawn",);
+}
+
+#[test]
+fn make_move_rejected_when_game_is_checkmate() {
+	let mut game = empty_game();
+	game.game_status = GameStatus::CheckmateForSide(Side::Black);
+
+	let white_king = ColoredPiece { piece: Piece::King, side: Side::White };
+	game.position.board[4] = Some(white_king); // e1
+
+	let mv = Move {
+		from_square: 4,
+		to_square: 5,
+		move_kind: MoveKind::Quiet,
+		colored_piece: white_king,
+	};
+	assert!(matches!(game.make_move(&mv), Err(ChessError::GameIsFinished)), "make_move must return GameIsFinished when the game is already over",);
+}
+
+#[test]
+fn make_move_rejected_when_game_is_draw_by_fifty_moves() {
+	let mut game = empty_game();
+	game.game_status = GameStatus::DrawByFiftyMoves;
+
+	let white_king = ColoredPiece { piece: Piece::King, side: Side::White };
+	game.position.board[4] = Some(white_king);
+
+	let mv = Move {
+		from_square: 4,
+		to_square: 5,
+		move_kind: MoveKind::Quiet,
+		colored_piece: white_king,
+	};
+	assert!(matches!(game.make_move(&mv), Err(ChessError::GameIsFinished)));
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// Game::make_move — game status update after move
+// These tests verify update_game_status() is called after each move.
+// ══════════════════════════════════════════════════════════════════════════════
+
+/// Fool's mate (fastest checkmate in chess):
+/// 1.f3 e5 2.g4 Qh4#
+/// After black plays Qd8-h4 the white king on e1 is completely surrounded:
+///   d1=own queen, d2=own pawn, e2=own pawn, f1=own bishop, f2 attacked by Qh4.
+#[test]
+fn fools_mate_sets_status_to_checkmate() {
+	// FEN after 1.f3 e5 2.g4 — black to move, one move before checkmate.
+	let mut game = game_from_fen("rnbqkbnr/pppp1ppp/8/4p3/6P1/5P2/PPPPP2P/RNBQKBNR b KQkq - 0 2");
+
+	let black_queen = ColoredPiece { piece: Piece::Queen, side: Side::Black };
+	// Qd8-h4: d8=59, h4=31
+	let mv = Move {
+		from_square: 59, // d8
+		to_square: 31,   // h4
+		move_kind: MoveKind::Quiet,
+		colored_piece: black_queen,
+	};
+	game.make_move(&mv).unwrap();
+
+	// White is checkmated; Black wins → CheckmateForSide(Black).
+	assert!(matches!(game.game_status, GameStatus::CheckmateForSide(Side::Black)), "after Fool's Mate, game status must be CheckmateForSide(Black) — Black wins",);
+}
+
+/// After a move that puts the opponent in check, game_status must be InCheck.
+/// Position: white Ke1(4), Qd5(35), black Ke8(60). White plays Qd5-e6(44).
+/// Queen on e6 attacks king on e8 along the e-file (e7 is empty).
+#[test]
+fn move_giving_check_sets_status_to_in_check() {
+	let mut game = game_from_fen("4k3/8/8/3Q4/8/8/8/4K3 w - - 0 1");
+
+	let white_queen = ColoredPiece { piece: Piece::Queen, side: Side::White };
+	// Qd5-e6: d5=35, e6=44
+	let mv = Move {
+		from_square: 35, // d5
+		to_square: 44,   // e6
+		move_kind: MoveKind::Quiet,
+		colored_piece: white_queen,
+	};
+	game.make_move(&mv).unwrap();
+
+	assert!(matches!(game.game_status, GameStatus::InCheck));
+}
+
+/// Stalemate: white Kf6(45), Qg5(38), black Kh8(63). White plays Qg5-g6(46).
+/// After Qg6 the black king on h8 has no legal move and is not in check:
+///   g8(62) attacked by queen along g-file; h7(55) attacked by queen on the g6-h7 diagonal;
+///   g7(54) attacked by white king on f6.
+#[test]
+fn move_causing_stalemate_sets_status_to_stalemate() {
+	let mut game = game_from_fen("7k/8/5K2/6Q1/8/8/8/8 w - - 0 1");
+
+	let white_queen = ColoredPiece { piece: Piece::Queen, side: Side::White };
+	// Qg5-g6: g5=38, g6=46
+	let mv = Move {
+		from_square: 38, // g5
+		to_square: 46,   // g6
+		move_kind: MoveKind::Quiet,
+		colored_piece: white_queen,
+	};
+	game.make_move(&mv).unwrap();
+
+	assert!(matches!(game.game_status, GameStatus::Stalemate));
+}
+
+/// Fifty-move draw: the halfmove clock starts at 99; after one quiet king move it reaches 100.
+/// Position: white Ke1(4), black Ke8(60). White plays Ke1-f1(5).
+#[test]
+fn quiet_move_at_halfmove_99_triggers_fifty_move_draw() {
+	let mut game = game_from_fen("4k3/8/8/8/8/8/8/4K3 w - - 99 1");
+
+	let white_king = ColoredPiece { piece: Piece::King, side: Side::White };
+	// Ke1-f1: e1=4, f1=5
+	let mv = Move {
+		from_square: 4, // e1
+		to_square: 5,   // f1
+		move_kind: MoveKind::Quiet,
+		colored_piece: white_king,
+	};
+	game.make_move(&mv).unwrap();
+
+	assert!(matches!(game.game_status, GameStatus::DrawByFiftyMoves));
+}
+
+/// Three-fold repetition with two bare kings.
+/// Moves: 1.Ke1-f1 Ke8-d8 2.Kf1-e1 Kd8-e8 3.Ke1-f1
+/// After move 5 the hash from move 1 (Kf1, Kd8, black to move) appears a
+/// second time in hash_history, so is_draw_by_repetition returns true.
+#[test]
+fn threefold_repetition_triggers_draw_by_repetition() {
+	let mut game = game_from_fen("4k3/8/8/8/8/8/8/R3K3 w - - 0 1");
+
+	let white_king = ColoredPiece { piece: Piece::King, side: Side::White };
+	let black_king = ColoredPiece { piece: Piece::King, side: Side::Black };
+
+	let ke1_f1 = Move {
+		from_square: 4,
+		to_square: 5,
+		move_kind: MoveKind::Quiet,
+		colored_piece: white_king,
+	};
+	let ke8_d8 = Move {
+		from_square: 60,
+		to_square: 59,
+		move_kind: MoveKind::Quiet,
+		colored_piece: black_king,
+	};
+	let kf1_e1 = Move {
+		from_square: 5,
+		to_square: 4,
+		move_kind: MoveKind::Quiet,
+		colored_piece: white_king,
+	};
+	let kd8_e8 = Move {
+		from_square: 59,
+		to_square: 60,
+		move_kind: MoveKind::Quiet,
+		colored_piece: black_king,
+	};
+
+	game.make_move(&ke1_f1).unwrap(); // 1. Ke1-f1
+	game.make_move(&ke8_d8).unwrap(); // 1... Ke8-d8
+	game.make_move(&kf1_e1).unwrap(); // 2. Kf1-e1
+	game.make_move(&kd8_e8).unwrap(); // 2... Kd8-e8
+	game.make_move(&ke1_f1).unwrap(); // 3. Ke1-f1 — hash from move 1 seen again
+
+	assert!(matches!(game.game_status, GameStatus::DrawByRepetition));
 }
