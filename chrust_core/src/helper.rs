@@ -4,8 +4,7 @@ use crate::{
 	ColoredPiece, Piece, Side, Square,
 	errors::ChessError,
 	game_status::GameStatus,
-	moves::make_move::Move,
-	position::{Game, Position, Undo},
+	position::{Game, Position},
 };
 
 pub fn file(square: Square) -> u8 {

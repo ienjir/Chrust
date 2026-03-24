@@ -12,6 +12,7 @@ use crate::{
 	layout::TEST_FEN_STRING,
 	renderer::{handle_ui_state, render_chess_pieces, render_chessboard_without_pieces, render_possible_moves},
 };
+use chrust_core::Side;
 use chrust_core::game_status::GameStatus;
 use chrust_core::position::{Game, load_position_from_fen};
 use macroquad::file::set_pc_assets_folder;
@@ -41,10 +42,10 @@ async fn main() {
 		ui_state: None,
 	};
 
-	if game_state.game.position.is_insufficient_material() {
-		println!("Not enough material");
-	} else {
-		println!("Enough material");
+	let test = game_state.game.update_game_status();
+
+	if game_state.game.game_status == GameStatus::CheckmateForSide(Side::Black) {
+		println!("Checkmate");
 	}
 
 	game_state.game.position.print_board();

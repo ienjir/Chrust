@@ -1788,3 +1788,339 @@ fn threefold_repetition_triggers_draw_by_repetition() {
 
 	assert!(matches!(game.game_status, GameStatus::DrawByRepetition));
 }
+
+// ══════════════════════════════════════════════════════════════════════════════
+// Game::undo_last_move tests
+// ══════════════════════════════════════════════════════════════════════════════
+
+#[test]
+fn undo_last_move_errors_when_no_history() {
+	let mut game = game_from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+	assert!(matches!(game.undo_last_move(), Err(ChessError::NothingToUndo)));
+}
+
+#[test]
+fn undo_last_move_quiet_restores_position() {
+	let mut game = game_from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+	let original_position = game.position;
+
+	// e2 (12) → e3 (20) quiet pawn move
+	let m = mv(&game.position, 12, 20, MoveKind::Quiet);
+	game.make_move(&m).unwrap();
+
+	assert_ne!(game.position, original_position);
+
+	game.undo_last_move().unwrap();
+
+	assert_eq!(game.position, original_position);
+}
+
+#[test]
+fn undo_last_move_clears_all_histories() {
+	let mut game = game_from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+
+	// d2 (11) → d4 (27) double pawn push
+	let m = mv(&game.position, 11, 27, MoveKind::DoublePawnPush { passed_square: 19 });
+	game.make_move(&m).unwrap();
+
+	assert_eq!(game.move_history.len(), 1);
+	assert_eq!(game.undo_history.len(), 1);
+	assert_eq!(game.hash_history.len(), 1);
+
+	game.undo_last_move().unwrap();
+
+	assert_eq!(game.move_history.len(), 0, "move_history should be empty after undo");
+	assert_eq!(game.undo_history.len(), 0, "undo_history should be empty after undo");
+	assert_eq!(game.hash_history.len(), 0, "hash_history should be empty after undo");
+}
+
+#[test]
+fn undo_last_move_capture_restores_both_pieces() {
+	// White rook on a5, black pawn on b5 — rook captures pawn
+	let mut game = game_from_fen("4k3/pppppppp/8/Rp6/8/8/8/4K3 w - - 0 1");
+	let original_position = game.position;
+
+	// a5 (32) captures b5 (33)
+	let m = mv(&game.position, 32, 33, MoveKind::Capture);
+	game.make_move(&m).unwrap();
+
+	assert_eq!(game.position.board[32], None, "a5 should be empty after capture");
+	assert_eq!(game.position.board[33].map(|p| p.piece), Some(Piece::Rook), "rook should be on b5");
+
+	game.undo_last_move().unwrap();
+
+	assert_eq!(game.position, original_position);
+}
+
+#[test]
+fn undo_last_move_en_passant_restores_all_squares() {
+	// White pawn e5 can capture black pawn d5 via en passant to d6
+	let mut game = game_from_fen("4k3/ppp1pppp/8/3pP3/8/8/PPP2PPP/4K3 w - d6 0 1");
+	let original_position = game.position;
+
+	// e5 (36) → d6 (43), captures d5 (35) en passant
+	let m = mv(&game.position, 36, 43, MoveKind::EnPassant { capture_square: 35 });
+	game.make_move(&m).unwrap();
+
+	assert_eq!(game.position.board[36], None, "e5 should be empty");
+	assert_eq!(game.position.board[35], None, "captured pawn on d5 should be gone");
+	assert!(game.position.board[43].is_some(), "white pawn should be on d6");
+
+	game.undo_last_move().unwrap();
+
+	assert_eq!(game.position, original_position);
+}
+
+#[test]
+fn undo_last_move_castling_restores_king_and_rook() {
+	// White can castle kingside
+	let mut game = game_from_fen("r3k2r/pppppppp/8/8/8/8/PPPPPPPP/R3K2R w KQkq - 0 1");
+	let original_position = game.position;
+
+	// e1 (4) → g1 (6) kingside castle, rook h1 (7) → f1 (5)
+	let m = mv(&game.position, 4, 6, MoveKind::Castling { rook_from: 7, rook_to: 5 });
+	game.make_move(&m).unwrap();
+
+	assert_eq!(game.position.board[4], None, "e1 should be empty after castling");
+	assert!(game.position.board[6].is_some(), "king should be on g1");
+	assert_eq!(game.position.board[7], None, "h1 should be empty after castling");
+	assert!(game.position.board[5].is_some(), "rook should be on f1");
+
+	game.undo_last_move().unwrap();
+
+	assert_eq!(game.position, original_position);
+}
+
+#[test]
+fn undo_last_move_castling_queenside_restores_king_and_rook() {
+	// White can castle queenside
+	let mut game = game_from_fen("r3k2r/pppppppp/8/8/8/8/PPPPPPPP/R3K2R w KQkq - 0 1");
+	let original_position = game.position;
+
+	// e1 (4) → c1 (2) queenside castle, rook a1 (0) → d1 (3)
+	let m = mv(&game.position, 4, 2, MoveKind::Castling { rook_from: 0, rook_to: 3 });
+	game.make_move(&m).unwrap();
+
+	game.undo_last_move().unwrap();
+
+	assert_eq!(game.position, original_position);
+}
+
+#[test]
+fn undo_last_move_promotion_restores_pawn() {
+	// White pawn on a7 promotes to queen at a8
+	let mut game = game_from_fen("7k/P7/8/8/8/8/8/7K w - - 0 1");
+	let original_position = game.position;
+
+	// a7 (48) → a8 (56) promote to queen
+	let m = mv(&game.position, 48, 56, MoveKind::Promotion { promotion_piece: Piece::Queen });
+	game.make_move(&m).unwrap();
+
+	assert_eq!(game.position.board[48], None, "a7 should be empty after promotion");
+	assert_eq!(game.position.board[56].map(|p| p.piece), Some(Piece::Queen), "queen should be on a8");
+
+	game.undo_last_move().unwrap();
+
+	assert_eq!(game.position, original_position);
+}
+
+#[test]
+fn undo_last_move_multiple_moves_in_sequence() {
+	let mut game = game_from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+	let pos_0 = game.position;
+
+	// White: e2 (12) → e4 (28)
+	let m1 = mv(&game.position, 12, 28, MoveKind::DoublePawnPush { passed_square: 20 });
+	game.make_move(&m1).unwrap();
+	let pos_1 = game.position;
+
+	// Black: e7 (52) → e5 (36)
+	let m2 = mv(&game.position, 52, 36, MoveKind::DoublePawnPush { passed_square: 44 });
+	game.make_move(&m2).unwrap();
+
+	// Undo black's move
+	game.undo_last_move().unwrap();
+	assert_eq!(game.position, pos_1, "should be back to position after white's move");
+	assert_eq!(game.move_history.len(), 1);
+
+	// Undo white's move
+	game.undo_last_move().unwrap();
+	assert_eq!(game.position, pos_0, "should be back to starting position");
+	assert_eq!(game.move_history.len(), 0);
+
+	// No more moves to undo
+	assert!(matches!(game.undo_last_move(), Err(ChessError::NothingToUndo)));
+}
+
+#[test]
+fn undo_last_move_restores_side_to_move() {
+	let mut game = game_from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+	assert_eq!(game.position.side_to_move, Side::White);
+
+	let m = mv(&game.position, 12, 20, MoveKind::Quiet);
+	game.make_move(&m).unwrap();
+	assert_eq!(game.position.side_to_move, Side::Black);
+
+	game.undo_last_move().unwrap();
+	assert_eq!(game.position.side_to_move, Side::White);
+}
+
+#[test]
+fn undo_last_move_restores_castling_rights_after_king_move() {
+	// White king move revokes both castling rights; undo should restore them
+	let mut game = game_from_fen("r3k2r/pppppppp/8/8/8/8/PPPPPPPP/R3K2R w KQkq - 0 1");
+	let original_castle = game.position.castle;
+
+	// e1 (4) → f1 (5) quiet king move — revokes white castling rights
+	let m = mv(&game.position, 4, 5, MoveKind::Quiet);
+	game.make_move(&m).unwrap();
+
+	assert!(!game.position.castle[0], "white kingside right should be revoked");
+	assert!(!game.position.castle[1], "white queenside right should be revoked");
+
+	game.undo_last_move().unwrap();
+
+	assert_eq!(game.position.castle, original_castle, "castling rights should be fully restored");
+}
+
+#[test]
+fn undo_last_move_restores_en_passant_square() {
+	let mut game = game_from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+
+	// White: e2 (12) → e4 (28) sets en passant square e3 (20)
+	let m = mv(&game.position, 12, 28, MoveKind::DoublePawnPush { passed_square: 20 });
+	game.make_move(&m).unwrap();
+	assert_eq!(game.position.en_passant, Some(20), "en passant square should be e3");
+
+	// Black: d7 (51) → d6 (43) clears en passant
+	let m2 = mv(&game.position, 51, 43, MoveKind::Quiet);
+	game.make_move(&m2).unwrap();
+	assert_eq!(game.position.en_passant, None, "en passant should be cleared");
+
+	// Undo black's move — en passant square e3 should be restored
+	game.undo_last_move().unwrap();
+	assert_eq!(game.position.en_passant, Some(20), "en passant square should be restored after undo");
+}
+
+#[test]
+fn undo_last_move_restores_halfmove_clock() {
+	let mut game = game_from_fen("r3k2r/pppppppp/8/8/8/8/PPPPPPPP/R3K2R w KQkq - 5 1");
+	assert_eq!(game.position.halfmove_clock, 5);
+
+	// Quiet rook move increments halfmove_clock
+	let m = mv(&game.position, 0, 1, MoveKind::Quiet); // a1 → b1
+	game.make_move(&m).unwrap();
+	assert_eq!(game.position.halfmove_clock, 6);
+
+	game.undo_last_move().unwrap();
+	assert_eq!(game.position.halfmove_clock, 5, "halfmove_clock should be restored");
+}
+
+#[test]
+fn undo_last_move_restores_fullmove_counter() {
+	// After black moves, fullmove_counter increments; undo should restore it
+	let mut game = game_from_fen("rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1");
+	assert_eq!(game.position.fullmove_counter, 1);
+
+	// Black: e7 (52) → e5 (36) — after black moves, fullmove_counter becomes 2
+	let m = mv(&game.position, 52, 36, MoveKind::DoublePawnPush { passed_square: 44 });
+	game.make_move(&m).unwrap();
+	assert_eq!(game.position.fullmove_counter, 2);
+
+	game.undo_last_move().unwrap();
+	assert_eq!(game.position.fullmove_counter, 1, "fullmove_counter should be restored after undo");
+}
+
+#[test]
+fn undo_last_move_restores_zobrist_hash() {
+	let mut game = game_from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+	let original_hash = game.position.zobrist_hash;
+
+	let m = mv(&game.position, 12, 28, MoveKind::DoublePawnPush { passed_square: 20 });
+	game.make_move(&m).unwrap();
+
+	assert_ne!(game.position.zobrist_hash, original_hash);
+
+	game.undo_last_move().unwrap();
+
+	assert_eq!(game.position.zobrist_hash, original_hash, "zobrist hash should be restored after undo");
+}
+
+#[test]
+fn undo_last_move_updates_game_status_to_playing() {
+	let mut game = game_from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+
+	let m = mv(&game.position, 12, 20, MoveKind::Quiet);
+	game.make_move(&m).unwrap();
+	assert!(matches!(game.game_status, GameStatus::Playing));
+
+	game.undo_last_move().unwrap();
+	assert!(matches!(game.game_status, GameStatus::Playing));
+}
+
+#[test]
+fn undo_last_move_from_in_check_restores_playing() {
+	// White rook moves to e7, giving check to black king on e8.
+	// After undo, status should be Playing again.
+	let mut game = game_from_fen("4k3/8/8/8/8/8/4R3/4K3 w - - 0 1");
+
+	// e2 (12) → e7 (52) — gives check to e8 king
+	let m = mv(&game.position, 12, 52, MoveKind::Quiet);
+	game.make_move(&m).unwrap();
+	assert!(matches!(game.game_status, GameStatus::InCheck), "black should be in check after Re7");
+
+	game.undo_last_move().unwrap();
+	assert!(matches!(game.game_status, GameStatus::Playing), "status should return to Playing after undo");
+}
+
+#[test]
+fn undo_last_move_from_checkmate_restores_playing() {
+	// Scholar's mate: white queen h5 captures f7, giving checkmate.
+	// f7 is protected by the bishop on c4 (c4→d5→e6→f7 diagonal), so
+	// black king on e8 cannot escape: d8 has the black queen, f8 has the
+	// black bishop, d7/e7 are covered by the queen on f7 (same rank), and
+	// Kxf7 is illegal because f7 is guarded by the c4 bishop.
+	let mut game = game_from_fen("r1bqkb1r/pppp1ppp/2n2n2/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR w KQkq - 4 4");
+
+	// Qh5 (39) × f7 (53) — Scholar's mate
+	let m = mv(&game.position, 39, 53, MoveKind::Capture);
+	game.make_move(&m).unwrap();
+	assert!(matches!(game.game_status, GameStatus::CheckmateForSide(Side::White)), "should be checkmate for white");
+
+	game.undo_last_move().unwrap();
+	assert!(matches!(game.game_status, GameStatus::Playing), "status should return to Playing after undoing the mating move");
+}
+
+#[test]
+fn undo_last_move_from_fifty_move_draw_restores_playing() {
+	// Set halfmove_clock to 99, make a quiet non-pawn move to hit 100 (draw).
+	// After undo, clock returns to 99 and status returns to Playing.
+	let mut game = game_from_fen("r3k2r/pppppppp/8/8/8/8/PPPPPPPP/R3K2R w KQkq - 99 50");
+
+	assert_eq!(game.position.halfmove_clock, 99);
+	assert!(matches!(game.game_status, GameStatus::Playing));
+
+	// a1 (0) → b1 (1) quiet rook move — increments clock to 100
+	let m = mv(&game.position, 0, 1, MoveKind::Quiet);
+	game.make_move(&m).unwrap();
+	assert!(matches!(game.game_status, GameStatus::DrawByFiftyMoves), "should be fifty-move draw");
+
+	game.undo_last_move().unwrap();
+	assert!(matches!(game.game_status, GameStatus::Playing), "status should return to Playing after undo");
+	assert_eq!(game.position.halfmove_clock, 99, "halfmove_clock should be restored to 99");
+}
+
+#[test]
+fn undo_last_move_king_square_tracking_restored() {
+	// After white king moves and is undone, king_squares[0] should point back to e1.
+	let mut game = game_from_fen("r3k2r/pppppppp/8/8/8/8/PPPPPPPP/R3K2R w KQkq - 0 1");
+	assert_eq!(game.position.king_squares[0], 4, "white king should start on e1 (4)");
+
+	// e1 (4) → f1 (5) quiet king move
+	let m = mv(&game.position, 4, 5, MoveKind::Quiet);
+	game.make_move(&m).unwrap();
+	assert_eq!(game.position.king_squares[0], 5, "white king should be on f1 (5) after move");
+
+	game.undo_last_move().unwrap();
+	assert_eq!(game.position.king_squares[0], 4, "white king square should be restored to e1 (4)");
+}

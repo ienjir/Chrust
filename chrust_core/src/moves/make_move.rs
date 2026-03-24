@@ -59,6 +59,15 @@ impl Game {
 
 		Ok(undo)
 	}
+
+	pub fn undo_last_move(&mut self) -> Result<(), ChessError> {
+		let mv = self.move_history.pop().ok_or(ChessError::NothingToUndo)?;
+		let undo = self.undo_history.pop().ok_or(ChessError::NothingToUndo)?;
+		self.hash_history.pop();
+		self.position.undo_move(undo, mv)?;
+		self.update_game_status()?;
+		Ok(())
+	}
 }
 
 impl Position {
@@ -68,14 +77,7 @@ impl Position {
 
 		let zobrist = zobrist();
 
-		for i in 0..4 {
-			if self.castle[i] {
-				self.zobrist_hash ^= zobrist.castling[i];
-			}
-		}
-		if let Some(ep) = self.en_passant {
-			self.zobrist_hash ^= zobrist.enpassant[(ep % 8) as usize];
-		}
+		self.update_zobrist_en_pasant_and_castling(zobrist);
 
 		self.apply_move_to_board(mv, piece, &mut undo, zobrist)?;
 		self.update_en_passant(mv);
@@ -83,15 +85,7 @@ impl Position {
 		self.update_king_positions(mv);
 		self.set_castle_rights(mv);
 
-		for i in 0..4 {
-			if self.castle[i] {
-				self.zobrist_hash ^= zobrist.castling[i];
-			}
-		}
-
-		if let Some(ep) = self.en_passant {
-			self.zobrist_hash ^= zobrist.enpassant[(ep % 8) as usize];
-		}
+		self.update_zobrist_en_pasant_and_castling(zobrist);
 
 		Ok(undo)
 	}
@@ -99,28 +93,12 @@ impl Position {
 	pub fn undo_move(&mut self, undo: Undo, mv: Move) -> Result<(), ChessError> {
 		let zobrist = zobrist();
 
-		for i in 0..4 {
-			if self.castle[i] {
-				self.zobrist_hash ^= zobrist.castling[i];
-			}
-		}
-
-		if let Some(ep) = self.en_passant {
-			self.zobrist_hash ^= zobrist.enpassant[(ep % 8) as usize];
-		}
+		self.update_zobrist_en_pasant_and_castling(zobrist);
 
 		self.undo_move_on_board(mv, undo, zobrist);
 		self.apply_undo(undo);
 
-		for i in 0..4 {
-			if self.castle[i] {
-				self.zobrist_hash ^= zobrist.castling[i];
-			}
-		}
-
-		if let Some(ep) = self.en_passant {
-			self.zobrist_hash ^= zobrist.enpassant[(ep % 8) as usize];
-		}
+		self.update_zobrist_en_pasant_and_castling(zobrist);
 
 		self.zobrist_hash ^= zobrist.side;
 
@@ -295,6 +273,17 @@ impl Position {
 			56 => self.castle[3] = false,
 			63 => self.castle[2] = false,
 			_ => {}
+		}
+	}
+
+	pub fn update_zobrist_en_pasant_and_castling(&mut self, zobrist: &ZobristTable) {
+		for i in 0..4 {
+			if self.castle[i] {
+				self.zobrist_hash ^= zobrist.castling[i];
+			}
+		}
+		if let Some(ep) = self.en_passant {
+			self.zobrist_hash ^= zobrist.enpassant[(ep % 8) as usize];
 		}
 	}
 }

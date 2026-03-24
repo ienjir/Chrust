@@ -206,7 +206,7 @@ Then check for things like halfmove clock etc (need to be expaned)
 ## Is game over checks
 is_draw_by_repetition()
     after each move make hash of position -> hashmap key = position hash, value = how many position were the same i		
-get_game_status() -> GameStatus
+    get_game_status() -> GameStatus
 
 
 
@@ -222,10 +222,9 @@ get_game_status() -> GameStatus
     8. [x] Clean up verbose match error handling with ?
     9. [x] Refactor move-gen APIs to reuse validated/colored piece context from callers where it actually reduces duplication
     10. [x] Finish fen loading
-    11. [ ] Add validation for things like halfmove clock
+    11. [x] Add validation for things like halfmove clock
     12. [ ] Use new Game struct in make move validated
-    13. [ ] Use private functions and test over public functions 
-
+    13. [ ] Use private functions and test over public functions like described in chat
 
 ## Small errors 
     - Slider.rs: Find a way to not return a queen when a faulty piece is provided
