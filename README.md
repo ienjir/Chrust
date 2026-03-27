@@ -232,3 +232,14 @@ is_draw_by_repetition()
 
 ## Important info
     - king_squares[0]  is white and [1] is black
+
+
+pub funtions:
+- load position from fen 
+- print board
+- make move (impl game)
+- undo last mvoe (impl game)
+- is king in check
+- is sqaure attacked
+- is square save
+- get legal moves

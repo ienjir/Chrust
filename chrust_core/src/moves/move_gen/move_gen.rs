@@ -18,7 +18,7 @@ impl Position {
 		Ok(target_moves)
 	}
 
-	pub fn get_pseduo_legal_moves(&self, from_square: Square, colored_piece: ColoredPiece) -> Result<Vec<Move>, ChessError> {
+	pub(crate) fn get_pseduo_legal_moves(&self, from_square: Square, colored_piece: ColoredPiece) -> Result<Vec<Move>, ChessError> {
 		match colored_piece.piece {
 			Piece::Rook => self.slider_targets(colored_piece, from_square),
 			Piece::Bishop => self.slider_targets(colored_piece, from_square),
@@ -29,3 +29,6 @@ impl Position {
 		}
 	}
 }
+
+#[cfg(test)]
+mod tests;

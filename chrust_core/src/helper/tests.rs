@@ -1,9 +1,7 @@
-mod common;
-
-use chrust_core::helper::{is_right_piece_side, is_right_piece_type, is_square_on_board};
-use chrust_core::position::Position;
-use chrust_core::{ColoredPiece, Piece, Side, errors::ChessError};
-use common::empty_position;
+use super::*;
+use crate::position::Position;
+use crate::test_common::empty_position;
+use crate::{ColoredPiece, Piece, Side, errors::ChessError};
 
 #[test]
 fn is_square_on_board_positive_test() {
@@ -225,7 +223,6 @@ fn validate_colored_piece_wrong_piece_type() {
 
 #[test]
 fn file_of_corners_and_edges() {
-	use chrust_core::helper::file;
 	assert_eq!(file(0), 0, "a1 is file 0");
 	assert_eq!(file(7), 7, "h1 is file 7");
 	assert_eq!(file(8), 0, "a2 is file 0");
@@ -236,7 +233,6 @@ fn file_of_corners_and_edges() {
 
 #[test]
 fn rank_of_corners_and_edges() {
-	use chrust_core::helper::rank;
 	assert_eq!(rank(0), 0, "a1 is rank 0");
 	assert_eq!(rank(7), 0, "h1 is rank 0");
 	assert_eq!(rank(8), 1, "a2 is rank 1");
@@ -246,7 +242,6 @@ fn rank_of_corners_and_edges() {
 
 #[test]
 fn square_from_file_and_rank() {
-	use chrust_core::helper::square;
 	assert_eq!(square(0, 0), 0, "a1 = 0");
 	assert_eq!(square(7, 0), 7, "h1 = 7");
 	assert_eq!(square(0, 1), 8, "a2 = 8");
@@ -256,7 +251,6 @@ fn square_from_file_and_rank() {
 
 #[test]
 fn file_rank_round_trips() {
-	use chrust_core::helper::{file_rank, square};
 	for f in 0u8..8 {
 		for r in 0u8..8 {
 			let sq = square(f, r);

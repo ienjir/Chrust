@@ -1,5 +1,5 @@
-use chrust_core::moves::make_move::{Move, MoveKind};
-use chrust_core::{
+use crate::moves::make_move::{Move, MoveKind};
+use crate::{
 	Side, Square,
 	game_status::GameStatus,
 	position::{Game, Position, load_position_from_fen},

@@ -7,7 +7,7 @@ use crate::{
 };
 
 impl Position {
-	pub fn slider_targets(&self, colored_piece: ColoredPiece, from_square: Square) -> Result<Vec<Move>, ChessError> {
+	pub(crate) fn slider_targets(&self, colored_piece: ColoredPiece, from_square: Square) -> Result<Vec<Move>, ChessError> {
 		let mut target_moves: Vec<Move> = Vec::with_capacity(27);
 
 		is_right_piece_side(colored_piece, self.side_to_move)?;
@@ -34,13 +34,13 @@ impl Position {
 		Ok(target_moves)
 	}
 
-	pub fn diagonal_slider(&self, from_square: Square, colored_piece: ColoredPiece, target_moves: &mut Vec<Move>) {
+	pub(crate) fn diagonal_slider(&self, from_square: Square, colored_piece: ColoredPiece, target_moves: &mut Vec<Move>) {
 		let directions: [i16; 4] = [-7, 7, -9, 9];
 
 		self.slider(from_square, colored_piece, target_moves, directions);
 	}
 
-	pub fn horizontal_vertical_slider(&self, from_square: Square, colored_piece: ColoredPiece, target_moves: &mut Vec<Move>) {
+	pub(crate) fn horizontal_vertical_slider(&self, from_square: Square, colored_piece: ColoredPiece, target_moves: &mut Vec<Move>) {
 		let directions: [i16; 4] = [-8, 8, -1, 1];
 
 		self.slider(from_square, colored_piece, target_moves, directions);
@@ -75,7 +75,7 @@ impl Position {
 		}
 	}
 
-	pub fn slide_ray(&self, from_square: Square, direction: i16, mut on_square: impl FnMut(u8, Option<ColoredPiece>) -> bool) {
+	pub(crate) fn slide_ray(&self, from_square: Square, direction: i16, mut on_square: impl FnMut(u8, Option<ColoredPiece>) -> bool) {
 		let mut step_from_i = from_square as i16;
 
 		loop {
@@ -111,3 +111,6 @@ impl Position {
 		}
 	}
 }
+
+#[cfg(test)]
+mod tests;

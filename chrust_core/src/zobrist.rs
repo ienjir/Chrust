@@ -3,22 +3,22 @@ use std::sync::LazyLock;
 use crate::{ColoredPiece, Piece, Side, position::Position};
 
 pub struct ZobristTable {
-	pub pieces: [[u64; 64]; 12],
-	pub side: u64,
-	pub castling: [u64; 4],
-	pub enpassant: [u64; 8],
+	pub(crate) pieces: [[u64; 64]; 12],
+	pub(crate) side: u64,
+	pub(crate) castling: [u64; 4],
+	pub(crate) enpassant: [u64; 8],
 }
 
 static ZOBRIST: LazyLock<ZobristTable> = LazyLock::new(ZobristTable::new);
 
 struct Splitmix64(u64);
 
-pub fn zobrist() -> &'static ZobristTable {
+pub(crate) fn zobrist() -> &'static ZobristTable {
 	&ZOBRIST
 }
 
 impl ZobristTable {
-	pub fn new() -> Self {
+	pub(crate) fn new() -> Self {
 		let mut rng = Splitmix64(6769420);
 
 		let mut pieces = [[0u64; 64]; 12];
@@ -47,7 +47,7 @@ impl Splitmix64 {
 	}
 }
 
-pub fn piece_index(colored_piece: ColoredPiece) -> usize {
+pub(crate) fn piece_index(colored_piece: ColoredPiece) -> usize {
 	let piece_idx = match colored_piece.piece {
 		Piece::Pawn => 0,
 		Piece::Knight => 1,
@@ -64,7 +64,7 @@ pub fn piece_index(colored_piece: ColoredPiece) -> usize {
 }
 
 impl Position {
-	pub fn compute_hash(&self) -> u64 {
+	pub(crate) fn compute_hash(&self) -> u64 {
 		let z = zobrist();
 		let mut hash = 0u64;
 
@@ -92,3 +92,6 @@ impl Position {
 		hash
 	}
 }
+
+#[cfg(test)]
+mod tests;

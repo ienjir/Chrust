@@ -54,7 +54,7 @@ impl Game {
 		Ok(())
 	}
 
-	pub fn is_draw_by_repetition(&self) -> bool {
+	pub(crate) fn is_draw_by_repetition(&self) -> bool {
 		let current_hash = self.position.zobrist_hash;
 		let lookback = self.position.halfmove_clock as usize;
 		let history_len = self.hash_history.len();
@@ -76,11 +76,11 @@ impl Game {
 }
 
 impl Position {
-	pub fn is_draw_by_fifty_moves(&self) -> bool {
+	pub(crate) fn is_draw_by_fifty_moves(&self) -> bool {
 		self.halfmove_clock >= 100
 	}
 
-	pub fn get_all_legal_moves_for_side(&mut self, side: Side) -> Result<Vec<Move>, ChessError> {
+	pub(crate) fn get_all_legal_moves_for_side(&mut self, side: Side) -> Result<Vec<Move>, ChessError> {
 		let squares: Vec<Square> = self.board.iter().enumerate().filter_map(|(sq, piece)| piece.filter(|p| p.side == side).map(|_| sq as u8)).collect();
 
 		let mut legal_moves: Vec<Move> = Vec::new();
@@ -91,7 +91,7 @@ impl Position {
 		Ok(legal_moves)
 	}
 
-	pub fn is_checkmate_for_side(&mut self, side: Side) -> Result<bool, ChessError> {
+	pub(crate) fn is_checkmate_for_side(&mut self, side: Side) -> Result<bool, ChessError> {
 		if self.is_king_in_check(side)?.is_none() {
 			return Ok(false);
 		}
@@ -103,7 +103,7 @@ impl Position {
 		Ok(true)
 	}
 
-	pub fn is_stalemate_for_side(&mut self, side: Side) -> Result<bool, ChessError> {
+	pub(crate) fn is_stalemate_for_side(&mut self, side: Side) -> Result<bool, ChessError> {
 		if self.is_king_in_check(side)?.is_some() {
 			return Ok(false);
 		}
@@ -115,7 +115,7 @@ impl Position {
 		Ok(true)
 	}
 
-	pub fn is_insufficient_material(&self) -> bool {
+	pub(crate) fn is_insufficient_material(&self) -> bool {
 		let mut white_knights: u8 = 0;
 		let mut black_knights: u8 = 0;
 		let mut white_bishop_color: Option<u8> = None;
@@ -186,3 +186,6 @@ impl Position {
 		true
 	}
 }
+
+#[cfg(test)]
+mod tests;

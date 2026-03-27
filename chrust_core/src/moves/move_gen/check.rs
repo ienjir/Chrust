@@ -125,7 +125,7 @@ impl Position {
 		Ok(Some(attacking_squares))
 	}
 
-	pub fn is_square_attacked_sliding(&self, attacking_squares: &mut Vec<Square>, from_square: Square, attacking_side: Side) {
+	pub(crate) fn is_square_attacked_sliding(&self, attacking_squares: &mut Vec<Square>, from_square: Square, attacking_side: Side) {
 		let directions: [i16; 8] = [-8, 8, -1, 1, -7, 7, -9, 9];
 
 		for direction in directions {
@@ -151,3 +151,6 @@ impl Position {
 		}
 	}
 }
+
+#[cfg(test)]
+mod tests;

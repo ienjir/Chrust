@@ -1,10 +1,294 @@
-mod common;
+use super::*;
+use crate::moves::make_move::{Move, MoveKind};
+use crate::position::Position;
+use crate::test_common::{assert_hash_matches_computed, empty_position, make_move_and_verify_hash, make_then_undo_and_verify_hash, position_with_hash};
+use crate::{ColoredPiece, Piece, Side};
+use std::collections::HashSet;
 
-use chrust_core::moves::make_move::{Move, MoveKind};
-use chrust_core::position::Position;
-use chrust_core::zobrist::zobrist;
-use chrust_core::{ColoredPiece, Piece, Side};
-use common::{assert_hash_matches_computed, empty_position, make_move_and_verify_hash, make_then_undo_and_verify_hash, position_with_hash};
+// ══════════════════════════════════════════════════════════════════════════════
+// ZobristTable Initialization Tests
+// ══════════════════════════════════════════════════════════════════════════════
+
+#[test]
+fn zobrist_table_accessible() {
+	let z = zobrist();
+	// If we can access it without panic, the test passes
+	assert!(z.side != 0, "side hash should be initialized");
+}
+
+#[test]
+fn zobrist_table_is_singleton() {
+	let z1 = zobrist();
+	let z2 = zobrist();
+	// Check that both references point to the same memory
+	assert!(std::ptr::eq(z1, z2), "zobrist() should return the same reference each time");
+}
+
+#[test]
+fn zobrist_pieces_array_initialized() {
+	let z = zobrist();
+	// Check all 12 piece types × 64 squares are non-zero
+	for piece_idx in 0..12 {
+		for square in 0..64 {
+			assert_ne!(z.pieces[piece_idx][square], 0, "pieces[{}][{}] should be non-zero", piece_idx, square);
+		}
+	}
+}
+
+#[test]
+fn zobrist_side_initialized() {
+	let z = zobrist();
+	assert_ne!(z.side, 0, "side hash should be non-zero");
+}
+
+#[test]
+fn zobrist_castling_initialized() {
+	let z = zobrist();
+	for i in 0..4 {
+		assert_ne!(z.castling[i], 0, "castling[{}] should be non-zero", i);
+	}
+}
+
+#[test]
+fn zobrist_enpassant_initialized() {
+	let z = zobrist();
+	for i in 0..8 {
+		assert_ne!(z.enpassant[i], 0, "enpassant[{}] should be non-zero", i);
+	}
+}
+
+#[test]
+fn zobrist_seed_is_deterministic() {
+	// Create a new table and verify it has the same values
+	let z1 = zobrist();
+	let z2 = ZobristTable::new();
+
+	// Check a few sample values
+	assert_eq!(z1.pieces[0][0], z2.pieces[0][0], "tables should be identical");
+	assert_eq!(z1.pieces[5][32], z2.pieces[5][32], "tables should be identical");
+	assert_eq!(z1.side, z2.side, "side hash should be identical");
+	assert_eq!(z1.castling[2], z2.castling[2], "castling hash should be identical");
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// Hash Value Uniqueness Tests
+// ══════════════════════════════════════════════════════════════════════════════
+
+#[test]
+fn zobrist_no_duplicate_piece_values() {
+	let z = zobrist();
+	let mut seen = HashSet::new();
+	let mut duplicates = 0;
+
+	// Check all 12×64 = 768 piece values
+	for piece_idx in 0..12 {
+		for square in 0..64 {
+			let val = z.pieces[piece_idx][square];
+			if !seen.insert(val) {
+				duplicates += 1;
+			}
+		}
+	}
+
+	// Allow some collisions due to birthday paradox, but should be very rare
+	// With 768 64-bit values, expect ~0 collisions
+	assert!(duplicates < 5, "too many duplicate piece hashes: {}", duplicates);
+}
+
+#[test]
+fn zobrist_side_unique_from_pieces() {
+	let z = zobrist();
+	let side_val = z.side;
+
+	for piece_idx in 0..12 {
+		for square in 0..64 {
+			assert_ne!(z.pieces[piece_idx][square], side_val, "side hash collides with pieces[{}][{}]", piece_idx, square);
+		}
+	}
+}
+
+#[test]
+fn zobrist_castling_unique_from_pieces() {
+	let z = zobrist();
+
+	for i in 0..4 {
+		let castle_val = z.castling[i];
+		for piece_idx in 0..12 {
+			for square in 0..64 {
+				assert_ne!(z.pieces[piece_idx][square], castle_val, "castling[{}] collides with pieces[{}][{}]", i, piece_idx, square);
+			}
+		}
+	}
+}
+
+#[test]
+fn zobrist_enpassant_unique_from_pieces() {
+	let z = zobrist();
+
+	for i in 0..8 {
+		let ep_val = z.enpassant[i];
+		for piece_idx in 0..12 {
+			for square in 0..64 {
+				assert_ne!(z.pieces[piece_idx][square], ep_val, "enpassant[{}] collides with pieces[{}][{}]", i, piece_idx, square);
+			}
+		}
+	}
+}
+
+#[test]
+fn zobrist_all_auxiliary_values_unique() {
+	let z = zobrist();
+	let mut values = Vec::new();
+
+	values.push(z.side);
+	for i in 0..4 {
+		values.push(z.castling[i]);
+	}
+	for i in 0..8 {
+		values.push(z.enpassant[i]);
+	}
+
+	// Check all 13 auxiliary values are unique
+	let unique_count = values.iter().collect::<HashSet<_>>().len();
+	assert_eq!(unique_count, 13, "auxiliary values should all be unique");
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// Splitmix64 RNG Tests
+// ══════════════════════════════════════════════════════════════════════════════
+
+// We test the RNG indirectly through ZobristTable generation
+#[test]
+fn splitmix64_generates_nonzero() {
+	// First value generated should be non-zero
+	let z = ZobristTable::new();
+	assert_ne!(z.pieces[0][0], 0, "first RNG value should be non-zero");
+}
+
+#[test]
+fn splitmix64_generates_different_values() {
+	let z = ZobristTable::new();
+	// Check first 10 generated values are all different
+	let mut values = Vec::new();
+	for i in 0..10 {
+		values.push(z.pieces[0][i]);
+	}
+
+	let unique_count = values.iter().collect::<HashSet<_>>().len();
+	assert_eq!(unique_count, 10, "RNG should produce unique values");
+}
+
+#[test]
+fn splitmix64_sequence_matches_expected() {
+	// Known sequence for seed 6769420
+	// These values were generated by the current implementation
+	let z = ZobristTable::new();
+
+	// Verify first few values are deterministic
+	assert_eq!(z.pieces[0][0], 0x5eceeba294398299, "first value mismatch");
+	assert_eq!(z.pieces[0][1], 0xc63eaa255d481914, "second value mismatch");
+	assert_eq!(z.pieces[0][2], 0xde2bb76ce936cda9, "third value mismatch");
+}
+
+#[test]
+fn splitmix64_distribution_test() {
+	let z = zobrist();
+
+	// Count bits set in first 100 random values
+	let mut bit_counts = [0u32; 64];
+	for piece_idx in 0..12 {
+		for square in 0..8 {
+			let val = z.pieces[piece_idx][square];
+			for bit in 0..64 {
+				if (val >> bit) & 1 == 1 {
+					bit_counts[bit] += 1;
+				}
+			}
+		}
+	}
+
+	// Each bit should be set roughly 50% of the time (96 values checked)
+	// Allow range of 20-80 for statistical variation
+	for (bit, &count) in bit_counts.iter().enumerate() {
+		assert!(count >= 20 && count <= 80, "bit {} distribution poor: {}/96", bit, count);
+	}
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// piece_index() Function Tests
+// ══════════════════════════════════════════════════════════════════════════════
+
+#[test]
+fn piece_index_white_pawn_is_0() {
+	let piece = ColoredPiece { piece: Piece::Pawn, side: Side::White };
+	assert_eq!(piece_index(piece), 0);
+}
+
+#[test]
+fn piece_index_white_knight_is_1() {
+	let piece = ColoredPiece { piece: Piece::Knight, side: Side::White };
+	assert_eq!(piece_index(piece), 1);
+}
+
+#[test]
+fn piece_index_white_bishop_is_2() {
+	let piece = ColoredPiece { piece: Piece::Bishop, side: Side::White };
+	assert_eq!(piece_index(piece), 2);
+}
+
+#[test]
+fn piece_index_white_rook_is_3() {
+	let piece = ColoredPiece { piece: Piece::Rook, side: Side::White };
+	assert_eq!(piece_index(piece), 3);
+}
+
+#[test]
+fn piece_index_white_queen_is_4() {
+	let piece = ColoredPiece { piece: Piece::Queen, side: Side::White };
+	assert_eq!(piece_index(piece), 4);
+}
+
+#[test]
+fn piece_index_white_king_is_5() {
+	let piece = ColoredPiece { piece: Piece::King, side: Side::White };
+	assert_eq!(piece_index(piece), 5);
+}
+
+#[test]
+fn piece_index_black_pawn_is_6() {
+	let piece = ColoredPiece { piece: Piece::Pawn, side: Side::Black };
+	assert_eq!(piece_index(piece), 6);
+}
+
+#[test]
+fn piece_index_black_knight_is_7() {
+	let piece = ColoredPiece { piece: Piece::Knight, side: Side::Black };
+	assert_eq!(piece_index(piece), 7);
+}
+
+#[test]
+fn piece_index_black_bishop_is_8() {
+	let piece = ColoredPiece { piece: Piece::Bishop, side: Side::Black };
+	assert_eq!(piece_index(piece), 8);
+}
+
+#[test]
+fn piece_index_black_rook_is_9() {
+	let piece = ColoredPiece { piece: Piece::Rook, side: Side::Black };
+	assert_eq!(piece_index(piece), 9);
+}
+
+#[test]
+fn piece_index_black_queen_is_10() {
+	let piece = ColoredPiece { piece: Piece::Queen, side: Side::Black };
+	assert_eq!(piece_index(piece), 10);
+}
+
+#[test]
+fn piece_index_black_king_is_11() {
+	let piece = ColoredPiece { piece: Piece::King, side: Side::Black };
+	assert_eq!(piece_index(piece), 11);
+}
 
 // ══════════════════════════════════════════════════════════════════════════════
 // compute_hash() Basic Tests
@@ -120,7 +404,7 @@ fn compute_hash_same_piece_different_square() {
 
 	let knight = ColoredPiece { piece: Piece::Knight, side: Side::White };
 	pos1.board[28] = Some(knight); // e4
-	pos2.board[29] = Some(knight); // e5 (actually f4, but different square)
+	pos2.board[29] = Some(knight); // f4
 
 	let hash1 = pos1.compute_hash();
 	let hash2 = pos2.compute_hash();
@@ -172,9 +456,6 @@ fn hash_updated_quiet_move_knight() {
 
 #[test]
 fn hash_updated_quiet_move_bishop() {
-	let mut pos = position_with_hash("rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1");
-
-	// Move white bishop from c1 to f4
 	let mut pos_white = position_with_hash("rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 1");
 
 	let mv = Move {
@@ -203,9 +484,6 @@ fn hash_updated_quiet_move_rook() {
 
 #[test]
 fn hash_updated_quiet_move_queen() {
-	let mut pos = position_with_hash("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
-
-	// This will be blocked, so let's use a more open position
 	let mut pos_open = position_with_hash("rnbqkbnr/pppppppp/8/8/8/3Q4/PPPPPPPP/RNB1KBNR w KQkq - 0 1");
 
 	let mv = Move {
@@ -516,7 +794,7 @@ fn hash_updated_capture_on_h8_loses_black_kingside() {
 fn hash_updated_multiple_castling_rights_lost() {
 	let mut pos = position_with_hash("r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1");
 
-	// Move king
+	// Move white king
 	let mv1 = Move {
 		from_square: 4,
 		to_square: 12,
@@ -639,7 +917,6 @@ fn hash_en_passant_file_specific() {
 #[test]
 fn hash_toggles_after_white_move() {
 	let mut pos = position_with_hash("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
-	let hash_before = pos.zobrist_hash;
 
 	let mv = Move {
 		from_square: 12,

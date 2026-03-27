@@ -1,10 +1,9 @@
-mod common;
-
-use chrust_core::errors::ChessError;
-use chrust_core::helper::{file_diff, in_bounds};
-use chrust_core::moves::make_move::MoveKind;
-use chrust_core::{ColoredPiece, Piece, Side};
-use common::{empty_position, has_move, has_to_square};
+use super::*;
+use crate::errors::ChessError;
+use crate::helper::{file_diff, in_bounds};
+use crate::moves::make_move::MoveKind;
+use crate::test_common::{empty_position, has_move, has_to_square};
+use crate::{ColoredPiece, Piece, Side};
 
 #[test]
 fn w_pawn_c2() {
@@ -129,7 +128,7 @@ fn b_pawn_h7_edge_capture_g6() {
 }
 
 #[test]
-fn wrong_piece_e2() {
+fn pawn_wrong_piece_e2() {
 	let mut pos = empty_position();
 
 	pos.board[12] = Some(ColoredPiece { piece: Piece::King, side: Side::White });
@@ -144,21 +143,21 @@ fn wrong_piece_e2() {
 }
 
 #[test]
-fn no_piece_e2() {
+fn pawn_no_piece_e2() {
 	let pos = empty_position();
 
 	assert_eq!(pos.get_piece_from_square(12), Err(ChessError::NoPieceOnSquare { square: 12 }))
 }
 
 #[test]
-fn try_move_on_non_existing_square() {
+fn pawn_try_move_on_non_existing_square() {
 	let pos = empty_position();
 
 	assert_eq!(pos.get_piece_from_square(65), Err(ChessError::NotASquareOnBoard { square: 65 }))
 }
 
 #[test]
-fn wrong_side_returns_wrong_side_error() {
+fn pawn_wrong_side_returns_wrong_side_error() {
 	// Black pawn on the board but it's White's turn → WrongSide.
 	let mut pos = empty_position(); // side_to_move = White
 
@@ -339,8 +338,6 @@ fn test_file_diff() {
 
 #[test]
 fn test_promotion_moves() {
-	use chrust_core::moves::move_gen::pawn::promotion_moves;
-
 	let colored_piece = ColoredPiece { piece: Piece::Pawn, side: Side::White };
 	let mut moves = Vec::new();
 

@@ -1,10 +1,9 @@
-mod common;
-
-use chrust_core::errors::ChessError;
-use chrust_core::moves::make_move::{Move, MoveKind};
-use chrust_core::position::Position;
-use chrust_core::{ColoredPiece, Piece, Side, Square};
-use common::{empty_position, has_move, has_to_square};
+use super::*;
+use crate::errors::ChessError;
+use crate::moves::make_move::{Move, MoveKind};
+use crate::position::Position;
+use crate::test_common::{empty_position, has_move, has_to_square};
+use crate::{ColoredPiece, Piece, Side, Square};
 
 #[test]
 fn king_c5_empty_board() {
@@ -76,7 +75,7 @@ fn king_h5_friendly_g4() {
 }
 
 #[test]
-fn wrong_piece_e8() {
+fn king_wrong_piece_e8() {
 	let mut pos = empty_position();
 
 	pos.board[60] = Some(ColoredPiece { piece: Piece::Knight, side: Side::White });
@@ -91,14 +90,14 @@ fn wrong_piece_e8() {
 }
 
 #[test]
-fn no_piece_d5() {
+fn king_no_piece_d5() {
 	let pos = empty_position();
 
 	assert_eq!(pos.get_validated_colored_piece(35, Piece::King), Err(ChessError::NoPieceOnSquare { square: 35 }))
 }
 
 #[test]
-fn try_move_on_non_existing_square() {
+fn king_try_move_on_non_existing_square() {
 	let pos = empty_position();
 
 	assert_eq!(pos.get_validated_colored_piece(65, Piece::King), Err(ChessError::NotASquareOnBoard { square: 65 }))
@@ -194,8 +193,7 @@ fn king_castling_white_kingside_disallowed_when_destination_attacked() {
 }
 
 #[test]
-fn wrong_side_returns_wrong_side_error() {
-	// Black king on the board but it's White's turn.
+fn king_wrong_side_returns_wrong_side_error() {
 	let mut pos = empty_position(); // side_to_move = White
 
 	pos.board[60] = Some(ColoredPiece { piece: Piece::King, side: Side::Black });
@@ -307,7 +305,6 @@ fn king_with_multiple_captures() {
 
 	pos.board[27] = Some(ColoredPiece { piece: Piece::King, side: Side::White });
 
-	// Surround with enemy pieces
 	pos.board[34] = Some(ColoredPiece { piece: Piece::Pawn, side: Side::Black });
 	pos.board[35] = Some(ColoredPiece { piece: Piece::Pawn, side: Side::Black });
 	pos.board[36] = Some(ColoredPiece { piece: Piece::Knight, side: Side::Black });
@@ -479,10 +476,7 @@ fn king_castling_white_kingside_disallowed_when_wrong_color_rook() {
 	let mut pos = empty_position();
 
 	pos.board[4] = Some(ColoredPiece { piece: Piece::King, side: Side::White });
-	pos.board[7] = Some(ColoredPiece {
-		piece: Piece::Rook,
-		side: Side::Black, // Enemy rook!
-	});
+	pos.board[7] = Some(ColoredPiece { piece: Piece::Rook, side: Side::Black });
 	pos.castle[0] = true; // white kingside
 
 	let king = pos.board[4].unwrap();
@@ -496,10 +490,7 @@ fn king_castling_white_queenside_disallowed_when_wrong_color_rook() {
 	let mut pos = empty_position();
 
 	pos.board[4] = Some(ColoredPiece { piece: Piece::King, side: Side::White });
-	pos.board[0] = Some(ColoredPiece {
-		piece: Piece::Rook,
-		side: Side::Black, // Enemy rook!
-	});
+	pos.board[0] = Some(ColoredPiece { piece: Piece::Rook, side: Side::Black });
 	pos.castle[1] = true; // white queenside
 
 	let king = pos.board[4].unwrap();
@@ -513,10 +504,7 @@ fn king_castling_white_kingside_disallowed_when_wrong_piece_type() {
 	let mut pos = empty_position();
 
 	pos.board[4] = Some(ColoredPiece { piece: Piece::King, side: Side::White });
-	pos.board[7] = Some(ColoredPiece {
-		piece: Piece::Knight, // Wrong piece type!
-		side: Side::White,
-	});
+	pos.board[7] = Some(ColoredPiece { piece: Piece::Knight, side: Side::White });
 	pos.castle[0] = true; // white kingside
 
 	let king = pos.board[4].unwrap();

@@ -1,10 +1,9 @@
-mod common;
-
-use chrust_core::errors::ChessError;
-use chrust_core::moves::make_move::{Move, MoveKind};
-use chrust_core::position::Position;
-use chrust_core::{ColoredPiece, Piece, Side, Square};
-use common::{empty_position, has_move, has_to_square};
+use super::*;
+use crate::errors::ChessError;
+use crate::moves::make_move::{Move, MoveKind};
+use crate::position::Position;
+use crate::test_common::{empty_position, has_move, has_to_square};
+use crate::{ColoredPiece, Piece, Side, Square};
 
 fn has_square(squares: &[Square], square: Square) -> bool {
 	squares.iter().any(|&s| s == square)
@@ -157,8 +156,6 @@ fn is_square_attacked_by_queen_on_orthogonal_ray() {
 
 #[test]
 fn is_square_attacked_by_rook_on_horizontal_ray() {
-	// All existing rook tests use vertical (same-file) rays — this checks a
-	// same-rank (horizontal) ray.
 	let mut pos = empty_position();
 
 	pos.board[28] = Some(ColoredPiece { piece: Piece::King, side: Side::White });
@@ -185,24 +182,17 @@ fn is_square_attacked_by_two_knights_simultaneously() {
 
 #[test]
 fn is_square_attacked_pawn_does_not_wrap_from_a_file() {
-	// A black pawn on a5 (sq 32) attacks b6 (sq 41) but NOT h6 (sq 47)
-	// via the -9 offset (which would wrap to the h-file).
 	let mut pos = empty_position();
 
 	pos.board[41] = Some(ColoredPiece { piece: Piece::King, side: Side::White }); // b6
 	pos.board[32] = Some(ColoredPiece { piece: Piece::Pawn, side: Side::Black }); // a5
 
-	// b6 should be attacked by the a5 pawn (+9 from White's perspective =
-	// is_square_attacked with side_to_attack=White means we look for White
-	// attackers of the given square; here we want black attackers of b6).
 	let attacks = pos.is_square_attacked(41, Side::White).expect("Err");
-	// Verify no h-file wrap: is sq 47 (h6) attacked by the a5 pawn?
 	assert_eq!(pos.is_square_attacked(47, Side::Black), Ok(None), "a-file pawn should not wrap to attack h6");
 }
 
 #[test]
 fn is_square_attacked_pawn_does_not_wrap_from_h_file() {
-	// A white pawn on h4 (sq 31) should NOT wrap to attack a5 (sq 32).
 	let mut pos = empty_position();
 
 	pos.board[31] = Some(ColoredPiece { piece: Piece::Pawn, side: Side::White }); // h4
@@ -212,7 +202,6 @@ fn is_square_attacked_pawn_does_not_wrap_from_h_file() {
 
 #[test]
 fn is_square_attacked_king_attacks_from_all_8_directions() {
-	// Place a black king on e4 (sq 28) and verify it attacks all 8 neighbours.
 	let mut pos = empty_position();
 	pos.board[28] = Some(ColoredPiece { piece: Piece::King, side: Side::Black });
 
@@ -268,8 +257,6 @@ fn is_king_in_check_black_in_check_from_knight() {
 
 #[test]
 fn is_king_in_check_uses_king_squares_array() {
-	// king_squares[0] (White) is set to 27 (d4), not the standard e1.
-	// The check should look at sq 27, not sq 4.
 	let mut pos = empty_position();
 	pos.king_squares = [27, 60];
 	pos.board[27] = Some(ColoredPiece { piece: Piece::King, side: Side::White });
@@ -292,68 +279,52 @@ fn is_square_attacked_blocked_by_enemy_non_attacker() {
 
 #[test]
 fn is_square_attacked_sliding_does_not_wrap_board_edge() {
-	// Rook on h4 should not wrap to attack a3 via horizontal ray
 	let mut pos = empty_position();
 
 	pos.board[24] = Some(ColoredPiece { piece: Piece::King, side: Side::White }); // a4
 	pos.board[31] = Some(ColoredPiece { piece: Piece::Rook, side: Side::Black }); // h4
 
-	// a4 should be attacked by rook on h4 (same rank)
 	let attacks = pos.is_square_attacked(24, Side::Black).expect("is_square_attacked returned Err").unwrap();
 
 	assert!(has_square(&attacks, 31));
 
-	// a3 should NOT be attacked by rook on h4 (different rank, would require wrap)
 	assert_eq!(pos.is_square_attacked(16, Side::Black), Ok(None));
 }
 
 #[test]
 fn is_square_attacked_bishop_does_not_wrap_diagonally() {
-	// Bishop on a1 should not wrap to attack h2 via invalid diagonal
 	let mut pos = empty_position();
 
 	pos.board[0] = Some(ColoredPiece { piece: Piece::Bishop, side: Side::Black }); // a1
 
-	// a1 bishop can attack b2, c3, etc on the valid diagonal
 	let attacks_b2 = pos.is_square_attacked(9, Side::Black).expect("Err");
 	assert!(attacks_b2.is_some()); // b2 is on valid diagonal
 
-	// But should not wrap to attack invalid squares
-	// h2 (square 15) is not on a valid diagonal from a1
 	assert_eq!(pos.is_square_attacked(15, Side::Black), Ok(None));
 }
 
 #[test]
 fn is_square_attacked_queen_multiple_rays_with_blockers() {
-	// Queen with blockers in various directions
 	let mut pos = empty_position();
 
 	pos.board[27] = Some(ColoredPiece { piece: Piece::King, side: Side::White }); // d4
 	pos.board[0] = Some(ColoredPiece { piece: Piece::Queen, side: Side::Black }); // a1
 
-	// Queen on a1 can attack d4 along diagonal (a1-b2-c3-d4)
 	let attacks_d4 = pos.is_square_attacked(27, Side::Black).expect("Err");
 	assert!(attacks_d4.is_some()); // d4 attacked by queen on a1 (diagonal)
 
-	// Add blocker on the diagonal
 	pos.board[18] = Some(ColoredPiece { piece: Piece::Pawn, side: Side::White }); // c3 blocks diagonal
 
-	// Now d4 should not be attacked
 	assert_eq!(pos.is_square_attacked(27, Side::Black), Ok(None));
 }
 
 #[test]
 fn is_square_attacked_queen_on_h6_attacks_h8() {
-	// Reproducing issue: white queen on h6 should attack black king on h8
 	let mut pos = empty_position();
 
 	pos.board[63] = Some(ColoredPiece { piece: Piece::King, side: Side::Black }); // h8
 	pos.board[47] = Some(ColoredPiece { piece: Piece::Queen, side: Side::White }); // h6
 	pos.board[0] = Some(ColoredPiece { piece: Piece::King, side: Side::White }); // a1
-
-	println!("Testing h8 (63) attacked by White queen on h6 (47)");
-	println!("h8 board: {:?}", pos.board[63]);
-	println!("h6 board: {:?}", pos.board[47]);
 
 	let attacks = pos.is_square_attacked(63, Side::White).expect("is_square_attacked returned Err");
 

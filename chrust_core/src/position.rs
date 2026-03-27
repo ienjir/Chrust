@@ -12,22 +12,22 @@ pub struct Game {
 pub struct Position {
 	pub board: [Option<ColoredPiece>; 64],
 	pub side_to_move: Side,
-	pub castle: [bool; 4],
-	pub en_passant: Option<Square>,
-	pub king_squares: [Square; 2],
-	pub halfmove_clock: u32,
-	pub fullmove_counter: u32,
-	pub zobrist_hash: u64,
+	pub(crate) castle: [bool; 4],
+	pub(crate) en_passant: Option<Square>,
+	pub(crate) king_squares: [Square; 2],
+	pub(crate) halfmove_clock: u32,
+	pub(crate) fullmove_counter: u32,
+	pub(crate) zobrist_hash: u64,
 }
 
 #[derive(Copy, Clone)]
 pub struct Undo {
-	pub captured_piece: Option<ColoredPiece>,
-	pub previous_castling_rights: [bool; 4],
-	pub previous_en_passant: Option<Square>,
-	pub previous_halfway_clock: u32,
-	pub fullmove_number: u32,
-	pub previous_king_squares: [Square; 2],
+	pub(crate) captured_piece: Option<ColoredPiece>,
+	pub(crate) previous_castling_rights: [bool; 4],
+	pub(crate) previous_en_passant: Option<Square>,
+	pub(crate) previous_halfway_clock: u32,
+	pub(crate) fullmove_number: u32,
+	pub(crate) previous_king_squares: [Square; 2],
 }
 
 pub fn load_position_from_fen(fen: &str) -> Result<Position, FenError> {
@@ -94,7 +94,7 @@ impl Position {
 	}
 }
 
-pub fn load_castling_ability(position: &mut Position, castling_rules: &str) -> Result<(), FenError> {
+fn load_castling_ability(position: &mut Position, castling_rules: &str) -> Result<(), FenError> {
 	for castle_char in castling_rules.chars() {
 		match castle_char {
 			'K' => position.castle[0] = true,
@@ -109,7 +109,7 @@ pub fn load_castling_ability(position: &mut Position, castling_rules: &str) -> R
 	Ok(())
 }
 
-pub fn load_en_passant(position: &mut Position, en_passant_string: &str) -> Result<(), FenError> {
+fn load_en_passant(position: &mut Position, en_passant_string: &str) -> Result<(), FenError> {
 	if en_passant_string == "-" {
 		return Ok(());
 	}
@@ -122,7 +122,7 @@ pub fn load_en_passant(position: &mut Position, en_passant_string: &str) -> Resu
 	Ok(())
 }
 
-pub fn load_side_to_move(position: &mut Position, side_to_move: &str) -> Result<(), FenError> {
+fn load_side_to_move(position: &mut Position, side_to_move: &str) -> Result<(), FenError> {
 	match side_to_move {
 		"b" => position.side_to_move = Side::Black,
 		"w" => position.side_to_move = Side::White,
@@ -132,7 +132,7 @@ pub fn load_side_to_move(position: &mut Position, side_to_move: &str) -> Result<
 	Ok(())
 }
 
-pub fn load_piece_placement(position: &mut Position, fen_board: &str) -> Result<(), FenError> {
+fn load_piece_placement(position: &mut Position, fen_board: &str) -> Result<(), FenError> {
 	let fen_ranks = fen_board.split("/");
 
 	let mut current_rank = 7;
@@ -175,7 +175,7 @@ pub fn load_piece_placement(position: &mut Position, fen_board: &str) -> Result<
 	Ok(())
 }
 
-pub fn load_clock(clock_string: &str) -> Result<u32, FenError> {
+fn load_clock(clock_string: &str) -> Result<u32, FenError> {
 	// please dont judge me i am to lazy to find a var name
 	let new_clock_string = clock_string.to_string();
 	match new_clock_string.parse::<u32>() {
@@ -184,7 +184,7 @@ pub fn load_clock(clock_string: &str) -> Result<u32, FenError> {
 	};
 }
 
-pub fn convert_square_string_to_square(square_string: &str) -> Result<u8, FenError> {
+fn convert_square_string_to_square(square_string: &str) -> Result<u8, FenError> {
 	if square_string.len() != 2 {
 		return Err(FenError::SquareLenghtIsnt2Wide(square_string.len()));
 	}
@@ -206,3 +206,6 @@ pub fn convert_square_string_to_square(square_string: &str) -> Result<u8, FenErr
 
 	Ok(square_index)
 }
+
+#[cfg(test)]
+mod tests;

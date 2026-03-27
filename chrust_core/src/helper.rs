@@ -7,11 +7,11 @@ use crate::{
 	position::{Game, Position},
 };
 
-pub fn file(square: Square) -> u8 {
+pub(crate) fn file(square: Square) -> u8 {
 	square % 8
 }
 
-pub fn rank(square: Square) -> u8 {
+pub(crate) fn rank(square: Square) -> u8 {
 	square / 8
 }
 
@@ -24,7 +24,7 @@ pub fn file_rank(square: Square) -> (u8, u8) {
 }
 
 impl ColoredPiece {
-	pub fn to_char(&self) -> char {
+	pub(crate) fn to_char(&self) -> char {
 		let mut piece_char = match self.piece {
 			Piece::Pawn => 'p',
 			Piece::Knight => 'n',
@@ -43,7 +43,7 @@ impl ColoredPiece {
 }
 
 impl Game {
-	pub fn is_legal_game_state(&self) -> bool {
+	pub(crate) fn is_legal_game_state(&self) -> bool {
 		if self.game_status == GameStatus::Playing || self.game_status == GameStatus::InCheck {
 			return true;
 		}
@@ -53,7 +53,7 @@ impl Game {
 }
 
 /// Checks if a `Square` is in the 64 squares of a chessboard
-pub fn is_square_on_board(from_square: Square) -> Result<(), ChessError> {
+pub(crate) fn is_square_on_board(from_square: Square) -> Result<(), ChessError> {
 	if !(0..=63).contains(&from_square) {
 		return Err(ChessError::NotASquareOnBoard { square: from_square as i16 });
 	} else {
@@ -61,11 +61,11 @@ pub fn is_square_on_board(from_square: Square) -> Result<(), ChessError> {
 	}
 }
 
-pub fn in_bounds(candidate: i16) -> bool {
+pub(crate) fn in_bounds(candidate: i16) -> bool {
 	(0..=63).contains(&candidate)
 }
 
-pub fn is_valid_promomotion_piece(promotion_piece: Piece) -> Result<(), ChessError> {
+pub(crate) fn is_valid_promomotion_piece(promotion_piece: Piece) -> Result<(), ChessError> {
 	if promotion_piece == Piece::Pawn {
 		return Err(ChessError::PromotionPieceCantBePawn);
 	}
@@ -73,15 +73,15 @@ pub fn is_valid_promomotion_piece(promotion_piece: Piece) -> Result<(), ChessErr
 	Ok(())
 }
 
-pub fn file_diff(candidate: i16, from_square: Square) -> i16 {
+pub(crate) fn file_diff(candidate: i16, from_square: Square) -> i16 {
 	(file(candidate as u8) as i16 - file(from_square) as i16).abs()
 }
 
-pub fn rank_diff(candidate: i16, from_square: Square) -> i16 {
+pub(crate) fn rank_diff(candidate: i16, from_square: Square) -> i16 {
 	(rank(candidate as u8) as i16 - rank(from_square) as i16).abs()
 }
 
-pub fn is_right_piece_type(from_piece: ColoredPiece, expected_piece: Piece) -> Result<(), ChessError> {
+pub(crate) fn is_right_piece_type(from_piece: ColoredPiece, expected_piece: Piece) -> Result<(), ChessError> {
 	if from_piece.piece != expected_piece {
 		return Err(ChessError::WrongPieceType {
 			expected_piece,
@@ -92,7 +92,7 @@ pub fn is_right_piece_type(from_piece: ColoredPiece, expected_piece: Piece) -> R
 	Ok(())
 }
 
-pub fn is_right_piece_side(from_piece: ColoredPiece, expected_side: Side) -> Result<(), ChessError> {
+pub(crate) fn is_right_piece_side(from_piece: ColoredPiece, expected_side: Side) -> Result<(), ChessError> {
 	if from_piece.side != expected_side {
 		return Err(ChessError::WrongSide {
 			expected_side,
@@ -105,7 +105,7 @@ pub fn is_right_piece_side(from_piece: ColoredPiece, expected_side: Side) -> Res
 
 impl Position {
 	/// Gets a colored piece that is validated so that it acutually exists. Also validates the from_square
-	pub fn get_validated_colored_piece(&self, from_square: Square, expected_piece: Piece) -> Result<ColoredPiece, ChessError> {
+	pub(crate) fn get_validated_colored_piece(&self, from_square: Square, expected_piece: Piece) -> Result<ColoredPiece, ChessError> {
 		let col_piece = self.get_piece_from_square(from_square)?;
 
 		if let Err(x) = self.validate_colored_piece(col_piece, expected_piece) {
@@ -115,7 +115,7 @@ impl Position {
 		Ok(col_piece)
 	}
 
-	pub fn validate_colored_piece(&self, colored_piece: ColoredPiece, expected_piece: Piece) -> Result<(), ChessError> {
+	pub(crate) fn validate_colored_piece(&self, colored_piece: ColoredPiece, expected_piece: Piece) -> Result<(), ChessError> {
 		if let Err(x) = is_right_piece_side(colored_piece, self.side_to_move) {
 			return Err(x);
 		}
@@ -127,7 +127,7 @@ impl Position {
 		Ok(())
 	}
 
-	pub fn get_piece_from_square(&self, from_square: Square) -> Result<ColoredPiece, ChessError> {
+	pub(crate) fn get_piece_from_square(&self, from_square: Square) -> Result<ColoredPiece, ChessError> {
 		if let Err(x) = is_square_on_board(from_square) {
 			return Err(x);
 		}
@@ -140,10 +140,13 @@ impl Position {
 }
 
 impl Side {
-	pub fn opponent(&self) -> Side {
+	pub(crate) fn opponent(&self) -> Side {
 		match self {
 			Side::White => Side::Black,
 			Side::Black => Side::White,
 		}
 	}
 }
+
+#[cfg(test)]
+mod tests;

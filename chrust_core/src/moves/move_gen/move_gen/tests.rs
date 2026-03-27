@@ -1,8 +1,7 @@
-mod common;
-
-use chrust_core::moves::make_move::{Move, MoveKind};
-use chrust_core::{ColoredPiece, Piece, Side, errors::ChessError};
-use common::{empty_game, empty_position, has_move, has_to_square};
+use super::*;
+use crate::moves::make_move::{Move, MoveKind};
+use crate::test_common::{empty_game, empty_position, has_move, has_to_square};
+use crate::{ColoredPiece, Piece, Side, errors::ChessError};
 
 fn mv(from_square: u8, to_square: u8, move_kind: MoveKind, colored_piece: ColoredPiece) -> Move {
 	Move {

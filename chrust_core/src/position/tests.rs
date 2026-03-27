@@ -1,8 +1,6 @@
-mod common;
-
-use chrust_core::errors::FenError;
-use chrust_core::position::{convert_square_string_to_square, load_position_from_fen};
-use chrust_core::{ColoredPiece, Piece, Side};
+use super::*;
+use crate::errors::FenError;
+use crate::{ColoredPiece, Piece, Side};
 
 // ── convert_square_string_to_square ──────────────────────────────────────────
 

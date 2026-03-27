@@ -7,7 +7,7 @@ use crate::{
 };
 
 impl Position {
-	pub fn knight_targets(&self, knight: ColoredPiece, from_square: Square) -> Result<Vec<Move>, ChessError> {
+	pub(crate) fn knight_targets(&self, knight: ColoredPiece, from_square: Square) -> Result<Vec<Move>, ChessError> {
 		let mut target_moves: Vec<Move> = Vec::with_capacity(8);
 
 		let directions: [i16; 8] = [-17, -15, -10, -6, 6, 10, 15, 17];
@@ -50,3 +50,6 @@ impl Position {
 		Ok(target_moves)
 	}
 }
+
+#[cfg(test)]
+mod tests;

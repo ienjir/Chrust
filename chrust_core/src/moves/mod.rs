@@ -1,2 +1,2 @@
 pub mod make_move;
-pub mod move_gen;
+pub(crate) mod move_gen;

@@ -1,10 +1,9 @@
-mod common;
-
-use chrust_core::errors::ChessError;
-use chrust_core::moves::make_move::{Move, MoveKind};
-use chrust_core::position::Position;
-use chrust_core::{ColoredPiece, Piece, Side, Square};
-use common::{empty_position, has_move, has_to_square};
+use super::*;
+use crate::errors::ChessError;
+use crate::moves::make_move::{Move, MoveKind};
+use crate::position::Position;
+use crate::test_common::{empty_position, has_move, has_to_square};
+use crate::{ColoredPiece, Piece, Side, Square};
 
 #[test]
 fn knight_e4_empty_board() {
@@ -75,12 +74,11 @@ fn knight_d1_friendly_f2() {
 }
 
 #[test]
-fn wrong_piece_e8() {
+fn knight_wrong_piece_e8() {
 	let mut pos = empty_position();
 
 	pos.board[60] = Some(ColoredPiece { piece: Piece::King, side: Side::White });
 
-	// get_validated_colored_piece validates piece type
 	assert_eq!(
 		pos.get_validated_colored_piece(60, Piece::Knight),
 		Err(ChessError::WrongPieceType {
@@ -91,28 +89,25 @@ fn wrong_piece_e8() {
 }
 
 #[test]
-fn no_piece_d5() {
+fn knight_no_piece_d5() {
 	let pos = empty_position();
 
 	assert_eq!(pos.get_piece_from_square(35), Err(ChessError::NoPieceOnSquare { square: 35 }))
 }
 
 #[test]
-fn try_move_on_non_existing_square() {
+fn knight_try_move_on_non_existing_square() {
 	let pos = empty_position();
 
 	assert_eq!(pos.get_piece_from_square(65), Err(ChessError::NotASquareOnBoard { square: 65 }))
 }
 
 #[test]
-fn wrong_side_returns_wrong_side_error() {
-	// Black knight on the board but it's White's turn.
-	// This validation happens via get_validated_colored_piece, not in knight_targets directly
+fn knight_wrong_side_returns_wrong_side_error() {
 	let mut pos = empty_position(); // side_to_move = White
 
 	pos.board[28] = Some(ColoredPiece { piece: Piece::Knight, side: Side::Black });
 
-	// get_validated_colored_piece validates side and piece type
 	assert_eq!(
 		pos.get_validated_colored_piece(28, Piece::Knight),
 		Err(ChessError::WrongSide {
@@ -132,7 +127,6 @@ fn white_knight_e4_empty_board() {
 	let moves = pos.knight_targets(knight, 28).expect("knight_targets returned Err");
 
 	assert_eq!(moves.len(), 8);
-	// Verify all 8 L-shapes from e4 (sq 28)
 	assert!(has_move(&moves, 28, 45, MoveKind::Quiet)); // f6  +17
 	assert!(has_move(&moves, 28, 43, MoveKind::Quiet)); // d6  +15
 	assert!(has_move(&moves, 28, 38, MoveKind::Quiet)); // g5  +10

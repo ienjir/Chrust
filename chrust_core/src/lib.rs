@@ -7,6 +7,9 @@ pub mod moves;
 pub mod position;
 pub mod zobrist;
 
+#[cfg(test)]
+mod test_common;
+
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub enum Side {
 	White,
@@ -31,7 +34,7 @@ pub struct ColoredPiece {
 
 pub type Square = u8;
 
-pub enum CastleRigth {
+pub(crate) enum CastleRigth {
 	WK,
 	WQ,
 	BK,

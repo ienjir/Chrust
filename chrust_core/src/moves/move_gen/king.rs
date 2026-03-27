@@ -9,7 +9,7 @@ use crate::{
 };
 
 impl Position {
-	pub fn king_targets(&self, king: ColoredPiece, from_square: Square) -> Result<Vec<Move>, ChessError> {
+	pub(crate) fn king_targets(&self, king: ColoredPiece, from_square: Square) -> Result<Vec<Move>, ChessError> {
 		let mut target_moves: Vec<Move> = Vec::with_capacity(8);
 
 		self.check_castling(&mut target_moves, from_square, king.side)?;
@@ -56,11 +56,11 @@ impl Position {
 		Ok(target_moves)
 	}
 
-	fn is_square_safe(&self, square: u8, opponent: Side) -> Result<bool, ChessError> {
+	pub fn is_square_safe(&self, square: u8, opponent: Side) -> Result<bool, ChessError> {
 		Ok(self.is_square_attacked(square, opponent)?.is_none())
 	}
 
-	pub fn check_castling(&self, target_moves: &mut Vec<Move>, from_square: Square, king_side: Side) -> Result<(), ChessError> {
+	pub(crate) fn check_castling(&self, target_moves: &mut Vec<Move>, from_square: Square, king_side: Side) -> Result<(), ChessError> {
 		if self.is_king_in_check(king_side)?.is_some() {
 			return Ok(());
 		}
@@ -81,7 +81,7 @@ impl Position {
 		Ok(())
 	}
 
-	pub fn check_castling_queen_or_king_side(&self, target_moves: &mut Vec<Move>, is_king_half: bool, from_square: Square, king_side: Side) -> Result<(), ChessError> {
+	pub(crate) fn check_castling_queen_or_king_side(&self, target_moves: &mut Vec<Move>, is_king_half: bool, from_square: Square, king_side: Side) -> Result<(), ChessError> {
 		let from_square_i = from_square as i16;
 		let (king_to, king_travel, rook_from, rook_to, side_squares): (u8, u8, u8, u8, [u8; 3]) = match is_king_half {
 			true => (
@@ -149,7 +149,7 @@ impl Position {
 	}
 }
 
-pub fn get_validated_candidate_square(from_square: Square, direction: i16) -> Result<Square, ChessError> {
+pub(crate) fn get_validated_candidate_square(from_square: Square, direction: i16) -> Result<Square, ChessError> {
 	let candidate_square_i = from_square as i16 + direction;
 
 	if !(0..=63).contains(&candidate_square_i) {
@@ -159,8 +159,11 @@ pub fn get_validated_candidate_square(from_square: Square, direction: i16) -> Re
 	Ok(candidate_square_i as u8)
 }
 
-pub fn get_file_and_rank_difference(from_square: Square, substracting_square: Square) -> (i16, i16) {
+pub(crate) fn get_file_and_rank_difference(from_square: Square, substracting_square: Square) -> (i16, i16) {
 	let file_difference_i = (file(from_square) as i16 - file(substracting_square) as i16).abs();
 	let rank_difference_i = (rank(from_square) as i16 - rank(substracting_square) as i16).abs();
 	(file_difference_i, rank_difference_i)
 }
+
+#[cfg(test)]
+mod tests;

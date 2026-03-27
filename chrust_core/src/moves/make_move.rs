@@ -71,7 +71,7 @@ impl Game {
 }
 
 impl Position {
-	pub fn make_move_unvalidated(&mut self, mv: Move) -> Result<Undo, ChessError> {
+	pub(crate) fn make_move_unvalidated(&mut self, mv: Move) -> Result<Undo, ChessError> {
 		let piece = self.get_piece_from_square(mv.from_square)?;
 		let mut undo = self.build_undo();
 
@@ -90,7 +90,7 @@ impl Position {
 		Ok(undo)
 	}
 
-	pub fn undo_move(&mut self, undo: Undo, mv: Move) -> Result<(), ChessError> {
+	pub(crate) fn undo_move(&mut self, undo: Undo, mv: Move) -> Result<(), ChessError> {
 		let zobrist = zobrist();
 
 		self.update_zobrist_en_pasant_and_castling(zobrist);
@@ -105,7 +105,7 @@ impl Position {
 		Ok(())
 	}
 
-	pub fn build_undo(&self) -> Undo {
+	pub(crate) fn build_undo(&self) -> Undo {
 		Undo {
 			captured_piece: None,
 			previous_en_passant: self.en_passant,
@@ -116,7 +116,7 @@ impl Position {
 		}
 	}
 
-	pub fn apply_undo(&mut self, undo: Undo) {
+	pub(crate) fn apply_undo(&mut self, undo: Undo) {
 		self.halfmove_clock = undo.previous_halfway_clock;
 		self.fullmove_counter = undo.fullmove_number;
 		self.castle = undo.previous_castling_rights;
@@ -125,7 +125,7 @@ impl Position {
 		self.side_to_move = self.side_to_move.opponent();
 	}
 
-	pub fn undo_move_on_board(&mut self, mv: Move, undo: Undo, zobrist: &ZobristTable) {
+	pub(crate) fn undo_move_on_board(&mut self, mv: Move, undo: Undo, zobrist: &ZobristTable) {
 		let piece = self.board[mv.to_square as usize].unwrap();
 
 		self.zobrist_hash ^= zobrist.pieces[piece_index(piece)][mv.to_square as usize];
@@ -164,7 +164,7 @@ impl Position {
 		}
 	}
 
-	pub fn apply_move_to_board(&mut self, mv: Move, piece: ColoredPiece, undo: &mut Undo, zobrist: &ZobristTable) -> Result<(), ChessError> {
+	pub(crate) fn apply_move_to_board(&mut self, mv: Move, piece: ColoredPiece, undo: &mut Undo, zobrist: &ZobristTable) -> Result<(), ChessError> {
 		self.zobrist_hash ^= zobrist.pieces[piece_index(piece)][mv.from_square as usize];
 		self.zobrist_hash ^= zobrist.pieces[piece_index(piece)][mv.to_square as usize];
 
@@ -211,7 +211,7 @@ impl Position {
 		Ok(())
 	}
 
-	pub fn update_en_passant(&mut self, mv: Move) {
+	pub(crate) fn update_en_passant(&mut self, mv: Move) {
 		if let MoveKind::DoublePawnPush { passed_square } = mv.move_kind {
 			self.en_passant = Some(passed_square);
 		} else {
@@ -219,7 +219,7 @@ impl Position {
 		}
 	}
 
-	pub fn update_clocks_and_side(&mut self, mv: Move, zobrist: &ZobristTable) {
+	pub(crate) fn update_clocks_and_side(&mut self, mv: Move, zobrist: &ZobristTable) {
 		if mv.colored_piece.piece == Piece::Pawn || matches!(mv.move_kind, MoveKind::Capture | MoveKind::EnPassant { .. }) {
 			self.halfmove_clock = 0;
 		} else {
@@ -237,7 +237,7 @@ impl Position {
 		}
 	}
 
-	pub fn update_king_positions(&mut self, mv: Move) {
+	pub(crate) fn update_king_positions(&mut self, mv: Move) {
 		if mv.colored_piece.piece == Piece::King {
 			match mv.colored_piece.side {
 				Side::White => {
@@ -250,7 +250,7 @@ impl Position {
 		}
 	}
 
-	pub fn set_castle_rights(&mut self, mv: Move) {
+	pub(crate) fn set_castle_rights(&mut self, mv: Move) {
 		match mv.from_square {
 			4 => {
 				self.castle[0] = false;
@@ -276,7 +276,7 @@ impl Position {
 		}
 	}
 
-	pub fn update_zobrist_en_pasant_and_castling(&mut self, zobrist: &ZobristTable) {
+	pub(crate) fn update_zobrist_en_pasant_and_castling(&mut self, zobrist: &ZobristTable) {
 		for i in 0..4 {
 			if self.castle[i] {
 				self.zobrist_hash ^= zobrist.castling[i];
@@ -287,3 +287,6 @@ impl Position {
 		}
 	}
 }
+
+#[cfg(test)]
+mod tests;

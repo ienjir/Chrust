@@ -1,11 +1,9 @@
-mod common;
-
-use chrust_core::game_status::GameStatus;
-use chrust_core::moves::make_move::{Move, MoveKind};
-use chrust_core::position::{Game, Position};
-use chrust_core::zobrist::zobrist;
-use chrust_core::{ColoredPiece, Piece, Side, errors::ChessError};
-use common::{empty_game, empty_position, game_from_fen};
+use super::*;
+use crate::game_status::GameStatus;
+use crate::position::Position;
+use crate::test_common::{empty_game, empty_position, game_from_fen};
+use crate::zobrist::zobrist;
+use crate::{ColoredPiece, Piece, Side, errors::ChessError};
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 

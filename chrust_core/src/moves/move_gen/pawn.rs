@@ -8,7 +8,7 @@ use crate::{
 
 impl Position {
 	// Without promotion
-	pub fn pawn_targets(&self, pawn: ColoredPiece, from_square: Square) -> Result<Vec<Move>, ChessError> {
+	pub(crate) fn pawn_targets(&self, pawn: ColoredPiece, from_square: Square) -> Result<Vec<Move>, ChessError> {
 		let mut target_moves: Vec<Move> = Vec::with_capacity(4);
 
 		self.push_moves(&mut target_moves, pawn, from_square);
@@ -67,7 +67,7 @@ impl Position {
 		Ok(target_moves)
 	}
 
-	pub fn push_moves(&self, target_moves: &mut Vec<Move>, colored_piece: ColoredPiece, from_square: Square) {
+	pub(crate) fn push_moves(&self, target_moves: &mut Vec<Move>, colored_piece: ColoredPiece, from_square: Square) {
 		let (push_offset, start_rank, last_rank) = match colored_piece.side {
 			Side::White => (8i16, 1u8, 7u8),
 			Side::Black => (-8i16, 6u8, 0u8),
@@ -119,7 +119,7 @@ impl Position {
 	}
 }
 
-pub fn promotion_moves(target_moves: &mut Vec<Move>, colored_piece: ColoredPiece, from_square: Square, to_square: Square) {
+pub(crate) fn promotion_moves(target_moves: &mut Vec<Move>, colored_piece: ColoredPiece, from_square: Square, to_square: Square) {
 	for piece in [Piece::Queen, Piece::Rook, Piece::Bishop, Piece::Knight] {
 		target_moves.push(Move {
 			colored_piece,
@@ -129,3 +129,6 @@ pub fn promotion_moves(target_moves: &mut Vec<Move>, colored_piece: ColoredPiece
 		});
 	}
 }
+
+#[cfg(test)]
+mod tests;
