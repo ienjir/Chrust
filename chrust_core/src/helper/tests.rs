@@ -1,5 +1,4 @@
 use super::*;
-use crate::position::Position;
 use crate::test_common::empty_position;
 use crate::{ColoredPiece, Piece, Side, errors::ChessError};
 

@@ -208,38 +208,13 @@ is_draw_by_repetition()
     after each move make hash of position -> hashmap key = position hash, value = how many position were the same i		
     get_game_status() -> GameStatus
 
-
-
-
 ## Next steps
-    1. [x] Add undo_move 
-    2. [x] Add legality filtering to move gen 
-    3. [x] Add a promotion-capture move kind 
-    4. [x] Refactor make_move
-    5. [x] Refactor check.rs + slider.rs shared ray logic
-    6. [x] Refactor king.rs
-    7. [x] Unify slider pieces behind one shared function
-    8. [x] Clean up verbose match error handling with ?
-    9. [x] Refactor move-gen APIs to reuse validated/colored piece context from callers where it actually reduces duplication
-    10. [x] Finish fen loading
-    11. [x] Add validation for things like halfmove clock
-    12. [ ] Use new Game struct in make move validated
-    13. [ ] Use private functions and test over public functions like described in chat
+[ ] Refactor get legal moves to not use side to move as param
+[ ] Add Game::from_fen()
+[ ] Add position to fen
 
 ## Small errors 
     - Slider.rs: Find a way to not return a queen when a faulty piece is provided
 
-
 ## Important info
     - king_squares[0]  is white and [1] is black
-
-
-pub funtions:
-- load position from fen 
-- print board
-- make move (impl game)
-- undo last mvoe (impl game)
-- is king in check
-- is sqaure attacked
-- is square save
-- get legal moves

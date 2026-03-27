@@ -1,8 +1,5 @@
-use super::*;
 use crate::errors::ChessError;
-use crate::moves::make_move::{Move, MoveKind};
-use crate::position::Position;
-use crate::test_common::{empty_position, has_move, has_to_square};
+use crate::test_common::empty_position;
 use crate::{ColoredPiece, Piece, Side, Square};
 
 fn has_square(squares: &[Square], square: Square) -> bool {
@@ -187,7 +184,7 @@ fn is_square_attacked_pawn_does_not_wrap_from_a_file() {
 	pos.board[41] = Some(ColoredPiece { piece: Piece::King, side: Side::White }); // b6
 	pos.board[32] = Some(ColoredPiece { piece: Piece::Pawn, side: Side::Black }); // a5
 
-	let attacks = pos.is_square_attacked(41, Side::White).expect("Err");
+	let _ = pos.is_square_attacked(41, Side::White).expect("Err");
 	assert_eq!(pos.is_square_attacked(47, Side::Black), Ok(None), "a-file pawn should not wrap to attack h6");
 }
 

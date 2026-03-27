@@ -118,9 +118,7 @@ impl Position {
 		if !side_squares.iter().all(|&square| self.board[square as usize].is_none()) {
 			return Ok(());
 		}
-		if !self.is_square_safe(king_to, king_side.opponent())? {
-			return Ok(());
-		}
+
 		match self.is_square_safe(king_to, king_side.opponent()) {
 			Ok(x) => {
 				if !x {

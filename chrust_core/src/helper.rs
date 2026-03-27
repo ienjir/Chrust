@@ -81,6 +81,7 @@ pub(crate) fn rank_diff(candidate: i16, from_square: Square) -> i16 {
 	(rank(candidate as u8) as i16 - rank(from_square) as i16).abs()
 }
 
+#[cfg(test)]
 pub(crate) fn is_right_piece_type(from_piece: ColoredPiece, expected_piece: Piece) -> Result<(), ChessError> {
 	if from_piece.piece != expected_piece {
 		return Err(ChessError::WrongPieceType {
@@ -105,6 +106,7 @@ pub(crate) fn is_right_piece_side(from_piece: ColoredPiece, expected_side: Side)
 
 impl Position {
 	/// Gets a colored piece that is validated so that it acutually exists. Also validates the from_square
+	#[cfg(test)]
 	pub(crate) fn get_validated_colored_piece(&self, from_square: Square, expected_piece: Piece) -> Result<ColoredPiece, ChessError> {
 		let col_piece = self.get_piece_from_square(from_square)?;
 
@@ -115,6 +117,7 @@ impl Position {
 		Ok(col_piece)
 	}
 
+	#[cfg(test)]
 	pub(crate) fn validate_colored_piece(&self, colored_piece: ColoredPiece, expected_piece: Piece) -> Result<(), ChessError> {
 		if let Err(x) = is_right_piece_side(colored_piece, self.side_to_move) {
 			return Err(x);

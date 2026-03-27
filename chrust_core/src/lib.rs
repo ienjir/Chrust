@@ -34,13 +34,6 @@ pub struct ColoredPiece {
 
 pub type Square = u8;
 
-pub(crate) enum CastleRigth {
-	WK,
-	WQ,
-	BK,
-	BQ,
-}
-
 impl fmt::Display for Piece {
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
 		match self {

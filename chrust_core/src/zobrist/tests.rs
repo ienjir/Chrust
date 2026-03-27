@@ -1,6 +1,5 @@
 use super::*;
 use crate::moves::make_move::{Move, MoveKind};
-use crate::position::Position;
 use crate::test_common::{assert_hash_matches_computed, empty_position, make_move_and_verify_hash, make_then_undo_and_verify_hash, position_with_hash};
 use crate::{ColoredPiece, Piece, Side};
 use std::collections::HashSet;

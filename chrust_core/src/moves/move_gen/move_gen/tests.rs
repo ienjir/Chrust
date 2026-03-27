@@ -1,4 +1,3 @@
-use super::*;
 use crate::moves::make_move::{Move, MoveKind};
 use crate::test_common::{empty_game, empty_position, has_move, has_to_square};
 use crate::{ColoredPiece, Piece, Side, errors::ChessError};

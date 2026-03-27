@@ -1,9 +1,7 @@
-use super::*;
 use crate::errors::ChessError;
-use crate::moves::make_move::{Move, MoveKind};
-use crate::position::Position;
+use crate::moves::make_move::MoveKind;
 use crate::test_common::{empty_position, has_move, has_to_square};
-use crate::{ColoredPiece, Piece, Side, Square};
+use crate::{ColoredPiece, Piece, Side};
 
 #[test]
 fn king_c5_empty_board() {

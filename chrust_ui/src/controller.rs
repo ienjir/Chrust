@@ -80,7 +80,7 @@ pub fn click_square(game_state: &mut GameState, from_square: Square) {
 				game_state.possible_moves = moves;
 				return;
 			}
-			Err(x) => {
+			Err(_x) => {
 				println!("Error occured, please implement error handling");
 				game_state.selected = None;
 				game_state.possible_moves.clear();
@@ -114,7 +114,7 @@ pub fn click_square(game_state: &mut GameState, from_square: Square) {
 					game_state.selected = None;
 					return;
 				}
-				Err(_e) => {
+				Err(e) => {
 					println!("Error occured, please implement error handling");
 					game_state.selected = None;
 					game_state.possible_moves.clear();

@@ -1,4 +1,3 @@
-use super::*;
 use crate::errors::ChessError;
 use crate::moves::make_move::MoveKind;
 use crate::test_common::{empty_position, has_move, has_to_square};
