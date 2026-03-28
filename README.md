@@ -209,8 +209,6 @@ is_draw_by_repetition()
     get_game_status() -> GameStatus
 
 ## Next steps
-[ ] Refactor get legal moves to not use side to move as param
-[ ] Add Game::from_fen()
 [ ] Add position to fen
 
 ## Small errors 
