@@ -182,37 +182,21 @@ The chess piece assets were not created by me. They were created by Uray M. Ján
 </tr>
 </table>
 
-
-## Implementation of legal move gen 
-Get piece
-    If piece on square does not belong to side to move return
-Generate all pseudo legal moves for the suqare. A pseudo legal move is a move that ignores king safety but checks for movement rules and occupancy rules (including promotions, en passant, castling)
-    Loop over each generated move and apply the move to the position. 
-    If king is in check after the move reject the move, otherwise add it the list of legal moves
-    Reset the position to the start and apply the next move
-    Return all remaining moves
-
-
-## Implemention of make validated move
-    If from square is empty return immediately 
-    If from square contains piece of the not moving side 
-    Generate all legal moves for the from square
-    If attempted move is in the generated moves proceed otherwise return
-Then check for things like halfmove clock etc (need to be expaned)
-
-    Later for engine:
-    Add a generate all moves function and cache the results 
-
-## Is game over checks
-is_draw_by_repetition()
-    after each move make hash of position -> hashmap key = position hash, value = how many position were the same i		
-    get_game_status() -> GameStatus
-
 ## Next steps
-[ ] Add position to fen
+- Add UCI move support
+- Make some helper functions pub
+- Fix promotion piece can be king
+- Add offer and accept draw
+- Add game history converter
+- Add perft
 
 ## Small errors 
     - Slider.rs: Find a way to not return a queen when a faulty piece is provided
 
 ## Important info
-    - king_squares[0]  is white and [1] is black
+    - king_squares[0] is white and [1] is black
+    - castling: 
+        - [0] => White kingside
+        - [1] => White queenside 
+        - [2] => Black kingside
+        - [3] => Black queenside

@@ -32,7 +32,7 @@ pub struct Undo {
 	pub(crate) previous_castling_rights: [bool; 4],
 	pub(crate) previous_en_passant: Option<Square>,
 	pub(crate) previous_halfway_clock: u32,
-	pub(crate) fullmove_number: u32,
+	pub(crate) fullmove_counter: u32,
 	pub(crate) previous_king_squares: [Square; 2],
 }
 
@@ -112,6 +112,44 @@ impl Position {
 			print!("\n");
 		}
 		println!("   a b c d e f g h");
+	}
+
+	pub fn export_position_to_fen(&self) -> Result<String, ChessError> {
+		let mut fen_string = String::new();
+
+		for rank in (0..8).rev() {
+			let mut empty = 0;
+			for file in 0..8 {
+				let sq = square(file, rank);
+				match self.board[sq as usize] {
+					None => empty += 1,
+					Some(piece) => {
+						if empty > 0 {
+							fen_string.push_str(&empty.to_string());
+							empty = 0;
+						}
+						fen_string.push(piece.to_char());
+					}
+				}
+			}
+			if empty > 0 { fen_string.push_str(&empty.to_string()); }
+			if rank != 0 { fen_string.push('/'); }
+		}
+
+		fen_string.push_str(match self.side_to_move { Side::White => " w ", Side::Black => " b " });
+
+		let castle: String = [('K', 0), ('Q', 1), ('k', 2), ('q', 3)].iter().filter(|&&(_, i)| self.castle[i]).map(|&(c, _)| c).collect();
+		fen_string.push_str(if castle.is_empty() { "-" } else { &castle });
+
+		fen_string.push(' ');
+		match self.en_passant {
+			Some(sq) => fen_string.push_str(&convert_square_to_square_string(sq)),
+			None => fen_string.push('-'),
+		}
+
+		fen_string.push_str(&format!(" {} {}", self.halfmove_clock, self.fullmove_counter));
+
+		Ok(fen_string)
 	}
 }
 
@@ -203,6 +241,12 @@ fn load_clock(clock_string: &str) -> Result<u32, FenError> {
 		Ok(x) => return Ok(x),
 		Err(_) => return Err(FenError::InvalidNumber(new_clock_string.to_string())),
 	};
+}
+
+fn convert_square_to_square_string(square: u8) -> String {
+	let file = (b'a' + (square % 8)) as char;
+	let rank = (b'1' + (square / 8)) as char;
+	format!("{}{}", file, rank)
 }
 
 fn convert_square_string_to_square(square_string: &str) -> Result<u8, FenError> {

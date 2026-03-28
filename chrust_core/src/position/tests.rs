@@ -475,3 +475,176 @@ fn try_from_fen_status_draw_by_insufficient_material() {
 	let game = Game::try_from_fen("8/5k2/8/8/3K4/8/8/8 w - - 0 1").unwrap();
 	assert!(matches!(game.game_status, GameStatus::DrawByInsufficientMaterial));
 }
+
+// ── convert_square_to_square_string ──────────────────────────────────────────
+
+#[test]
+fn square_to_string_a1_is_sq0() {
+	assert_eq!(convert_square_to_square_string(0), "a1");
+}
+
+#[test]
+fn square_to_string_h1_is_sq7() {
+	assert_eq!(convert_square_to_square_string(7), "h1");
+}
+
+#[test]
+fn square_to_string_a8_is_sq56() {
+	assert_eq!(convert_square_to_square_string(56), "a8");
+}
+
+#[test]
+fn square_to_string_h8_is_sq63() {
+	assert_eq!(convert_square_to_square_string(63), "h8");
+}
+
+#[test]
+fn square_to_string_e4_is_sq28() {
+	// e4: file=4 ('e'), rank=3 ('4') → sq 28
+	assert_eq!(convert_square_to_square_string(28), "e4");
+}
+
+#[test]
+fn square_to_string_d6_is_sq43() {
+	// d6: file=3 ('d'), rank=5 ('6') → sq 43
+	assert_eq!(convert_square_to_square_string(43), "d6");
+}
+
+#[test]
+fn square_to_string_e3_is_sq20() {
+	// e3: file=4 ('e'), rank=2 ('3') → sq 20
+	assert_eq!(convert_square_to_square_string(20), "e3");
+}
+
+#[test]
+fn square_to_string_roundtrips_with_square_string_to_square() {
+	for sq in 0u8..64 {
+		let s = convert_square_to_square_string(sq);
+		assert_eq!(convert_square_string_to_square(&s).unwrap(), sq, "roundtrip failed for square {sq}");
+	}
+}
+
+// ── export_position_to_fen ───────────────────────────────────────────────────
+
+#[test]
+fn export_fen_starting_position_roundtrip() {
+	let fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+	let pos = load_position_from_fen(fen).unwrap();
+	assert_eq!(pos.export_position_to_fen().unwrap(), fen);
+}
+
+#[test]
+fn export_fen_after_e4_roundtrip() {
+	let fen = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1";
+	let pos = load_position_from_fen(fen).unwrap();
+	assert_eq!(pos.export_position_to_fen().unwrap(), fen);
+}
+
+#[test]
+fn export_fen_after_e4_d5_roundtrip() {
+	let fen = "rnbqkbnr/ppp1pppp/8/3p4/4P3/8/PPPP1PPP/RNBQKBNR w KQkq d6 0 2";
+	let pos = load_position_from_fen(fen).unwrap();
+	assert_eq!(pos.export_position_to_fen().unwrap(), fen);
+}
+
+#[test]
+fn export_fen_no_castling_rights() {
+	let fen = "r3k2r/8/8/8/8/8/8/R3K2R w - - 0 1";
+	let pos = load_position_from_fen(fen).unwrap();
+	assert_eq!(pos.export_position_to_fen().unwrap(), fen);
+}
+
+#[test]
+fn export_fen_partial_castling_rights() {
+	let fen = "r3k2r/8/8/8/8/8/8/R3K2R w Kq - 0 1";
+	let pos = load_position_from_fen(fen).unwrap();
+	assert_eq!(pos.export_position_to_fen().unwrap(), fen);
+}
+
+#[test]
+fn export_fen_black_to_move() {
+	let fen = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1";
+	let pos = load_position_from_fen(fen).unwrap();
+	let exported = pos.export_position_to_fen().unwrap();
+	assert!(exported.contains(" b "), "exported FEN should contain ' b ' for black to move");
+}
+
+#[test]
+fn export_fen_white_to_move() {
+	let fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+	let pos = load_position_from_fen(fen).unwrap();
+	let exported = pos.export_position_to_fen().unwrap();
+	assert!(exported.contains(" w "), "exported FEN should contain ' w ' for white to move");
+}
+
+#[test]
+fn export_fen_halfmove_clock_preserved() {
+	let fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 7 42";
+	let pos = load_position_from_fen(fen).unwrap();
+	assert_eq!(pos.export_position_to_fen().unwrap(), fen);
+}
+
+#[test]
+fn export_fen_large_move_counters_roundtrip() {
+	let fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 99 999";
+	let pos = load_position_from_fen(fen).unwrap();
+	assert_eq!(pos.export_position_to_fen().unwrap(), fen);
+}
+
+#[test]
+fn export_fen_endgame_king_and_pawn_roundtrip() {
+	let fen = "8/5k2/8/8/3K4/8/4P3/8 w - - 10 50";
+	let pos = load_position_from_fen(fen).unwrap();
+	assert_eq!(pos.export_position_to_fen().unwrap(), fen);
+}
+
+#[test]
+fn export_fen_empty_board() {
+	let fen = "8/8/8/8/8/8/8/8 w - - 0 1";
+	let pos = load_position_from_fen(fen).unwrap();
+	assert_eq!(pos.export_position_to_fen().unwrap(), fen);
+}
+
+#[test]
+fn export_fen_complex_middlegame_roundtrip() {
+	let fen = "r1bqkb1r/pppp1ppp/2n2n2/1B2p3/4P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 4 4";
+	let pos = load_position_from_fen(fen).unwrap();
+	assert_eq!(pos.export_position_to_fen().unwrap(), fen);
+}
+
+#[test]
+fn export_fen_en_passant_square_correct() {
+	// After 1. e4, en passant square is e3
+	let fen = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1";
+	let pos = load_position_from_fen(fen).unwrap();
+	let exported = pos.export_position_to_fen().unwrap();
+	let parts: Vec<&str> = exported.split_whitespace().collect();
+	assert_eq!(parts[3], "e3", "en passant square should be e3");
+}
+
+#[test]
+fn export_fen_no_en_passant_is_dash() {
+	let fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+	let pos = load_position_from_fen(fen).unwrap();
+	let exported = pos.export_position_to_fen().unwrap();
+	let parts: Vec<&str> = exported.split_whitespace().collect();
+	assert_eq!(parts[3], "-", "no en passant should export as '-'");
+}
+
+#[test]
+fn export_fen_piece_placement_has_six_fields() {
+	let fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+	let pos = load_position_from_fen(fen).unwrap();
+	let exported = pos.export_position_to_fen().unwrap();
+	let parts: Vec<&str> = exported.split_whitespace().collect();
+	assert_eq!(parts.len(), 6, "exported FEN must have exactly 6 space-separated fields");
+}
+
+#[test]
+fn export_fen_piece_placement_has_eight_ranks() {
+	let fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+	let pos = load_position_from_fen(fen).unwrap();
+	let exported = pos.export_position_to_fen().unwrap();
+	let ranks: Vec<&str> = exported.split_whitespace().next().unwrap().split('/').collect();
+	assert_eq!(ranks.len(), 8, "piece placement must have 8 ranks separated by '/'");
+}

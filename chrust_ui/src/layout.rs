@@ -2,7 +2,7 @@ use chrust_core::Piece;
 use macroquad::math::Rect;
 
 // pub const DEFAULT_FEN_STRING: &str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-pub const TEST_FEN_STRING: &str = "7k/6K1/8/8/8/8/8/7R b - - 0 1";
+pub const TEST_FEN_STRING: &str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
 pub const CELL_SIZE: f32 = 40.0;
 pub const GRID_ORIGIN_X: f32 = 100.0;
