@@ -1,4 +1,10 @@
-use crate::{ColoredPiece, Piece, Side, Square, errors::FenError, game_status::GameStatus, helper::square, moves::make_move::Move};
+use crate::{
+	ColoredPiece, Piece, Side, Square,
+	errors::{ChessError, FenError},
+	game_status::GameStatus,
+	helper::square,
+	moves::make_move::Move,
+};
 
 pub struct Game {
 	pub position: Position,
@@ -28,6 +34,21 @@ pub struct Undo {
 	pub(crate) previous_halfway_clock: u32,
 	pub(crate) fullmove_number: u32,
 	pub(crate) previous_king_squares: [Square; 2],
+}
+
+impl Game {
+	pub fn try_from_fen(fen_string: &str) -> Result<Game, ChessError> {
+		let position = load_position_from_fen(fen_string)?;
+		let mut game = Game {
+			position,
+			hash_history: Vec::new(),
+			move_history: Vec::new(),
+			undo_history: Vec::new(),
+			game_status: GameStatus::Playing,
+		};
+		game.update_game_status()?;
+		Ok(game)
+	}
 }
 
 pub fn load_position_from_fen(fen: &str) -> Result<Position, FenError> {

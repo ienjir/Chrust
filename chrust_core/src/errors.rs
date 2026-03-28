@@ -1,5 +1,4 @@
 use crate::{Piece, Side, Square};
-use core::fmt;
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum ChessError {
@@ -7,6 +6,9 @@ pub enum ChessError {
 	PromotionPieceCantBePawn,
 	GameIsFinished,
 	NothingToUndo,
+	FenError {
+		fen_error: FenError,
+	},
 	NotASquareOnBoard {
 		square: i16,
 	},
@@ -27,7 +29,7 @@ pub enum ChessError {
 	},
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum FenError {
 	InvalidPieceChar(char),
 	SquareLenghtIsnt2Wide(usize),
@@ -40,23 +42,8 @@ pub enum FenError {
 	InvalidNumber(String),
 }
 
-impl fmt::Display for ChessError {
-	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-		match self {
-			ChessError::NothingToUndo => write!(f, "Nothing to undo"),
-			ChessError::GameIsFinished => write!(f, "Game is finished"),
-			ChessError::NotAValidMove => write!(f, "Not a valid move"),
-			ChessError::NotImplemented => write!(f, "Not implemented"),
-			ChessError::KingIsAttacked { squares: _ } => write!(f, "King is attacked"),
-			ChessError::PromotionPieceCantBePawn => write!(f, "Promotion piece can't be pawn"),
-			ChessError::NotASquareOnBoard { square } => write!(f, "Not a square on board: {square}"),
-			ChessError::NoPieceOnSquare { square } => write!(f, "No piece on square: {square}"),
-			ChessError::WrongPieceType { expected_piece, found_piece } => {
-				write!(f, "Wrong piece type: expected {expected_piece}, found {found_piece}")
-			}
-			ChessError::WrongSide { expected_side, found_side } => {
-				write!(f, "Wrong side: expected {expected_side}, found {found_side}")
-			}
-		}
+impl From<FenError> for ChessError {
+	fn from(fen_error: FenError) -> Self {
+		ChessError::FenError { fen_error }
 	}
 }

@@ -14,7 +14,7 @@ use crate::{
 };
 use chrust_core::Side;
 use chrust_core::game_status::GameStatus;
-use chrust_core::position::{Game, load_position_from_fen};
+use chrust_core::position::Game;
 use macroquad::file::set_pc_assets_folder;
 use macroquad::prelude::*;
 
@@ -23,18 +23,13 @@ async fn main() {
 	set_pc_assets_folder("chrust_ui/assets");
 	let assets = load_assets().await;
 
-	let default_position = match load_position_from_fen(TEST_FEN_STRING) {
-		Ok(x) => x,
-		Err(_x) => panic!("Paniced while loading default position"),
-	};
-
 	let mut game_state = GameState {
-		game: Game {
-			position: default_position,
-			hash_history: Vec::new(),
-			move_history: Vec::new(),
-			undo_history: Vec::new(),
-			game_status: GameStatus::Playing,
+		game: match Game::try_from_fen(TEST_FEN_STRING) {
+			Ok(x) => x,
+			Err(_x) => {
+				println!("Error while loading position");
+				return;
+			}
 		},
 		assets: assets,
 		selected: None,

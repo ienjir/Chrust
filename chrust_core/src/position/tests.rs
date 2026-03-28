@@ -1,5 +1,6 @@
 use super::*;
-use crate::errors::FenError;
+use crate::errors::{ChessError, FenError};
+use crate::game_status::GameStatus;
 use crate::{ColoredPiece, Piece, Side};
 
 // ── convert_square_string_to_square ──────────────────────────────────────────
@@ -408,4 +409,69 @@ fn fen_endgame_position() {
 	assert_eq!(pos.board[12], Some(ColoredPiece { piece: Piece::Pawn, side: Side::White })); // e2
 	assert_eq!(pos.board[53], Some(ColoredPiece { piece: Piece::King, side: Side::Black }));
 	// f7
+}
+
+// ── Game::try_from_fen ────────────────────────────────────────────────────────
+
+#[test]
+fn try_from_fen_position_matches_load_position_from_fen() {
+	let fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+	let game = Game::try_from_fen(fen).unwrap();
+	let expected_position = load_position_from_fen(fen).unwrap();
+	assert_eq!(game.position, expected_position);
+}
+
+#[test]
+fn try_from_fen_all_vecs_are_empty() {
+	let game = Game::try_from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1").unwrap();
+	assert!(game.hash_history.is_empty(), "hash_history should be empty");
+	assert!(game.move_history.is_empty(), "move_history should be empty");
+	assert!(game.undo_history.is_empty(), "undo_history should be empty");
+}
+
+#[test]
+fn try_from_fen_invalid_fen_returns_err() {
+	let result = Game::try_from_fen("not a valid fen string");
+	assert!(matches!(result, Err(ChessError::FenError { .. })));
+}
+
+#[test]
+fn try_from_fen_status_playing() {
+	let game = Game::try_from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1").unwrap();
+	assert!(matches!(game.game_status, GameStatus::Playing));
+}
+
+#[test]
+fn try_from_fen_status_in_check() {
+	// White king on e1, black rook on e8 giving check, black king on a8
+	let game = Game::try_from_fen("k7/8/8/8/8/8/8/4K2r w - - 0 1").unwrap();
+	assert!(matches!(game.game_status, GameStatus::InCheck));
+}
+
+#[test]
+fn try_from_fen_status_checkmate() {
+	// Back-rank mate: white king on h1 trapped by own pawns on g2/h2, black rooks on a1 and h8
+	let game = Game::try_from_fen("6k1/8/8/8/8/8/6PP/r6K w - - 0 1").unwrap();
+	assert!(matches!(game.game_status, GameStatus::CheckmateForSide(Side::Black)));
+}
+
+#[test]
+fn try_from_fen_status_stalemate() {
+	// White king on a1 stalemated: black queen on b3, black king on c2
+	let game = Game::try_from_fen("8/8/8/8/8/1q6/2k5/K7 w - - 0 1").unwrap();
+	assert!(matches!(game.game_status, GameStatus::Stalemate));
+}
+
+#[test]
+fn try_from_fen_status_draw_by_fifty_moves() {
+	// Halfmove clock at 100: draw by fifty-move rule
+	let game = Game::try_from_fen("8/5k2/8/8/3K4/8/8/8 w - - 100 80").unwrap();
+	assert!(matches!(game.game_status, GameStatus::DrawByFiftyMoves));
+}
+
+#[test]
+fn try_from_fen_status_draw_by_insufficient_material() {
+	// Kings only: neither side can mate
+	let game = Game::try_from_fen("8/5k2/8/8/3K4/8/8/8 w - - 0 1").unwrap();
+	assert!(matches!(game.game_status, GameStatus::DrawByInsufficientMaterial));
 }
