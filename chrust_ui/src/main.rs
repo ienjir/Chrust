@@ -12,9 +12,9 @@ use crate::{
 	layout::TEST_FEN_STRING,
 	renderer::{handle_ui_state, render_chess_pieces, render_chessboard_without_pieces, render_possible_moves},
 };
-use chrust_core::{ColoredPiece, Piece, Side};
 use chrust_core::game_status::GameStatus;
-use chrust_core::position::Game;
+use chrust_core::position::{Game, convert_square_string_to_square};
+use chrust_core::{ColoredPiece, Piece, Side};
 use macroquad::file::set_pc_assets_folder;
 use macroquad::prelude::*;
 
@@ -37,26 +37,20 @@ async fn main() {
 		ui_state: None,
 	};
 
-	let sdjlkf = ColoredPiece {
-		piece: Piece::Knight,
-		side: Side::Black,
-	};
+	game_state.game.position.print_board();
+	println!("");
+	println!("");
+	println!("");
 
-	let test = game_state.game.update_game_status();
+	let uci_move = "e1g1";
 
-	if game_state.game.game_status == GameStatus::CheckmateForSide(Side::Black) {
-		println!("Checkmate");
-	}
-
-	let test = match game_state.game.position.export_position_to_fen() {
+	let _undo = match game_state.game.make_move_from_uci(uci_move) {
 		Ok(x) => x,
 		Err(_x) => {
-			println!("Error exportign");
+			println!("Error");
 			return;
-		} 
+		}
 	};
-
-	println!("Export: {test}");
 
 	game_state.game.position.print_board();
 

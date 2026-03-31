@@ -2,7 +2,7 @@ use crate::{
 	ColoredPiece, Piece, Side, Square,
 	errors::{ChessError, FenError},
 	game_status::GameStatus,
-	helper::square,
+	helper::{letter_to_piece, square},
 	moves::make_move::Move,
 };
 
@@ -132,14 +132,25 @@ impl Position {
 					}
 				}
 			}
-			if empty > 0 { fen_string.push_str(&empty.to_string()); }
-			if rank != 0 { fen_string.push('/'); }
+			if empty > 0 {
+				fen_string.push_str(&empty.to_string());
+			}
+			if rank != 0 {
+				fen_string.push('/');
+			}
 		}
 
-		fen_string.push_str(match self.side_to_move { Side::White => " w ", Side::Black => " b " });
+		fen_string.push_str(match self.side_to_move {
+			Side::White => " w ",
+			Side::Black => " b ",
+		});
 
 		let castle: String = [('K', 0), ('Q', 1), ('k', 2), ('q', 3)].iter().filter(|&&(_, i)| self.castle[i]).map(|&(c, _)| c).collect();
-		fen_string.push_str(if castle.is_empty() { "-" } else { &castle });
+		fen_string.push_str(if castle.is_empty() {
+			"-"
+		} else {
+			&castle
+		});
 
 		fen_string.push(' ');
 		match self.en_passant {
@@ -207,15 +218,7 @@ fn load_piece_placement(position: &mut Position, fen_board: &str) -> Result<(), 
 				} else {
 					Side::Black
 				};
-				let piece_type = match c.to_ascii_lowercase() {
-					'k' => Piece::King,
-					'p' => Piece::Pawn,
-					'n' => Piece::Knight,
-					'b' => Piece::Bishop,
-					'r' => Piece::Rook,
-					'q' => Piece::Queen,
-					_ => return Err(FenError::InvalidPieceChar(c)),
-				};
+				let piece_type = letter_to_piece(c)?;
 
 				let piece = ColoredPiece { piece: piece_type, side: piece_side };
 
@@ -249,7 +252,7 @@ fn convert_square_to_square_string(square: u8) -> String {
 	format!("{}{}", file, rank)
 }
 
-fn convert_square_string_to_square(square_string: &str) -> Result<u8, FenError> {
+pub fn convert_square_string_to_square(square_string: &str) -> Result<Square, FenError> {
 	if square_string.len() != 2 {
 		return Err(FenError::SquareLenghtIsnt2Wide(square_string.len()));
 	}

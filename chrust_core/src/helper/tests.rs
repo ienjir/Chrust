@@ -280,6 +280,35 @@ fn to_char_black_pieces_are_lowercase() {
 	assert_eq!(ColoredPiece { piece: Piece::Pawn, side: Side::Black }.to_char(), 'p');
 }
 
+// ── letter_to_piece ───────────────────────────────────────────────────────────
+
+#[test]
+fn letter_to_piece_all_valid_lowercase() {
+	assert_eq!(letter_to_piece('k'), Ok(Piece::King));
+	assert_eq!(letter_to_piece('p'), Ok(Piece::Pawn));
+	assert_eq!(letter_to_piece('n'), Ok(Piece::Knight));
+	assert_eq!(letter_to_piece('b'), Ok(Piece::Bishop));
+	assert_eq!(letter_to_piece('r'), Ok(Piece::Rook));
+	assert_eq!(letter_to_piece('q'), Ok(Piece::Queen));
+}
+
+#[test]
+fn letter_to_piece_all_valid_uppercase() {
+	assert_eq!(letter_to_piece('K'), Ok(Piece::King));
+	assert_eq!(letter_to_piece('P'), Ok(Piece::Pawn));
+	assert_eq!(letter_to_piece('N'), Ok(Piece::Knight));
+	assert_eq!(letter_to_piece('B'), Ok(Piece::Bishop));
+	assert_eq!(letter_to_piece('R'), Ok(Piece::Rook));
+	assert_eq!(letter_to_piece('Q'), Ok(Piece::Queen));
+}
+
+#[test]
+fn letter_to_piece_invalid_char_returns_error() {
+	assert!(letter_to_piece('x').is_err());
+	assert!(letter_to_piece('1').is_err());
+	assert!(letter_to_piece('z').is_err());
+}
+
 // ── integration ───────────────────────────────────────────────────────────────
 
 #[test]

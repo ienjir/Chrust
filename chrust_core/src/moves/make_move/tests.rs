@@ -2122,3 +2122,139 @@ fn undo_last_move_king_square_tracking_restored() {
 	game.undo_last_move().unwrap();
 	assert_eq!(game.position.king_squares[0], 4, "white king square should be restored to e1 (4)");
 }
+
+// ══════════════════════════════════════════════════════════════════════════════
+// Game::make_move_from_uci tests
+// ══════════════════════════════════════════════════════════════════════════════
+
+#[test]
+fn uci_quiet_move_moves_piece() {
+	let mut game = game_from_fen("4k3/8/8/8/8/8/8/R3K3 w - - 0 1");
+	game.make_move_from_uci("a1a2").unwrap();
+	assert_eq!(game.position.board[0], None, "a1 should be empty after move");
+	assert_eq!(game.position.board[8].unwrap().piece, Piece::Rook, "a2 should have the rook");
+}
+
+#[test]
+fn uci_capture_replaces_enemy_piece() {
+	// white rook a1(0), black rook a6(40), white king e1(4), black king e8(60)
+	let mut game = game_from_fen("4k3/8/r7/8/8/8/8/R3K3 w - - 0 1");
+	game.make_move_from_uci("a1a6").unwrap();
+	assert_eq!(game.position.board[0], None, "a1 should be empty after capture");
+	assert_eq!(game.position.board[40].unwrap().side, Side::White, "a6 should be occupied by white piece");
+	assert_eq!(game.position.board[40].unwrap().piece, Piece::Rook);
+}
+
+#[test]
+fn uci_double_pawn_push_sets_en_passant() {
+	let mut game = game_from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+	game.make_move_from_uci("e2e4").unwrap();
+	assert_eq!(game.position.board[12], None, "e2 should be empty");
+	assert!(game.position.board[28].is_some(), "e4 should have the pawn");
+	assert_eq!(game.position.en_passant, Some(20), "en passant should be set to e3(20)");
+}
+
+#[test]
+fn uci_white_kingside_castling_moves_king_and_rook() {
+	let mut game = game_from_fen("r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1");
+	game.make_move_from_uci("e1g1").unwrap();
+	assert_eq!(game.position.board[4], None, "e1 should be empty");
+	assert_eq!(game.position.board[6].unwrap().piece, Piece::King, "king should be on g1");
+	assert_eq!(game.position.board[5].unwrap().piece, Piece::Rook, "rook should be on f1");
+	assert_eq!(game.position.board[7], None, "h1 should be empty");
+}
+
+#[test]
+fn uci_white_queenside_castling_moves_king_and_rook() {
+	let mut game = game_from_fen("r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1");
+	game.make_move_from_uci("e1c1").unwrap();
+	assert_eq!(game.position.board[4], None, "e1 should be empty");
+	assert_eq!(game.position.board[2].unwrap().piece, Piece::King, "king should be on c1");
+	assert_eq!(game.position.board[3].unwrap().piece, Piece::Rook, "rook should be on d1");
+	assert_eq!(game.position.board[0], None, "a1 should be empty");
+}
+
+#[test]
+fn uci_black_kingside_castling_moves_king_and_rook() {
+	let mut game = game_from_fen("r3k2r/8/8/8/8/8/8/R3K2R b KQkq - 0 1");
+	game.make_move_from_uci("e8g8").unwrap();
+	assert_eq!(game.position.board[60], None, "e8 should be empty");
+	assert_eq!(game.position.board[62].unwrap().piece, Piece::King, "king should be on g8");
+	assert_eq!(game.position.board[61].unwrap().piece, Piece::Rook, "rook should be on f8");
+	assert_eq!(game.position.board[63], None, "h8 should be empty");
+}
+
+#[test]
+fn uci_black_queenside_castling_moves_king_and_rook() {
+	let mut game = game_from_fen("r3k2r/8/8/8/8/8/8/R3K2R b KQkq - 0 1");
+	game.make_move_from_uci("e8c8").unwrap();
+	assert_eq!(game.position.board[60], None, "e8 should be empty");
+	assert_eq!(game.position.board[58].unwrap().piece, Piece::King, "king should be on c8");
+	assert_eq!(game.position.board[59].unwrap().piece, Piece::Rook, "rook should be on d8");
+	assert_eq!(game.position.board[56], None, "a8 should be empty");
+}
+
+#[test]
+fn uci_promotion_to_queen() {
+	let mut game = game_from_fen("7k/P7/8/8/8/8/8/7K w - - 0 1");
+	game.make_move_from_uci("a7a8q").unwrap();
+	assert_eq!(game.position.board[48], None, "a7 should be empty after promotion");
+	assert_eq!(game.position.board[56].unwrap().piece, Piece::Queen);
+	assert_eq!(game.position.board[56].unwrap().side, Side::White);
+}
+
+#[test]
+fn uci_promotion_to_rook() {
+	let mut game = game_from_fen("7k/P7/8/8/8/8/8/7K w - - 0 1");
+	game.make_move_from_uci("a7a8r").unwrap();
+	assert_eq!(game.position.board[56].unwrap().piece, Piece::Rook);
+}
+
+#[test]
+fn uci_promotion_to_bishop() {
+	let mut game = game_from_fen("7k/P7/8/8/8/8/8/7K w - - 0 1");
+	game.make_move_from_uci("a7a8b").unwrap();
+	assert_eq!(game.position.board[56].unwrap().piece, Piece::Bishop);
+}
+
+#[test]
+fn uci_promotion_to_knight() {
+	let mut game = game_from_fen("7k/P7/8/8/8/8/8/7K w - - 0 1");
+	game.make_move_from_uci("a7a8n").unwrap();
+	assert_eq!(game.position.board[56].unwrap().piece, Piece::Knight);
+}
+
+#[test]
+fn uci_toggles_side_to_move() {
+	let mut game = game_from_fen("4k3/8/8/8/8/8/8/R3K3 w - - 0 1");
+	assert_eq!(game.position.side_to_move, Side::White);
+	game.make_move_from_uci("a1a2").unwrap();
+	assert_eq!(game.position.side_to_move, Side::Black);
+}
+
+#[test]
+fn uci_pushes_to_move_history() {
+	let mut game = game_from_fen("4k3/8/8/8/8/8/8/R3K3 w - - 0 1");
+	game.make_move_from_uci("a1a2").unwrap();
+	assert_eq!(game.move_history.len(), 1);
+}
+
+#[test]
+fn uci_error_no_piece_on_from_square() {
+	let mut game = game_from_fen("4k3/8/8/8/8/8/8/R3K3 w - - 0 1");
+	assert!(matches!(game.make_move_from_uci("b1b2"), Err(ChessError::NoPieceOnSquare { square: 1 })));
+}
+
+#[test]
+fn uci_error_invalid_square_string() {
+	let mut game = game_from_fen("4k3/8/8/8/8/8/8/R3K3 w - - 0 1");
+	assert!(game.make_move_from_uci("z1a1").is_err(), "invalid file should return an error");
+	assert!(game.make_move_from_uci("a0a1").is_err(), "invalid rank should return an error");
+}
+
+#[test]
+fn uci_error_illegal_move() {
+	// Rook on a1 cannot move diagonally to b2
+	let mut game = game_from_fen("4k3/8/8/8/8/8/8/R3K3 w - - 0 1");
+	assert!(matches!(game.make_move_from_uci("a1b2"), Err(ChessError::NotAValidMove)));
+}

@@ -188,6 +188,7 @@ The chess piece assets were not created by me. They were created by Uray M. Ján
 - Fix promotion piece can be king
 - Add offer and accept draw
 - Add game history converter
+- Make it that undo is automatically added to game history and not returned
 - Add perft
 
 ## Small errors 
