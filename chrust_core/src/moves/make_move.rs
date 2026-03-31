@@ -42,16 +42,13 @@ impl Game {
 
 		let to_square = convert_square_string_to_square(&uci_move[2..4])?;
 
-		let colored_piece = match self.position.board[from_square as usize] {
-			Some(x) => x,
-			None => return Err(ChessError::NoPieceOnSquare { square: from_square }),
-		};
+		let colored_piece = self.position.board[from_square as usize].ok_or(ChessError::NoPieceOnSquare { square: from_square })?;
 
 		let mut mv = Move {
-			from_square: from_square,
-			to_square: to_square,
+			from_square,
+			to_square,
 			move_kind: MoveKind::Quiet,
-			colored_piece: colored_piece,
+			colored_piece,
 		};
 
 		if self.position.board[to_square as usize].is_some() {
@@ -72,13 +69,20 @@ impl Game {
 		if colored_piece.piece == Piece::Pawn {
 			let (_file_diff, rank_diff) = get_file_and_rank_difference(from_square, to_square);
 
+			let direction: i16 = match colored_piece.side {
+				Side::White => 8,
+				Side::Black => -8,
+			};
+
 			if rank_diff == 2 {
-				mv.move_kind = MoveKind::DoublePawnPush { passed_square: from_square + 8 }
+				mv.move_kind = MoveKind::DoublePawnPush {
+					passed_square: (from_square as i16 + direction) as u8,
+				}
 			}
 
-			if self.position.en_passant.is_some() {
-				if to_square == self.position.en_passant.expect("make_move.rs: make_move_unvalidated: en pasant is empty") {
-					mv.move_kind = MoveKind::EnPassant { capture_square: to_square + 8 }
+			if Some(to_square) == self.position.en_passant {
+				mv.move_kind = MoveKind::EnPassant {
+					capture_square: (to_square as i16 - direction) as u8,
 				}
 			}
 		}
