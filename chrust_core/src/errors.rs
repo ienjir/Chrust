@@ -3,11 +3,13 @@ use crate::{Piece, Side, Square};
 #[derive(Debug, PartialEq, Eq)]
 pub enum ChessError {
 	NotImplemented,
-	PromotionPieceCantBePawn,
 	GameIsFinished,
 	NothingToUndo,
 	FenError {
 		fen_error: FenError,
+	},
+	InvalidPromotionPiece {
+		piece: Piece,
 	},
 	NotASquareOnBoard {
 		square: i16,

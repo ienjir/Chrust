@@ -81,7 +81,11 @@ pub(crate) fn in_bounds(candidate: i16) -> bool {
 
 pub(crate) fn is_valid_promomotion_piece(promotion_piece: Piece) -> Result<(), ChessError> {
 	if promotion_piece == Piece::Pawn {
-		return Err(ChessError::PromotionPieceCantBePawn);
+		return Err(ChessError::InvalidPromotionPiece { piece: Piece::Pawn });
+	}
+
+	if promotion_piece == Piece::King {
+		return Err(ChessError::InvalidPromotionPiece { piece: Piece::King });
 	}
 
 	Ok(())

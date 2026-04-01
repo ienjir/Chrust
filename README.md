@@ -183,9 +183,7 @@ The chess piece assets were not created by me. They were created by Uray M. Ján
 </table>
 
 ## Next steps
-- Add UCI move support
 - Make some helper functions pub
-- Fix promotion piece can be king
 - Add offer and accept draw
 - Add game history converter
 - Make it that undo is automatically added to game history and not returned

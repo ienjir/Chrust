@@ -221,7 +221,7 @@ fn promotion_with_pawn_sentinel_is_rejected() {
 		colored_piece: pawn,
 	};
 	// Should be rejected by apply_move_to_board's validation
-	assert!(matches!(pos.make_move_unvalidated(m), Err(ChessError::PromotionPieceCantBePawn)), "promotion to Pawn should be rejected");
+	assert!(matches!(pos.make_move_unvalidated(m), Err(ChessError::InvalidPromotionPiece { piece: Piece::Pawn })), "promotion to Pawn should be rejected");
 }
 
 #[test]
@@ -1115,7 +1115,7 @@ fn apply_move_to_board_rejects_pawn_promotion() {
 	};
 	let mut undo = pos.build_undo();
 
-	assert!(matches!(pos.apply_move_to_board(m, white_pawn, &mut undo, zobrist()), Err(ChessError::PromotionPieceCantBePawn)));
+	assert!(matches!(pos.apply_move_to_board(m, white_pawn, &mut undo, zobrist()), Err(ChessError::InvalidPromotionPiece { piece: Piece::Pawn })));
 }
 
 // ── update_en_passant tests ───────────────────────────────────────────────────
