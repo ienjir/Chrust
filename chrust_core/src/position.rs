@@ -246,7 +246,7 @@ fn load_clock(clock_string: &str) -> Result<u32, FenError> {
 	};
 }
 
-fn convert_square_to_square_string(square: u8) -> String {
+pub fn convert_square_to_square_string(square: u8) -> String {
 	let file = (b'a' + (square % 8)) as char;
 	let rank = (b'1' + (square / 8)) as char;
 	format!("{}{}", file, rank)

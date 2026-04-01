@@ -80,7 +80,7 @@ impl Position {
 		self.halfmove_clock >= 100
 	}
 
-	pub(crate) fn get_all_legal_moves_for_side(&mut self, side: Side) -> Result<Vec<Move>, ChessError> {
+	pub fn get_all_legal_moves_for_side(&mut self, side: Side) -> Result<Vec<Move>, ChessError> {
 		let squares: Vec<Square> = self.board.iter().enumerate().filter_map(|(sq, piece)| piece.filter(|p| p.side == side).map(|_| sq as u8)).collect();
 
 		let mut legal_moves: Vec<Move> = Vec::new();

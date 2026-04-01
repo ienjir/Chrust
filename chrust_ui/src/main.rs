@@ -12,9 +12,7 @@ use crate::{
 	layout::TEST_FEN_STRING,
 	renderer::{handle_ui_state, render_chess_pieces, render_chessboard_without_pieces, render_possible_moves},
 };
-use chrust_core::game_status::GameStatus;
-use chrust_core::position::{Game, convert_square_string_to_square};
-use chrust_core::{ColoredPiece, Piece, Side};
+use chrust_core::position::Game;
 use macroquad::file::set_pc_assets_folder;
 use macroquad::prelude::*;
 

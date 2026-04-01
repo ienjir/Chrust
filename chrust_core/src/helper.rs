@@ -38,7 +38,7 @@ pub fn letter_to_piece(piece_char: char) -> Result<Piece, FenError> {
 }
 
 impl ColoredPiece {
-	pub(crate) fn to_char(&self) -> char {
+	pub fn to_char(&self) -> char {
 		let mut piece_char = match self.piece {
 			Piece::Pawn => 'p',
 			Piece::Knight => 'n',
@@ -57,7 +57,7 @@ impl ColoredPiece {
 }
 
 impl Game {
-	pub(crate) fn is_legal_game_state(&self) -> bool {
+	pub fn is_legal_game_state(&self) -> bool {
 		if self.game_status == GameStatus::Playing || self.game_status == GameStatus::InCheck {
 			return true;
 		}
@@ -148,7 +148,7 @@ impl Position {
 		Ok(())
 	}
 
-	pub(crate) fn get_piece_from_square(&self, from_square: Square) -> Result<ColoredPiece, ChessError> {
+	pub fn get_piece_from_square(&self, from_square: Square) -> Result<ColoredPiece, ChessError> {
 		if let Err(x) = is_square_on_board(from_square) {
 			return Err(x);
 		}
@@ -161,7 +161,7 @@ impl Position {
 }
 
 impl Side {
-	pub(crate) fn opponent(&self) -> Side {
+	pub fn opponent(&self) -> Side {
 		match self {
 			Side::White => Side::Black,
 			Side::Black => Side::White,
