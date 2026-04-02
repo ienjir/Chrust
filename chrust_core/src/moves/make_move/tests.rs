@@ -2258,3 +2258,240 @@ fn uci_error_illegal_move() {
 	let mut game = game_from_fen("4k3/8/8/8/8/8/8/R3K3 w - - 0 1");
 	assert!(matches!(game.make_move_from_uci("a1b2"), Err(ChessError::NotAValidMove)));
 }
+
+// ══════════════════════════════════════════════════════════════════════════════
+// offer_draw / accept_draw tests
+// ══════════════════════════════════════════════════════════════════════════════
+
+// ── offer_draw ────────────────────────────────────────────────────────────────
+
+#[test]
+fn offer_draw_sets_draw_offer_for_white_to_move() {
+	let mut game = game_from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+	assert_eq!(game.draw_offer, None);
+	game.offer_draw().unwrap();
+	assert_eq!(game.draw_offer, Some(Side::White));
+}
+
+#[test]
+fn offer_draw_sets_draw_offer_for_black_to_move() {
+	let mut game = game_from_fen("rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1");
+	game.offer_draw().unwrap();
+	assert_eq!(game.draw_offer, Some(Side::Black));
+}
+
+#[test]
+fn offer_draw_does_not_change_game_status() {
+	let mut game = game_from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+	game.offer_draw().unwrap();
+	assert!(matches!(game.game_status, GameStatus::Playing), "offer_draw must not change game_status");
+}
+
+#[test]
+fn offer_draw_does_not_change_side_to_move() {
+	let mut game = game_from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+	game.offer_draw().unwrap();
+	assert_eq!(game.position.side_to_move, Side::White, "offer_draw must not flip side_to_move");
+}
+
+#[test]
+fn offer_draw_does_not_modify_board() {
+	let mut game = game_from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+	let board_before = game.position.board;
+	game.offer_draw().unwrap();
+	assert_eq!(game.position.board, board_before, "offer_draw must not touch the board");
+}
+
+#[test]
+fn offer_draw_while_in_check_sets_flag() {
+	// White king on e1 is in check from black rook on e8 but can escape.
+	// Per FIDE rules a player may offer draw even while in check;
+	// the flag should be recorded normally.
+	let mut game = game_from_fen("4k3/8/8/8/8/8/8/r3K3 w - - 0 1");
+	game.offer_draw().unwrap();
+	assert_eq!(game.draw_offer, Some(Side::White));
+}
+
+// Per FIDE rules, offering draw after the game is already over is meaningless.
+// The current implementation has no guard — this test will fail until
+// offer_draw validates the game state and becomes a no-op (or returns an error).
+#[test]
+fn offer_draw_when_game_is_finished_is_rejected() {
+	let mut game = game_from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+	game.game_status = GameStatus::CheckmateForSide(Side::Black);
+	assert!(game.offer_draw().is_err(), "offering draw after game over must return an error");
+	assert_eq!(game.draw_offer, None, "offering draw after game over must not set the flag");
+}
+
+// ── accept_draw ───────────────────────────────────────────────────────────────
+
+#[test]
+fn accept_draw_with_no_offer_returns_no_draw_offered() {
+	let mut game = game_from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+	assert!(matches!(game.accept_draw(), Err(ChessError::NoDrawOffered)));
+}
+
+#[test]
+fn accept_draw_sets_status_to_draw_by_agreement() {
+	// After 1.e4; White offered; it is Black's turn to respond.
+	let mut game = game_from_fen("rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1");
+	game.draw_offer = Some(Side::White);
+	game.accept_draw().expect("accept_draw must succeed when an offer is pending");
+	assert!(matches!(game.game_status, GameStatus::DrawByAgreement));
+}
+
+#[test]
+fn accept_draw_clears_draw_offer_field() {
+	let mut game = game_from_fen("rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1");
+	game.draw_offer = Some(Side::White);
+	game.accept_draw().unwrap();
+	assert_eq!(game.draw_offer, None, "draw_offer must be None after acceptance");
+}
+
+#[test]
+fn accept_draw_prevents_further_moves() {
+	// After agreement no further moves may be made.
+	let mut game = game_from_fen("rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1");
+	game.draw_offer = Some(Side::White);
+	game.accept_draw().unwrap();
+
+	let black_pawn = ColoredPiece { piece: Piece::Pawn, side: Side::Black };
+	let m = Move {
+		from_square: 52,
+		to_square: 44,
+		move_kind: MoveKind::Quiet,
+		colored_piece: black_pawn,
+	};
+	assert!(matches!(game.make_move(&m), Err(ChessError::GameIsFinished)));
+}
+
+// FIDE rules: only the player who did NOT make the offer may accept it.
+// The current implementation does not enforce this — this test will fail until
+// accept_draw checks that side_to_move is the opponent of the offering side.
+#[test]
+fn accept_draw_by_offering_side_returns_error() {
+	let mut game = game_from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+	game.offer_draw().unwrap(); // White offers on White's turn
+	// White must not be able to accept their own offer immediately.
+	assert!(game.accept_draw().is_err(), "the offering side must not be able to accept their own draw offer");
+	assert!(!matches!(game.game_status, GameStatus::DrawByAgreement), "game must still be in progress after the offering side tries to accept");
+}
+
+// If the game is already finished (e.g. checkmate) accepting a lingering draw
+// offer must be rejected.  The current implementation has no game-state guard
+// in accept_draw — this test will fail until that check is added.
+#[test]
+fn accept_draw_when_game_already_finished_returns_error() {
+	let mut game = game_from_fen("rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1");
+	game.draw_offer = Some(Side::White);
+	game.game_status = GameStatus::CheckmateForSide(Side::White);
+	assert!(game.accept_draw().is_err(), "accept_draw must return an error when the game is already over");
+}
+
+// ── implicit decline — making a move cancels the pending offer ────────────────
+
+#[test]
+fn opponent_move_clears_pending_draw_offer() {
+	// White offered; Black declines by playing a normal move.
+	let mut game = game_from_fen("rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1");
+	game.draw_offer = Some(Side::White);
+
+	let m = mv(&game.position, 52, 44, MoveKind::Quiet); // e7–e6
+	game.make_move(&m).unwrap();
+
+	assert_eq!(game.draw_offer, None, "any move by the receiving side implicitly declines the draw offer");
+}
+
+// After White offers and then plays their own move, the offer should remain
+// active for Black to respond.  The current implementation unconditionally
+// clears draw_offer on any make_move call — this test will fail until that
+// is fixed to only clear the offer when the receiving side moves.
+#[test]
+fn draw_offer_survives_offering_sides_own_move() {
+	let mut game = game_from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+	game.offer_draw().unwrap(); // White offers on their turn
+
+	// White plays 1. e4 alongside the offer.
+	let m = mv(&game.position, 12, 28, MoveKind::DoublePawnPush { passed_square: 20 });
+	game.make_move(&m).unwrap();
+
+	// It is now Black's turn; the offer from White should still be pending.
+	assert_eq!(game.draw_offer, Some(Side::White), "draw offer must survive the offering side's own move so the opponent can respond");
+}
+
+// ── undo restores draw-offer state ───────────────────────────────────────────
+
+#[test]
+fn undo_after_implicit_decline_restores_draw_offer() {
+	// White offered; Black declined via a move; undo should bring the offer back.
+	let mut game = game_from_fen("rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1");
+	game.draw_offer = Some(Side::White);
+
+	let m = mv(&game.position, 52, 44, MoveKind::Quiet); // e7–e6
+	game.make_move(&m).unwrap();
+	assert_eq!(game.draw_offer, None);
+
+	game.undo_last_move().unwrap();
+	assert_eq!(game.draw_offer, Some(Side::White), "undo must restore the pending draw offer");
+}
+
+#[test]
+fn undo_when_no_draw_offer_was_pending_keeps_none() {
+	let mut game = game_from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+	assert_eq!(game.draw_offer, None);
+
+	let m = mv(&game.position, 12, 20, MoveKind::Quiet); // e2–e3
+	game.make_move(&m).unwrap();
+	game.undo_last_move().unwrap();
+
+	assert_eq!(game.draw_offer, None, "draw_offer must remain None when no offer was pending");
+}
+
+// ── full game sequences ───────────────────────────────────────────────────────
+
+// Correct FIDE sequence: White plays a move and offers draw simultaneously;
+// Black accepts on their turn.
+// This test will fail with the current implementation because make_move
+// clears draw_offer even when the offering side is making the move.
+#[test]
+fn full_draw_by_agreement_white_offers_then_plays_black_accepts() {
+	let mut game = game_from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+
+	// White signals intent to offer draw, then plays 1. e4.
+	game.offer_draw().unwrap();
+	let m = mv(&game.position, 12, 28, MoveKind::DoublePawnPush { passed_square: 20 });
+	game.make_move(&m).unwrap();
+
+	// Black accepts — should succeed because White's offer is still pending.
+	game.accept_draw().expect("Black must be able to accept White's pending offer");
+	assert!(matches!(game.game_status, GameStatus::DrawByAgreement));
+	assert_eq!(game.draw_offer, None);
+}
+
+/// Black declines by playing a move; the game continues normally.
+#[test]
+fn black_declines_draw_by_playing_a_move_game_continues() {
+	let mut game = game_from_fen("rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1");
+	game.draw_offer = Some(Side::White);
+
+	// Black plays 1... e5 — implicit decline.
+	let m = mv(&game.position, 52, 36, MoveKind::DoublePawnPush { passed_square: 44 });
+	game.make_move(&m).unwrap();
+
+	assert_eq!(game.draw_offer, None, "offer must be cleared after Black declines");
+	assert!(matches!(game.game_status, GameStatus::Playing), "game must continue after decline");
+}
+
+/// After an offer is declined, calling accept_draw must return NoDrawOffered.
+#[test]
+fn draw_offer_cleared_after_decline_cannot_be_accepted() {
+	let mut game = game_from_fen("rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1");
+	game.draw_offer = Some(Side::White);
+
+	// Black declines.
+	let m = mv(&game.position, 52, 36, MoveKind::DoublePawnPush { passed_square: 44 });
+	game.make_move(&m).unwrap();
+
+	// Now White tries to accept — there is no pending offer.
+	assert!(matches!(game.accept_draw(), Err(ChessError::NoDrawOffered)));
+}

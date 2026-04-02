@@ -817,6 +817,7 @@ fn empty_game_with_hash(hash: u64, halfmove_clock: u32) -> Game {
 		move_history: Vec::new(),
 		undo_history: Vec::new(),
 		game_status: GameStatus::Playing,
+		draw_offer: None,
 	}
 }
 
@@ -1172,6 +1173,7 @@ fn update_game_status_playing() {
 
 	let mut game = Game {
 		position: pos,
+		draw_offer: None,
 		hash_history: Vec::new(),
 		move_history: Vec::new(),
 		undo_history: Vec::new(),
@@ -1196,6 +1198,7 @@ fn update_game_status_in_check() {
 
 	let mut game = Game {
 		position: pos,
+		draw_offer: None,
 		hash_history: Vec::new(),
 		move_history: Vec::new(),
 		undo_history: Vec::new(),
@@ -1224,6 +1227,7 @@ fn update_game_status_checkmate_black_wins() {
 
 	let mut game = Game {
 		position: pos,
+		draw_offer: None,
 		hash_history: Vec::new(),
 		move_history: Vec::new(),
 		undo_history: Vec::new(),
@@ -1251,6 +1255,7 @@ fn update_game_status_checkmate_white_wins() {
 
 	let mut game = Game {
 		position: pos,
+		draw_offer: None,
 		hash_history: Vec::new(),
 		move_history: Vec::new(),
 		undo_history: Vec::new(),
@@ -1275,6 +1280,7 @@ fn update_game_status_stalemate() {
 
 	let mut game = Game {
 		position: pos,
+		draw_offer: None,
 		hash_history: Vec::new(),
 		move_history: Vec::new(),
 		undo_history: Vec::new(),
@@ -1299,6 +1305,7 @@ fn update_game_status_draw_by_repetition() {
 
 	let mut game = Game {
 		position: pos,
+		draw_offer: None,
 		hash_history: vec![0x1111, hash, 0x2222, hash, 0x3333, 0x4444],
 		move_history: Vec::new(),
 		undo_history: Vec::new(),
@@ -1324,6 +1331,7 @@ fn update_game_status_draw_by_fifty_moves() {
 
 	let mut game = Game {
 		position: pos,
+		draw_offer: None,
 		// No repeated hashes — distinct entries only
 		hash_history: (0..100).map(|i| i as u64).collect(),
 		move_history: Vec::new(),
@@ -1347,6 +1355,7 @@ fn update_game_status_draw_by_insufficient_material_kings_only() {
 
 	let mut game = Game {
 		position: pos,
+		draw_offer: None,
 		hash_history: Vec::new(),
 		move_history: Vec::new(),
 		undo_history: Vec::new(),
@@ -1370,6 +1379,7 @@ fn update_game_status_draw_by_insufficient_material_kb_vs_k() {
 
 	let mut game = Game {
 		position: pos,
+		draw_offer: None,
 		hash_history: Vec::new(),
 		move_history: Vec::new(),
 		undo_history: Vec::new(),
@@ -1393,6 +1403,7 @@ fn update_game_status_draw_by_insufficient_material_kn_vs_k() {
 
 	let mut game = Game {
 		position: pos,
+		draw_offer: None,
 		hash_history: Vec::new(),
 		move_history: Vec::new(),
 		undo_history: Vec::new(),
@@ -1417,6 +1428,7 @@ fn update_game_status_repetition_has_priority_over_fifty_moves() {
 
 	let mut game = Game {
 		position: pos,
+		draw_offer: None,
 		hash_history: vec![
 			hash, 0xAAAA, hash, 0xBBBB, 0xCCCC, 0xDDDD, 0xEEEE, 0xFFFF, 0x1010, 0x2020, 0x3030, 0x4040, 0x5050, 0x6060, 0x7070, 0x8080, 0x9090, 0xA0A0, 0xB0B0, 0xC0C0, 0xD0D0, 0xE0E0, 0xF0F0, 0x0101,
 			0x0202, 0x0303, 0x0404, 0x0505, 0x0606, 0x0707, 0x0808, 0x0909, 0x1111, 0x1212, 0x1313, 0x1414, 0x1515, 0x1616, 0x1717, 0x1818, 0x1919, 0x2121, 0x2222, 0x2323, 0x2424, 0x2525, 0x2626,

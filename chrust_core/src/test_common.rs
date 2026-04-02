@@ -9,6 +9,7 @@ pub fn game_from_fen(fen: &str) -> Game {
 	let position = position_with_hash(fen);
 	Game {
 		position,
+		draw_offer: None,
 		hash_history: Vec::new(),
 		move_history: Vec::new(),
 		undo_history: Vec::new(),
@@ -19,6 +20,7 @@ pub fn game_from_fen(fen: &str) -> Game {
 pub fn empty_game() -> Game {
 	Game {
 		position: empty_position(),
+		draw_offer: None,
 		hash_history: Vec::new(),
 		move_history: Vec::new(),
 		undo_history: Vec::new(),

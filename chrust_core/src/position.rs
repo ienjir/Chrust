@@ -12,6 +12,7 @@ pub struct Game {
 	pub move_history: Vec<Move>,
 	pub undo_history: Vec<Undo>,
 	pub game_status: GameStatus,
+	pub draw_offer: Option<Side>,
 }
 
 #[derive(Debug, PartialEq, Clone, Copy)]
@@ -34,6 +35,7 @@ pub struct Undo {
 	pub(crate) previous_halfway_clock: u32,
 	pub(crate) fullmove_counter: u32,
 	pub(crate) previous_king_squares: [Square; 2],
+	pub previous_draw_offer: Option<Side>,
 }
 
 impl Game {
@@ -41,6 +43,7 @@ impl Game {
 		let position = load_position_from_fen(fen_string)?;
 		let mut game = Game {
 			position,
+			draw_offer: None,
 			hash_history: Vec::new(),
 			move_history: Vec::new(),
 			undo_history: Vec::new(),

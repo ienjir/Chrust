@@ -4,7 +4,10 @@ use crate::{Piece, Side, Square};
 pub enum ChessError {
 	NotImplemented,
 	GameIsFinished,
+	NotAValidMove,
 	NothingToUndo,
+	NoDrawOffered,
+	CantAcceptYourOwnDraw,
 	FenError {
 		fen_error: FenError,
 	},
@@ -17,7 +20,6 @@ pub enum ChessError {
 	NoPieceOnSquare {
 		square: Square,
 	},
-	NotAValidMove,
 	KingIsAttacked {
 		squares: Vec<Square>,
 	},

@@ -12,6 +12,7 @@ pub enum GameStatus {
 	InCheck,
 	CheckmateForSide(Side),
 	Stalemate,
+	DrawByAgreement,
 	DrawByFiftyMoves,
 	DrawByRepetition,
 	DrawByInsufficientMaterial,

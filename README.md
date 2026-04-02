@@ -183,19 +183,17 @@ The chess piece assets were not created by me. They were created by Uray M. Ján
 </table>
 
 ## Next steps
-- Make some helper functions pub
-- Add offer and accept draw
-- Add game history converter
 - Make it that undo is automatically added to game history and not returned
+- Add game history converter
 - Add perft
 
 ## Small errors 
-    - Slider.rs: Find a way to not return a queen when a faulty piece is provided
+- Slider.rs: Find a way to not return a queen when a faulty piece is provided
 
 ## Important info
-    - king_squares[0] is white and [1] is black
-    - castling: 
-        - [0] => White kingside
-        - [1] => White queenside 
-        - [2] => Black kingside
-        - [3] => Black queenside
+- king_squares[0] is white and [1] is black
+- castling: 
+- [0] => White kingside
+- [1] => White queenside 
+- [2] => Black kingside
+- [3] => Black queenside

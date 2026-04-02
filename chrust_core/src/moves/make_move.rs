@@ -1,8 +1,7 @@
-use std::usize;
-
 use crate::{
 	ColoredPiece, Piece, Side, Square,
 	errors::ChessError,
+	game_status::GameStatus,
 	helper::{is_square_on_board, is_valid_promomotion_piece, letter_to_piece},
 	moves::move_gen::king::get_file_and_rank_difference,
 	position::{Game, Position, Undo, convert_square_string_to_square},
@@ -129,11 +128,16 @@ impl Game {
 			return Err(ChessError::NotAValidMove);
 		}
 
-		let undo = self.position.make_move_unvalidated(*mv)?;
+		let mut undo = self.position.make_move_unvalidated(*mv)?;
+		undo.previous_draw_offer = self.draw_offer;
 
 		self.hash_history.push(self.position.zobrist_hash);
 		self.undo_history.push(undo);
 		self.move_history.push(*mv);
+
+		if self.draw_offer == Some(self.position.side_to_move) {
+			self.draw_offer = None;
+		}
 
 		self.update_game_status()?;
 
@@ -144,8 +148,40 @@ impl Game {
 		let mv = self.move_history.pop().ok_or(ChessError::NothingToUndo)?;
 		let undo = self.undo_history.pop().ok_or(ChessError::NothingToUndo)?;
 		self.hash_history.pop();
+
 		self.position.undo_move(undo, mv)?;
+		self.draw_offer = undo.previous_draw_offer;
+
 		self.update_game_status()?;
+		Ok(())
+	}
+
+	pub fn offer_draw(&mut self) -> Result<(), ChessError> {
+		if !self.is_legal_game_state() {
+			return Err(ChessError::GameIsFinished);
+		}
+
+		self.draw_offer = Some(self.position.side_to_move);
+
+		Ok(())
+	}
+
+	pub fn accept_draw(&mut self) -> Result<(), ChessError> {
+		if self.draw_offer.is_none() {
+			return Err(ChessError::NoDrawOffered);
+		}
+
+		if self.draw_offer == Some(self.position.side_to_move) {
+			return Err(ChessError::CantAcceptYourOwnDraw);
+		}
+
+		if !self.is_legal_game_state() {
+			return Err(ChessError::GameIsFinished);
+		}
+
+		self.draw_offer = None;
+		self.game_status = GameStatus::DrawByAgreement;
+
 		Ok(())
 	}
 }
@@ -188,6 +224,7 @@ impl Position {
 	pub(crate) fn build_undo(&self) -> Undo {
 		Undo {
 			captured_piece: None,
+			previous_draw_offer: None,
 			previous_en_passant: self.en_passant,
 			previous_king_squares: self.king_squares,
 			previous_halfway_clock: self.halfmove_clock,
