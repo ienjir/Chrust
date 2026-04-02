@@ -42,46 +42,6 @@ async fn main() {
 	println!("");
 	println!("");
 
-	game_state.game.offer_draw();
-
-	let uci_move = "e1g1";
-
-	if game_state.game.draw_offer.is_some() {
-		println!("Some");
-	} else {
-		println!("None");
-	}
-
-	let undo = match game_state.game.make_move_from_uci(uci_move) {
-		Ok(x) => x,
-		Err(x) => {
-			println!("Error");
-			return;
-		}
-	};
-
-	if undo.previous_draw_offer.is_some() {
-		println!("Undo is some")
-	}
-
-	game_state.game.position.print_board();
-
-	match game_state.game.undo_last_move() {
-		Ok(_x) => println!("Good"),
-		Err(_x) => println!("undo error"),
-	}
-
-	if game_state.game.draw_offer.is_some() {
-		println!("Some");
-	} else {
-		println!("None");
-	}
-
-	match game_state.game.accept_draw() {
-		Ok(_x) => println!("Accepted"),
-		Err(_x) => println!("draw Error"),
-	};
-
 	if 1 == 1 {
 		return;
 	}

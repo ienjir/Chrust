@@ -36,7 +36,7 @@ pub enum MoveKind {
 }
 
 impl Game {
-	pub fn make_move_from_uci(&mut self, uci_move: &str) -> Result<Undo, ChessError> {
+	pub fn make_move_from_uci(&mut self, uci_move: &str) -> Result<(), ChessError> {
 		let from_square = convert_square_string_to_square(&uci_move[..2])?;
 
 		let to_square = convert_square_string_to_square(&uci_move[2..4])?;
@@ -112,7 +112,7 @@ impl Game {
 
 		let undo = self.make_move(&mv)?;
 
-		Ok(undo)
+		Ok(())
 	}
 
 	pub fn make_move(&mut self, mv: &Move) -> Result<Undo, ChessError> {
