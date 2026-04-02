@@ -1,5 +1,6 @@
 use core::fmt;
 
+pub mod converter;
 pub mod errors;
 pub mod game_status;
 pub mod helper;
