@@ -183,8 +183,10 @@ The chess piece assets were not created by me. They were created by Uray M. Ján
 </table>
 
 ## Next steps
-- Make it that undo is automatically added to game history and not returned
 - Add game history converter
+    - UCI
+    - San
+    - PGN
 - Add perft
 
 ## Small errors 

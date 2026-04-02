@@ -110,12 +110,12 @@ impl Game {
 			}
 		}
 
-		let undo = self.make_move(&mv)?;
+		self.make_move(&mv)?;
 
 		Ok(())
 	}
 
-	pub fn make_move(&mut self, mv: &Move) -> Result<Undo, ChessError> {
+	pub fn make_move(&mut self, mv: &Move) -> Result<(), ChessError> {
 		if !self.is_legal_game_state() {
 			return Err(ChessError::GameIsFinished);
 		}
@@ -141,7 +141,7 @@ impl Game {
 
 		self.update_game_status()?;
 
-		Ok(undo)
+		Ok(())
 	}
 
 	pub fn undo_last_move(&mut self) -> Result<(), ChessError> {
