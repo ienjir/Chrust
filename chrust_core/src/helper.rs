@@ -2,7 +2,7 @@ use std::u8;
 
 use crate::{
 	ColoredPiece, Piece, Side, Square,
-	errors::{ChessError, FenError},
+	errors::{ChessError},
 	game_status::GameStatus,
 	position::{Game, Position},
 };
@@ -21,39 +21,6 @@ pub fn square(file: u8, rank: u8) -> Square {
 
 pub fn file_rank(square: Square) -> (u8, u8) {
 	(file(square), rank(square))
-}
-
-pub fn letter_to_piece(piece_char: char) -> Result<Piece, FenError> {
-	let piece_type = match piece_char.to_ascii_lowercase() {
-		'k' => Piece::King,
-		'p' => Piece::Pawn,
-		'n' => Piece::Knight,
-		'b' => Piece::Bishop,
-		'r' => Piece::Rook,
-		'q' => Piece::Queen,
-		_ => return Err(FenError::InvalidPieceChar(piece_char)),
-	};
-
-	Ok(piece_type)
-}
-
-impl ColoredPiece {
-	pub fn to_char(&self) -> char {
-		let mut piece_char = match self.piece {
-			Piece::Pawn => 'p',
-			Piece::Knight => 'n',
-			Piece::Bishop => 'b',
-			Piece::Rook => 'r',
-			Piece::Queen => 'q',
-			Piece::King => 'k',
-		};
-
-		if self.side == Side::White {
-			piece_char = piece_char.to_ascii_uppercase();
-		}
-
-		piece_char
-	}
 }
 
 impl Game {

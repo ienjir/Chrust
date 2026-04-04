@@ -12,8 +12,6 @@ use crate::{
 	layout::TEST_FEN_STRING,
 	renderer::{handle_ui_state, render_chess_pieces, render_chessboard_without_pieces, render_possible_moves},
 };
-use chrust_core::errors::ChessError;
-use chrust_core::game_status;
 use chrust_core::position::Game;
 use macroquad::file::set_pc_assets_folder;
 use macroquad::prelude::*;

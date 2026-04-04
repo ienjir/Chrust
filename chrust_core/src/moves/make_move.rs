@@ -2,9 +2,8 @@ use crate::{
 	ColoredPiece, Piece, Side, Square,
 	errors::ChessError,
 	game_status::GameStatus,
-	helper::{is_square_on_board, is_valid_promomotion_piece, letter_to_piece},
-	moves::move_gen::king::get_file_and_rank_difference,
-	position::{Game, Position, Undo, convert_square_string_to_square},
+	helper::{is_square_on_board, is_valid_promomotion_piece},
+	position::{Game, Position, Undo},
 	zobrist::{ZobristTable, piece_index, zobrist},
 };
 

@@ -1,78 +1,79 @@
 use super::*;
+use crate::converter::convert_square_to_string;
 use crate::errors::{ChessError, FenError};
 use crate::game_status::GameStatus;
 use crate::{ColoredPiece, Piece, Side};
 
-// ── convert_square_string_to_square ──────────────────────────────────────────
+// ── convert_string_to_square ──────────────────────────────────────────
 
 #[test]
 fn square_string_a1_is_square_0() {
-	assert_eq!(convert_square_string_to_square("a1").unwrap(), 0);
+	assert_eq!(convert_string_to_square("a1").unwrap(), 0);
 }
 
 #[test]
 fn square_string_h1_is_square_7() {
-	assert_eq!(convert_square_string_to_square("h1").unwrap(), 7);
+	assert_eq!(convert_string_to_square("h1").unwrap(), 7);
 }
 
 #[test]
 fn square_string_a8_is_square_56() {
-	assert_eq!(convert_square_string_to_square("a8").unwrap(), 56);
+	assert_eq!(convert_string_to_square("a8").unwrap(), 56);
 }
 
 #[test]
 fn square_string_h8_is_square_63() {
-	assert_eq!(convert_square_string_to_square("h8").unwrap(), 63);
+	assert_eq!(convert_string_to_square("h8").unwrap(), 63);
 }
 
 #[test]
 fn square_string_e4_is_square_28() {
 	// e4 = file 4 (e=4), rank 3 (4-1) → 3*8+4 = 28
-	assert_eq!(convert_square_string_to_square("e4").unwrap(), 28);
+	assert_eq!(convert_string_to_square("e4").unwrap(), 28);
 }
 
 #[test]
 fn square_string_accepts_uppercase() {
 	// The function lowercases the input.
-	assert_eq!(convert_square_string_to_square("E4").unwrap(), 28);
-	assert_eq!(convert_square_string_to_square("H8").unwrap(), 63);
+	assert_eq!(convert_string_to_square("E4").unwrap(), 28);
+	assert_eq!(convert_string_to_square("H8").unwrap(), 63);
 }
 
 #[test]
 fn square_string_too_short_returns_error() {
-	assert!(matches!(convert_square_string_to_square("a"), Err(FenError::SquareLenghtIsnt2Wide(1))));
+	assert!(matches!(convert_string_to_square("a"), Err(FenError::SquareLenghtIsnt2Wide(1))));
 }
 
 #[test]
 fn square_string_too_long_returns_error() {
-	assert!(matches!(convert_square_string_to_square("a12"), Err(FenError::SquareLenghtIsnt2Wide(3))));
+	assert!(matches!(convert_string_to_square("a12"), Err(FenError::SquareLenghtIsnt2Wide(3))));
 }
 
 #[test]
 fn square_string_empty_returns_error() {
-	assert!(matches!(convert_square_string_to_square(""), Err(FenError::SquareLenghtIsnt2Wide(0))));
+	assert!(matches!(convert_string_to_square(""), Err(FenError::SquareLenghtIsnt2Wide(0))));
 }
 
 #[test]
 fn square_string_invalid_file_returns_error() {
-	assert!(matches!(convert_square_string_to_square("i4"), Err(FenError::InvalidFile('i'))));
-	assert!(matches!(convert_square_string_to_square("z1"), Err(FenError::InvalidFile('z'))));
+	assert!(matches!(convert_string_to_square("i4"), Err(FenError::InvalidFile('i'))));
+	assert!(matches!(convert_string_to_square("z1"), Err(FenError::InvalidFile('z'))));
 }
 
 #[test]
 fn square_string_rank_zero_returns_error() {
 	// Rank 0 is not a valid chess rank (1-8 only).
-	assert!(matches!(convert_square_string_to_square("a0"), Err(FenError::InvalidRank('0'))));
+	assert!(matches!(convert_string_to_square("a0"), Err(FenError::InvalidRank('0'))));
 }
 
 #[test]
 fn square_string_rank_nine_returns_error() {
-	assert!(matches!(convert_square_string_to_square("a9"), Err(FenError::InvalidRank('9'))));
+	assert!(matches!(convert_string_to_square("a9"), Err(FenError::InvalidRank('9'))));
 }
 
 #[test]
 fn square_string_non_digit_rank_returns_error() {
-	assert!(matches!(convert_square_string_to_square("ax"), Err(FenError::InvalidRank('x'))));
+	assert!(matches!(convert_string_to_square("ax"), Err(FenError::InvalidRank('x'))));
 }
 
 // ── load_position_from_fen — error paths ─────────────────────────────────────
@@ -476,51 +477,51 @@ fn try_from_fen_status_draw_by_insufficient_material() {
 	assert!(matches!(game.game_status, GameStatus::DrawByInsufficientMaterial));
 }
 
-// ── convert_square_to_square_string ──────────────────────────────────────────
+// ── convert_square_to_string ──────────────────────────────────────────
 
 #[test]
 fn square_to_string_a1_is_sq0() {
-	assert_eq!(convert_square_to_square_string(0), "a1");
+	assert_eq!(convert_square_to_string(0), "a1");
 }
 
 #[test]
 fn square_to_string_h1_is_sq7() {
-	assert_eq!(convert_square_to_square_string(7), "h1");
+	assert_eq!(convert_square_to_string(7), "h1");
 }
 
 #[test]
 fn square_to_string_a8_is_sq56() {
-	assert_eq!(convert_square_to_square_string(56), "a8");
+	assert_eq!(convert_square_to_string(56), "a8");
 }
 
 #[test]
 fn square_to_string_h8_is_sq63() {
-	assert_eq!(convert_square_to_square_string(63), "h8");
+	assert_eq!(convert_square_to_string(63), "h8");
 }
 
 #[test]
 fn square_to_string_e4_is_sq28() {
 	// e4: file=4 ('e'), rank=3 ('4') → sq 28
-	assert_eq!(convert_square_to_square_string(28), "e4");
+	assert_eq!(convert_square_to_string(28), "e4");
 }
 
 #[test]
 fn square_to_string_d6_is_sq43() {
 	// d6: file=3 ('d'), rank=5 ('6') → sq 43
-	assert_eq!(convert_square_to_square_string(43), "d6");
+	assert_eq!(convert_square_to_string(43), "d6");
 }
 
 #[test]
 fn square_to_string_e3_is_sq20() {
 	// e3: file=4 ('e'), rank=2 ('3') → sq 20
-	assert_eq!(convert_square_to_square_string(20), "e3");
+	assert_eq!(convert_square_to_string(20), "e3");
 }
 
 #[test]
 fn square_to_string_roundtrips_with_square_string_to_square() {
 	for sq in 0u8..64 {
-		let s = convert_square_to_square_string(sq);
-		assert_eq!(convert_square_string_to_square(&s).unwrap(), sq, "roundtrip failed for square {sq}");
+		let s = convert_square_to_string(sq);
+		assert_eq!(convert_string_to_square(&s).unwrap(), sq, "roundtrip failed for square {sq}");
 	}
 }
 

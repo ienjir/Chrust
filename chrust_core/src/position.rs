@@ -1,9 +1,5 @@
 use crate::{
-	ColoredPiece, Piece, Side, Square,
-	errors::{ChessError, FenError},
-	game_status::GameStatus,
-	helper::{letter_to_piece, square},
-	moves::make_move::Move,
+	ColoredPiece, Piece, Side, Square, converter::{convert_square_to_string, convert_string_to_square, letter_to_piece}, errors::{ChessError, FenError}, game_status::GameStatus, helper::square, moves::make_move::Move
 };
 
 pub struct Game {
@@ -157,7 +153,7 @@ impl Position {
 
 		fen_string.push(' ');
 		match self.en_passant {
-			Some(sq) => fen_string.push_str(&convert_square_to_square_string(sq)),
+			Some(sq) => fen_string.push_str(&convert_square_to_string(sq)),
 			None => fen_string.push('-'),
 		}
 
@@ -187,7 +183,7 @@ fn load_en_passant(position: &mut Position, en_passant_string: &str) -> Result<(
 		return Ok(());
 	}
 
-	match convert_square_string_to_square(en_passant_string) {
+	match convert_string_to_square(en_passant_string) {
 		Ok(x) => position.en_passant = Some(x),
 		Err(x) => return Err(x),
 	}
@@ -247,35 +243,6 @@ fn load_clock(clock_string: &str) -> Result<u32, FenError> {
 		Ok(x) => return Ok(x),
 		Err(_) => return Err(FenError::InvalidNumber(new_clock_string.to_string())),
 	};
-}
-
-pub fn convert_square_to_square_string(square: u8) -> String {
-	let file = (b'a' + (square % 8)) as char;
-	let rank = (b'1' + (square / 8)) as char;
-	format!("{}{}", file, rank)
-}
-
-pub fn convert_square_string_to_square(square_string: &str) -> Result<Square, FenError> {
-	if square_string.len() != 2 {
-		return Err(FenError::SquareLenghtIsnt2Wide(square_string.len()));
-	}
-
-	let chars: Vec<char> = square_string.to_lowercase().chars().collect();
-
-	let file = (chars[0] as u8).wrapping_sub(b'a');
-	if file > 7 {
-		return Err(FenError::InvalidFile(chars[0]));
-	}
-
-	let rank = chars[1].to_digit(10).map(|d| d as u8).and_then(|d| d.checked_sub(1)).filter(|&d| d < 8).ok_or(FenError::InvalidRank(chars[1]))?;
-
-	let square_index = rank * 8 + file;
-
-	if square_index > 63 {
-		return Err(FenError::OutOfBounds(square_index));
-	}
-
-	Ok(square_index)
 }
 
 #[cfg(test)]

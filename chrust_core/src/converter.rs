@@ -1,10 +1,53 @@
-use crate::{Piece, Side, Square, errors::ChessError, helper::letter_to_piece, moves::{make_move::{Move, MoveKind}, move_gen::king::get_file_and_rank_difference}, position::{Game, convert_square_string_to_square}};
+use crate::{ColoredPiece, Piece, Side, Square, errors::{ChessError, FenError}, moves::{make_move::{Move, MoveKind}, move_gen::king::get_file_and_rank_difference}, position::Game};
+
+pub fn convert_square_to_string(square: u8) -> String {
+	let file = (b'a' + (square % 8)) as char;
+	let rank = (b'1' + (square / 8)) as char;
+	format!("{}{}", file, rank)
+}
+
+pub fn convert_string_to_square(square_string: &str) -> Result<Square, FenError> {
+	if square_string.len() != 2 {
+		return Err(FenError::SquareLenghtIsnt2Wide(square_string.len()));
+	}
+
+	let chars: Vec<char> = square_string.to_lowercase().chars().collect();
+
+	let file = (chars[0] as u8).wrapping_sub(b'a');
+	if file > 7 {
+		return Err(FenError::InvalidFile(chars[0]));
+	}
+
+	let rank = chars[1].to_digit(10).map(|d| d as u8).and_then(|d| d.checked_sub(1)).filter(|&d| d < 8).ok_or(FenError::InvalidRank(chars[1]))?;
+
+	let square_index = rank * 8 + file;
+
+	if square_index > 63 {
+		return Err(FenError::OutOfBounds(square_index));
+	}
+
+	Ok(square_index)
+}
+
+pub fn letter_to_piece(piece_char: char) -> Result<Piece, FenError> {
+	let piece_type = match piece_char.to_ascii_lowercase() {
+		'k' => Piece::King,
+		'p' => Piece::Pawn,
+		'n' => Piece::Knight,
+		'b' => Piece::Bishop,
+		'r' => Piece::Rook,
+		'q' => Piece::Queen,
+		_ => return Err(FenError::InvalidPieceChar(piece_char)),
+	};
+
+	Ok(piece_type)
+}
 
 impl Game {
 	pub fn convert_uci_to_move(&self, uci_string: &str) -> Result<Move, ChessError> {
-		let from_square = convert_square_string_to_square(&uci_string[..2])?;
+		let from_square = convert_string_to_square(&uci_string[..2])?;
 
-		let to_square = convert_square_string_to_square(&uci_string[2..4])?;
+		let to_square = convert_string_to_square(&uci_string[2..4])?;
 
 		let colored_piece = self.position.board[from_square as usize].ok_or(ChessError::NoPieceOnSquare { square: from_square })?;
 
@@ -79,4 +122,23 @@ impl Game {
 
 	}
 
+}
+
+impl ColoredPiece {
+	pub fn to_char(&self) -> char {
+		let mut piece_char = match self.piece {
+			Piece::Pawn => 'p',
+			Piece::Knight => 'n',
+			Piece::Bishop => 'b',
+			Piece::Rook => 'r',
+			Piece::Queen => 'q',
+			Piece::King => 'k',
+		};
+
+		if self.side == Side::White {
+			piece_char = piece_char.to_ascii_uppercase();
+		}
+
+		piece_char
+	}
 }
