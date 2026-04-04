@@ -1,6 +1,12 @@
 # Chrust
 ## Chrust is a simple 2 player chess game and later (hopefully) a chess engine
 
+## Next steps
+- Add dragging
+- Display side to move
+- Captured pieces
+- Check indicator
+
 ## Information
 ### Assets
 The chess piece assets were not created by me. They were created by Uray M. János and are published on <a href="https://greenchess.net/info.php?item=downloads">greenchess.net</a>. The author retains the copyright. The images are licensed under the Creative Commons Attribution-ShareAlike 3.0 (CC BY-SA 3.0) license.
@@ -181,13 +187,6 @@ The chess piece assets were not created by me. They were created by Uray M. Ján
 <td style="border:1px solid black;width:40px;height:40px;">-21</td>
 </tr>
 </table>
-
-## Next steps
-- Add game history converter
-    - UCI
-    - San
-    - PGN
-- Add perft
 
 ## Small errors 
 - Slider.rs: Find a way to not return a queen when a faulty piece is provided

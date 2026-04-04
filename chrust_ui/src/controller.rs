@@ -1,6 +1,7 @@
 use chrust_core::{Piece, Square, moves::make_move::MoveKind};
+use macroquad::ui::Layout;
 
-use crate::state::{GameState, UiState};
+use crate::state::{GameState, Overlay};
 
 pub enum UiEvent {
 	ClickSquare(Square),
@@ -31,7 +32,7 @@ pub fn click_promotion(game_state: &mut GameState, piece: Piece) {
 	let state = game_state.ui_state.take();
 
 	let mut mv = match state {
-		Some(UiState::PROMOTION { pending_move, .. }) => pending_move,
+		Some(Overlay::Promotion { pending_move, .. }) => pending_move,
 		_ => {
 			println!("Gamestate is not promotion");
 			return;
@@ -42,21 +43,21 @@ pub fn click_promotion(game_state: &mut GameState, piece: Piece) {
 
 	match game_state.game.make_move(&mv) {
 		Ok(_undo) => {
-			game_state.possible_moves.clear();
+			game_state.legal_moves.clear();
 			game_state.selected = None;
 			return;
 		}
 		Err(_e) => {
 			println!("Error occured, please implement error handling");
 			game_state.selected = None;
-			game_state.possible_moves.clear();
+			game_state.legal_moves.clear();
 			return;
 		}
 	};
 }
 
 pub fn click_square(game_state: &mut GameState, from_square: Square) {
-	if matches!(game_state.ui_state, Some(UiState::PROMOTION { .. })) {
+	if matches!(game_state.ui_state, Some(Overlay::Promotion { .. })) {
 		return;
 	}
 
@@ -64,26 +65,26 @@ pub fn click_square(game_state: &mut GameState, from_square: Square) {
 		let square_occupant = match game_state.game.position.board[from_square as usize] {
 			Some(p) => p,
 			None => {
-				game_state.possible_moves.clear();
+				game_state.legal_moves.clear();
 				return;
 			}
 		};
 
 		if square_occupant.side != game_state.game.position.side_to_move {
-			game_state.possible_moves.clear();
+			game_state.legal_moves.clear();
 			return;
 		}
 
 		match game_state.game.position.get_legal_moves(from_square, game_state.game.position.side_to_move) {
 			Ok(moves) => {
 				game_state.selected = Some(from_square);
-				game_state.possible_moves = moves;
+				game_state.legal_moves = moves;
 				return;
 			}
 			Err(_x) => {
 				println!("Error occured, please implement error handling");
 				game_state.selected = None;
-				game_state.possible_moves.clear();
+				game_state.legal_moves.clear();
 				return;
 			}
 		}
@@ -94,30 +95,30 @@ pub fn click_square(game_state: &mut GameState, from_square: Square) {
 		let clicked_occupant = game_state.game.position.board[from_square as usize];
 
 		if from_square == selected_square {
-			game_state.possible_moves.clear();
+			game_state.legal_moves.clear();
 			game_state.selected = None;
 			return;
 		}
 
 		// Make move
-		if let Some(chosen_move) = game_state.possible_moves.iter().find(|m| m.to_square == from_square) {
+		if let Some(chosen_move) = game_state.legal_moves.iter().find(|m| m.to_square == from_square) {
 			if matches!(chosen_move.move_kind, MoveKind::Promotion { .. }) {
-				game_state.ui_state = Some(UiState::PROMOTION { pending_move: chosen_move.clone() });
+				game_state.ui_state = Some(Overlay::Promotion { pending_move: chosen_move.clone() });
 				game_state.selected = None;
-				game_state.possible_moves.clear();
+				game_state.legal_moves.clear();
 				return;
 			}
 
 			match game_state.game.make_move(&chosen_move) {
 				Ok(_undo) => {
-					game_state.possible_moves.clear();
+					game_state.legal_moves.clear();
 					game_state.selected = None;
 					return;
 				}
 				Err(e) => {
 					println!("Error occured, please implement error handling");
 					game_state.selected = None;
-					game_state.possible_moves.clear();
+					game_state.legal_moves.clear();
 					return;
 				}
 			}
@@ -128,20 +129,20 @@ pub fn click_square(game_state: &mut GameState, from_square: Square) {
 				match game_state.game.position.get_legal_moves(from_square, game_state.game.position.side_to_move) {
 					Ok(moves) => {
 						game_state.selected = Some(from_square);
-						game_state.possible_moves = moves;
+						game_state.legal_moves = moves;
 						return;
 					}
 					Err(x) => {
 						println!("Error occured, please implement error handling");
 						game_state.selected = None;
-						game_state.possible_moves.clear();
+						game_state.legal_moves.clear();
 						return;
 					}
 				}
 			}
 		}
 
-		game_state.possible_moves.clear();
+		game_state.legal_moves.clear();
 		game_state.selected = None;
 	}
 }

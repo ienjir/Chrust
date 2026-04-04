@@ -31,18 +31,9 @@ async fn main() {
 		},
 		assets: assets,
 		selected: None,
-		possible_moves: Vec::new(),
+		legal_moves: Vec::new(),
 		ui_state: None,
 	};
-
-	game_state.game.position.print_board();
-	println!("");
-	println!("");
-	println!("");
-
-	if 1 == 1 {
-		return;
-	}
 
 	loop {
 		clear_background(LIGHTGRAY);

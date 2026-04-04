@@ -3,7 +3,7 @@ use std::usize;
 use crate::{
 	controller::UiEvent,
 	layout::{CELL_SIZE, GRID_ORIGIN_X, GRID_ORIGIN_Y, PROMOTION_LEFT_CELLS, PROMOTION_PIECES, PROMOTION_TOP_CELLS, RESET_BUTTON},
-	state::{GameState, InputState, UiState},
+	state::{GameState, InputState, Overlay},
 };
 use chrust_core::{Piece, Square, helper::square};
 use macroquad::{math::i32, prelude::Rect};
@@ -21,7 +21,7 @@ pub fn route_click(input: &InputState, game_state: &GameState) -> Option<UiEvent
 		return Some(UiEvent::ClickResetButton);
 	}
 
-	if matches!(game_state.ui_state, Some(UiState::PROMOTION { .. })) {
+	if matches!(game_state.ui_state, Some(Overlay::Promotion { .. })) {
 		let promotion_ui = Rect::new(GRID_ORIGIN_X + (CELL_SIZE * PROMOTION_LEFT_CELLS), GRID_ORIGIN_Y + (CELL_SIZE * PROMOTION_TOP_CELLS), CELL_SIZE * 4.0, CELL_SIZE);
 		if mouse_over_rect(input, promotion_ui) {
 			let piece = get_promotion_square(input);

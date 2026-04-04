@@ -1,6 +1,6 @@
 use crate::{
 	layout::{CELL_SIZE, GRID_ORIGIN_X, GRID_ORIGIN_Y, PROMOTION_LEFT_CELLS, PROMOTION_PIECES, PROMOTION_TOP_CELLS},
-	state::{GameState, UiState},
+	state::{GameState, Overlay},
 };
 use chrust_core::{Square, helper::file_rank};
 use core::f32;
@@ -15,7 +15,7 @@ use macroquad::{
 pub fn handle_ui_state(game_state: &GameState) {
 	if let Some(uistate) = &game_state.ui_state {
 		match uistate {
-			UiState::PROMOTION { pending_move: _ } => render_promotion_modal(&game_state),
+			Overlay::Promotion { pending_move: _ } => render_promotion_modal(&game_state),
 		}
 	}
 }
@@ -84,7 +84,7 @@ pub async fn render_chess_pieces(game_state: &GameState) {
 }
 
 pub fn render_possible_moves(game_state: &GameState) {
-	for mv in game_state.possible_moves.iter() {
+	for mv in game_state.legal_moves.iter() {
 		let rect = get_square_rectangle(mv.to_square);
 		let rect_center = rect.center();
 

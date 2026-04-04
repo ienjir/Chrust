@@ -5,8 +5,8 @@ pub struct GameState {
 	pub game: Game,
 	pub assets: Assets,
 	pub selected: Option<Square>,
-	pub possible_moves: Vec<Move>,
-	pub ui_state: Option<UiState>,
+	pub legal_moves: Vec<Move>,
+	pub ui_state: Option<Overlay>,
 }
 
 pub struct InputState {
@@ -15,8 +15,8 @@ pub struct InputState {
 	pub left_mouse_clicked: bool,
 }
 
-pub enum UiState {
-	PROMOTION {
+pub enum Overlay {
+	Promotion {
 		pending_move: Move,
 	},
 }
