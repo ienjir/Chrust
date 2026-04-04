@@ -2,7 +2,7 @@ use std::u8;
 
 use crate::{
 	ColoredPiece, Piece, Side, Square,
-	errors::{ChessError},
+	errors::ChessError,
 	game_status::GameStatus,
 	position::{Game, Position},
 };

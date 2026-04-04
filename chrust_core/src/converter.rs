@@ -1,5 +1,14 @@
-use crate::{ColoredPiece, Piece, Side, Square, errors::{ChessError, FenError}, moves::{make_move::{Move, MoveKind}, move_gen::king::get_file_and_rank_difference}, position::Game};
+use crate::{
+	ColoredPiece, Piece, Side, Square,
+	errors::{ChessError, FenError},
+	moves::{
+		make_move::{Move, MoveKind},
+		move_gen::king::get_file_and_rank_difference,
+	},
+	position::Game,
+};
 
+/// Deprecated - Do not use
 pub fn convert_square_to_string(square: u8) -> String {
 	let file = (b'a' + (square % 8)) as char;
 	let rank = (b'1' + (square / 8)) as char;
@@ -41,6 +50,33 @@ pub fn letter_to_piece(piece_char: char) -> Result<Piece, FenError> {
 	};
 
 	Ok(piece_type)
+}
+
+impl Piece {
+	pub fn to_char(&self) -> char {
+		let piece_char = match self {
+			Piece::Pawn => 'p',
+			Piece::Knight => 'n',
+			Piece::Bishop => 'b',
+			Piece::Rook => 'r',
+			Piece::Queen => 'q',
+			Piece::King => 'k',
+		};
+
+		piece_char
+	}
+}
+
+impl Move {
+	pub fn to_uci(&self) {
+		let mut uci_string = String::new();
+
+		uci_string.push_str(&convert_square_to_string(self.to_square));
+
+		if let MoveKind::Promotion { promotion_piece } = self.move_kind {
+			uci_string.push(promotion_piece.to_char());
+		}
+	}
 }
 
 impl Game {
@@ -119,21 +155,12 @@ impl Game {
 		}
 
 		Ok(mv)
-
 	}
-
 }
 
 impl ColoredPiece {
 	pub fn to_char(&self) -> char {
-		let mut piece_char = match self.piece {
-			Piece::Pawn => 'p',
-			Piece::Knight => 'n',
-			Piece::Bishop => 'b',
-			Piece::Rook => 'r',
-			Piece::Queen => 'q',
-			Piece::King => 'k',
-		};
+		let mut piece_char = self.piece.to_char();
 
 		if self.side == Side::White {
 			piece_char = piece_char.to_ascii_uppercase();
@@ -142,3 +169,6 @@ impl ColoredPiece {
 		piece_char
 	}
 }
+
+#[cfg(test)]
+mod tests;

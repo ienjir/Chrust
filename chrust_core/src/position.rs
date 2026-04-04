@@ -1,5 +1,10 @@
 use crate::{
-	ColoredPiece, Piece, Side, Square, converter::{convert_square_to_string, convert_string_to_square, letter_to_piece}, errors::{ChessError, FenError}, game_status::GameStatus, helper::square, moves::make_move::Move
+	ColoredPiece, Piece, Side, Square,
+	converter::{convert_square_to_string, convert_string_to_square, letter_to_piece},
+	errors::{ChessError, FenError},
+	game_status::GameStatus,
+	helper::square,
+	moves::make_move::Move,
 };
 
 pub struct Game {
