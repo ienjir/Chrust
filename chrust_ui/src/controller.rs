@@ -1,7 +1,5 @@
-use chrust_core::{Piece, Square, moves::make_move::MoveKind};
-use macroquad::ui::Layout;
-
 use crate::state::{GameState, Overlay};
+use chrust_core::{Piece, Square, moves::make_move::MoveKind};
 
 pub enum UiEvent {
 	ClickSquare(Square),

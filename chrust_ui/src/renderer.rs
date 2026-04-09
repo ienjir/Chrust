@@ -4,6 +4,7 @@ use crate::{
 };
 use chrust_core::{Square, helper::file_rank};
 use core::f32;
+use egui::Context;
 use macroquad::{
 	color::{Color, GREEN, WHITE},
 	math::{Rect, Vec2},
@@ -11,6 +12,8 @@ use macroquad::{
 	texture::{DrawTextureParams, draw_texture_ex},
 	window::{screen_height, screen_width},
 };
+
+pub(crate) fn render_board(egui_ctx: &Context) {}
 
 pub fn handle_ui_state(game_state: &GameState) {
 	if let Some(uistate) = &game_state.ui_state {
