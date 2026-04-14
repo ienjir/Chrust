@@ -1,7 +1,7 @@
-use crate::{helper::position_to_square, layout::{BOARD_BLACK_COLOR, BOARD_HIGHLIGHTED_COLOR, BOARD_WHITE_COLOR}, state::GameState};
+use crate::{state::{GameState}};
 use chrust_core::{helper::{square}};
 use core::f32;
-use egui::{Context, Pos2, Rect};
+use egui::{Color32, Context, Pos2, Rect};
 
 pub(crate) fn render_board(egui_ctx: &Context, game_state: &mut GameState) {
 	egui::CentralPanel::default().show(egui_ctx, |ui| {
@@ -13,8 +13,11 @@ pub(crate) fn render_board(egui_ctx: &Context, game_state: &mut GameState) {
 
 		if response.clicked() {
 			let mouse_position = response.interact_pointer_pos().expect("Hello");
-			
-			let (file, rank) = position_to_square(mouse_position, board, square_side);
+			let y = mouse_position.y - board.min.y;
+			let x = mouse_position.x - board.min.x;
+
+			let rank = (8.0 - y / square_side).floor();
+			let file = (x / square_side).floor();
 
 			game_state.selected = Some(square(file as u8, rank as u8));
 		}
@@ -23,16 +26,16 @@ pub(crate) fn render_board(egui_ctx: &Context, game_state: &mut GameState) {
 			for file in 0..8 {
 				let square_idk = square(file, rank);
 
-				let absolute_x = file as f32 * square_side + board.min.x; 
-				let absolute_y = (7 - rank) as f32 * square_side + board.min.y; 
+				let absolute_x = file as f32 * square_side + rect.min.x; 
+				let absolute_y = (7 - rank) as f32 * square_side + rect.min.y; 
 
-				let mut color = BOARD_BLACK_COLOR;
+				let mut color = Color32::from_rgb(250, 150, 250);
 				if (rank + file) % 2 == 1 {
-					color = BOARD_WHITE_COLOR;
+					color = Color32::from_rgb(77, 77, 70);
 				};
 
 				if Some(square_idk) == game_state.selected {
-					color = BOARD_HIGHLIGHTED_COLOR;
+					color = Color32::from_rgb(140, 90, 210)
 				}
 
 				let square_rect = Rect {

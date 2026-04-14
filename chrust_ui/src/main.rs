@@ -3,15 +3,15 @@ mod controller;
 mod input;
 mod layout;
 mod renderer;
+mod helper;
 mod state;
-use std::usize;
 
+use crate::renderer::render_board;
 use crate::state::{GameState, InputState};
 use crate::{assets::load_assets, controller::apply_ui_event, input::route_click, layout::TEST_FEN_STRING};
-use chrust_core::helper::square;
 use chrust_core::position::Game;
-use egui::{Color32, Pos2, Rect};
 use macroquad::file::set_pc_assets_folder;
+use macroquad::prelude::coroutines::wait_seconds;
 use macroquad::prelude::*;
 
 #[macroquad::main("Chrust")]
@@ -51,60 +51,13 @@ async fn main() {
 			egui::SidePanel::right("sidebar").show(egui_ctx, |ui| {
 				ui.label("Overview!");
 			});
+			render_board(egui_ctx, &mut game_state);
 
-			egui::CentralPanel::default().show(egui_ctx, |ui| {
-				let rect = ui.available_rect_before_wrap();
-				let board_size = rect.width().min(rect.height());
-				let square_side = board_size / 8f32;
-
-				let response = ui.allocate_rect(rect, egui::Sense::click());
-
-				if response.clicked() {
-					let mouse_position = response.interact_pointer_pos().expect("Hello");
-					let y = mouse_position.y - rect.min.y;
-					let x = mouse_position.x - rect.min.x;
-
-					let rank = (y / square_side).floor();
-					let file = (x / square_side).floor();
-
-					println!("Clicked Square: {}", square(file as u8, rank as u8));
-					game_state.selected = Some(square(file as u8, rank as u8));
-				}
-
-				for rank in (0..8).rev() {
-					for file in 0..8 {
-						let square_idk = square(file, rank);
-						let x = file as f32 * square_side + rect.min.y;
-						let y = rank as f32 * square_side + rect.min.x;
-
-						let mut color = Color32::from_rgb(250, 150, 250);
-						if (rank + file) % 2 == 1 {
-							color = Color32::from_rgb(77, 77, 70);
-						};
-
-						if Some(square_idk) == game_state.selected {
-							color = Color32::from_rgb(140, 90, 210)
-						}
-
-						let square_rect = Rect {
-							min: Pos2 { x, y },
-							max: Pos2 {
-								x: (x + square_side as f32),
-								y: (y + square_side as f32),
-							},
-						};
-
-						let _idk = ui.painter().rect_filled(square_rect, 0, color);
-
-						let Some(piece) = game_state.game.position.board[square_idk as usize] else {
-							continue;
-						};
-					}
-				}
-			});
 		});
 
 		egui_macroquad::draw();
+
+		wait_seconds(5f32);
 
 		next_frame().await;
 	}
