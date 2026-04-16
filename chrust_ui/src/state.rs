@@ -3,7 +3,7 @@ use chrust_core::{Square, moves::make_move::Move, position::Game};
 
 pub struct GameState {
 	pub game: Game,
-	pub assets: Assets,
+	pub assets: Option<Assets>,
 	pub selected: Option<Square>,
 	pub legal_moves: Vec<Move>,
 	pub ui_state: Option<Overlay>,

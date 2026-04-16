@@ -1,6 +1,7 @@
 use crate::{helper::position_to_square, layout::{BOARD_BLACK_COLOR, BOARD_HIGHLIGHTED_COLOR, BOARD_WHITE_COLOR}, state::GameState};
 use chrust_core::{helper::{square}};
 use core::f32;
+use std::usize;
 use egui::{Context, Pos2, Rect};
 
 pub(crate) fn render_board(egui_ctx: &Context, game_state: &mut GameState) {
@@ -21,7 +22,7 @@ pub(crate) fn render_board(egui_ctx: &Context, game_state: &mut GameState) {
 
 		for rank in (0..8).rev() {
 			for file in 0..8 {
-				let square_idk = square(file, rank);
+				let square = square(file, rank);
 
 				let absolute_x = file as f32 * square_side + board.min.x; 
 				let absolute_y = (7 - rank) as f32 * square_side + board.min.y; 
@@ -31,7 +32,7 @@ pub(crate) fn render_board(egui_ctx: &Context, game_state: &mut GameState) {
 					color = BOARD_WHITE_COLOR;
 				};
 
-				if Some(square_idk) == game_state.selected {
+				if Some(square) == game_state.selected {
 					color = BOARD_HIGHLIGHTED_COLOR;
 				}
 
@@ -43,7 +44,14 @@ pub(crate) fn render_board(egui_ctx: &Context, game_state: &mut GameState) {
 					},
 				};
 
-				let _idk = ui.painter().rect_filled(square_rect, 0, color);
+				let _ = ui.painter().rect_filled(square_rect, 0, color);
+
+				let piece = match game_state.game.position.board[square as usize] {
+					Some(x) => x,
+					None => continue,
+				};
+
+
 			}
 		}
 	});

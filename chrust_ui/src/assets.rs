@@ -1,34 +1,43 @@
-use chrust_core::{Piece, Side};
-use macroquad::texture::{FilterMode, Texture2D, load_texture};
-use std::collections::HashMap;
+use chrust_core::{ColoredPiece, Piece, Side};
+use egui::{ColorImage, TextureHandle, ahash::{HashMap, HashMapExt}};
 
 pub struct Assets {
-	pub pieces: HashMap<(Side, Piece), Texture2D>,
+    pub pieces: HashMap<(Side, Piece), egui::TextureHandle>,
 }
 
-pub async fn load_assets() -> Assets {
-	let mut pieces = HashMap::new();
-
-	let defs = [
-		(Side::White, Piece::King, "w_king.png"),
-		(Side::White, Piece::Queen, "w_queen.png"),
-		(Side::White, Piece::Rook, "w_rook.png"),
-		(Side::White, Piece::Bishop, "w_bishop.png"),
-		(Side::White, Piece::Knight, "w_knight.png"),
-		(Side::White, Piece::Pawn, "w_pawn.png"),
-		(Side::Black, Piece::King, "b_king.png"),
-		(Side::Black, Piece::Queen, "b_queen.png"),
-		(Side::Black, Piece::Rook, "b_rook.png"),
-		(Side::Black, Piece::Bishop, "b_bishop.png"),
-		(Side::Black, Piece::Knight, "b_knight.png"),
-		(Side::Black, Piece::Pawn, "b_pawn.png"),
+pub fn load_assets(ctx: &egui::Context) -> Assets {
+    let mut pieces = HashMap::new();
+    let defs = [
+		(Side::White, Piece::King, include_bytes!("../assets/w_king.png") as &[u8]),
+		(Side::White, Piece::Queen, include_bytes!("../assets/w_queen.png") as &[u8]),
+		(Side::White, Piece::King, include_bytes!("../assets/w_king.png") as &[u8]),
+		(Side::White, Piece::Queen, include_bytes!("../assets/w_queen.png") as &[u8]),
+		(Side::White, Piece::Rook, include_bytes!("../assets/w_rook.png") as &[u8]),
+		(Side::White, Piece::Bishop, include_bytes!("../assets/w_bishop.png") as &[u8]),
+		(Side::White, Piece::Knight, include_bytes!("../assets/w_knight.png") as &[u8]),
+		(Side::White, Piece::Pawn, include_bytes!("../assets/w_pawn.png") as &[u8]),
+		(Side::Black, Piece::King, include_bytes!("../assets/b_king.png") as &[u8]),
+		(Side::Black, Piece::Queen, include_bytes!("../assets/b_queen.png") as &[u8]),
+		(Side::Black, Piece::Rook, include_bytes!("../assets/b_rook.png") as &[u8]),
+		(Side::Black, Piece::Bishop, include_bytes!("../assets/b_bishop.png") as &[u8]),
+		(Side::Black, Piece::Knight, include_bytes!("../assets/b_knight.png") as &[u8]),
+		(Side::Black, Piece::Pawn, include_bytes!("../assets/b_pawn.png") as &[u8]),
 	];
-
-	for (side, kind, path) in defs {
-		let tex = load_texture(path).await.unwrap();
-		tex.set_filter(FilterMode::Nearest);
-		pieces.insert((side, kind), tex);
+	for (side, kind, bytes) in defs {
+		let image = image::load_from_memory(bytes).unwrap().to_rgba8();
+		let size = [image.width() as usize, image.height() as usize];
+		let pixels = image.as_flat_samples();
+		let color_image = ColorImage::from_rgba_unmultiplied(size, pixels.as_slice());
+		let handle = ctx.load_texture(
+			format!("{:?}{:?}", side, kind),
+			color_image,
+			egui::TextureOptions::NEAREST, 
+		);
+		pieces.insert((side, kind), handle);
 	}
-
 	Assets { pieces }
+}
+
+pub(crate) fn get_texture(colored_piece: ColoredPiece) -> TextureHandle {
+
 }

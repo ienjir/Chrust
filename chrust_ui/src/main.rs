@@ -6,6 +6,7 @@ mod renderer;
 mod helper;
 mod state;
 
+use crate::assets::Assets;
 use crate::renderer::render_board;
 use crate::state::{GameState, InputState};
 use crate::{assets::load_assets, controller::apply_ui_event, input::route_click, layout::TEST_FEN_STRING};
@@ -17,7 +18,6 @@ use macroquad::prelude::*;
 #[macroquad::main("Chrust")]
 async fn main() {
 	set_pc_assets_folder("chrust_ui/assets");
-	let assets = load_assets().await;
 
 	let mut game_state = GameState {
 		game: match Game::try_from_fen(TEST_FEN_STRING) {
@@ -27,12 +27,13 @@ async fn main() {
 				return;
 			}
 		},
-		assets: assets,
+		assets: None,
 		selected: None,
 		legal_moves: Vec::new(),
 		ui_state: None,
 	};
 
+	
 	loop {
 		clear_background(LIGHTGRAY);
 
@@ -48,9 +49,14 @@ async fn main() {
 		};
 
 		egui_macroquad::ui(|egui_ctx| {
+			if game_state.assets.is_none() {
+				game_state.assets = Some(load_assets(egui_ctx))
+			}
+
 			egui::SidePanel::right("sidebar").show(egui_ctx, |ui| {
 				ui.label("Overview!");
 			});
+
 			render_board(egui_ctx, &mut game_state);
 
 		});
