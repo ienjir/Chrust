@@ -166,6 +166,12 @@ impl Position {
 
 		Ok(fen_string)
 	}
+
+    pub fn castle(&self) -> &[bool; 4] { &self.castle }
+    pub fn en_passant(&self) -> Option<Square> { self.en_passant }
+    pub fn king_squares(&self) -> &[Square; 2] { &self.king_squares }
+    pub fn halfmove_clock(&self) -> u32 { self.halfmove_clock }
+    pub fn fullmove_counter(&self) -> u32 { self.fullmove_counter }
 }
 
 fn load_castling_ability(position: &mut Position, castling_rules: &str) -> Result<(), FenError> {
