@@ -3,4 +3,5 @@ resolver = "3"
 members = [
     "chrust_core",
     "chrust_ui",
+	"chrust_engine"
 ]
