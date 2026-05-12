@@ -1,5 +1,5 @@
 use crate::state::{GameState, Overlay};
-use chrust_core::{Piece, Square, moves::make_move::MoveKind};
+use chrust_core::{Piece, Square, moves::make_move::MoveKind, position::Game};
 
 pub enum UiEvent {
 	ClickSquare(Square),
@@ -10,7 +10,13 @@ pub enum UiEvent {
 pub fn apply_ui_event(game_state: &mut GameState, ui_event: UiEvent) {
 	match ui_event {
 		UiEvent::ClickResetButton => {
-			println!("Reset board (currently not implemented)");
+			let fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+			if let Ok(new_game) = Game::try_from_fen(fen) {
+				game_state.game = new_game;
+				game_state.selected = None;
+				game_state.legal_moves.clear();
+				game_state.ui_state = None;
+			}
 		}
 		UiEvent::ClickPromotionSquare(piece) => {
 			click_promotion(game_state, piece);
