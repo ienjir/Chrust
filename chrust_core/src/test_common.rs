@@ -1,6 +1,7 @@
 use crate::moves::make_move::{Move, MoveKind};
 use crate::{
 	Side, Square,
+	attack_tables::init_attack_tables,
 	game_status::GameStatus,
 	position::{Game, Position, load_position_from_fen},
 };
@@ -29,6 +30,7 @@ pub fn empty_game() -> Game {
 }
 
 pub fn empty_position() -> Position {
+	init_attack_tables();
 	Position {
 		board: [None; 64],
 		side_to_move: Side::White,
@@ -60,6 +62,7 @@ pub fn assert_hash_matches_computed(pos: &Position) {
 
 /// Create a position from FEN and compute initial hash
 pub fn position_with_hash(fen: &str) -> Position {
+	init_attack_tables();
 	let mut pos = load_position_from_fen(fen).unwrap();
 	pos.zobrist_hash = pos.compute_hash();
 	pos

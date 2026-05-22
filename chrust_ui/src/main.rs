@@ -7,7 +7,7 @@ mod renderer;
 mod state;
 
 use crate::assets::load_assets;
-use crate::controller::{apply_ui_event, UiEvent};
+use crate::controller::{UiEvent, apply_ui_event};
 use crate::renderer::render_board;
 use crate::state::GameState;
 use chrust_core::game_status::GameStatus;
@@ -25,9 +25,6 @@ async fn main() {
 		legal_moves: Vec::new(),
 		ui_state: None,
 	};
-
-	
-	
 
 	loop {
 		clear_background(DARKGRAY);

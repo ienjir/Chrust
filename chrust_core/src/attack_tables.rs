@@ -1,9 +1,12 @@
+use crate::{
+	Square,
+	helper::{file_diff, in_bounds, rank_diff},
+	moves::move_gen::king::get_file_and_rank_difference,
+};
 use std::{array, sync::OnceLock};
-use crate::{Square, helper::{file_diff, in_bounds, rank_diff}, moves::move_gen::king::get_file_and_rank_difference};
 
-static KNIGHT_TARGETS: OnceLock<[Vec<Square>; 64]> = OnceLock::new();
-static KING_TARGETS: OnceLock<[Vec<Square>; 64]> = OnceLock::new();
-
+pub(crate) static KNIGHT_TARGETS: OnceLock<[Vec<Square>; 64]> = OnceLock::new();
+pub(crate) static KING_TARGETS: OnceLock<[Vec<Square>; 64]> = OnceLock::new();
 
 pub fn init_attack_tables() {
 	KNIGHT_TARGETS.get_or_init(precompute_knight_targets);
@@ -28,7 +31,6 @@ pub(crate) fn precompute_knight_targets() -> [Vec<Square>; 64] {
 
 			moves[compute_square as usize].push(candidate_square_i as Square);
 		}
-
 	}
 
 	moves
@@ -57,4 +59,3 @@ pub(crate) fn precompute_king_targets() -> [Vec<Square>; 64] {
 
 	moves
 }
-

@@ -47,12 +47,7 @@ impl Position {
 
 			let from = mv.from_square;
 			let to = mv.to_square;
-			println!(
-				"{}{}: {}",
-				crate::converter::convert_square_to_string(from),
-				crate::converter::convert_square_to_string(to),
-				nodes
-			);
+			println!("{}{}: {}", crate::converter::convert_square_to_string(from), crate::converter::convert_square_to_string(to), nodes);
 			total += nodes;
 		}
 

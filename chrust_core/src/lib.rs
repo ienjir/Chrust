@@ -1,12 +1,12 @@
 use core::fmt;
 
+pub mod attack_tables;
 pub mod converter;
 pub mod errors;
 pub mod game_status;
 pub mod helper;
 pub mod moves;
 pub mod position;
-pub mod attack_tables;
 pub mod zobrist;
 
 #[cfg(test)]

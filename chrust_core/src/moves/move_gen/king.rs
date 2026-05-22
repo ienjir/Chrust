@@ -2,6 +2,7 @@ use std::{u8, usize};
 
 use crate::{
 	ColoredPiece, Piece, Side, Square,
+	attack_tables::KING_TARGETS,
 	errors::ChessError,
 	helper::{file, rank},
 	moves::make_move::{Move, MoveKind},
@@ -14,27 +15,13 @@ impl Position {
 
 		self.check_castling(&mut target_moves, from_square, king.side)?;
 
-		let directions: [i16; 8] = [-9, -8, -7, -1, 1, 7, 8, 9];
-
-		for direction in directions {
-			let candidate_square_u = match get_validated_candidate_square(from_square, direction) {
-				Ok(x) => x,
-				Err(_x) => continue,
-			};
-
-			let (file_difference_i, rank_difference_i) = get_file_and_rank_difference(from_square, candidate_square_u);
-
-			if !(file_difference_i <= 1 && rank_difference_i <= 1) {
-				continue;
-			}
-
-			let candidate_occupant = self.board[candidate_square_u as usize];
-			match candidate_occupant {
+		for attack_square in &KING_TARGETS.get().unwrap()[from_square as usize] {
+			match self.board[*attack_square as usize] {
 				None => {
 					target_moves.push(Move {
 						colored_piece: king,
 						from_square: from_square,
-						to_square: candidate_square_u,
+						to_square: *attack_square,
 						move_kind: MoveKind::Quiet,
 					});
 				}
@@ -43,12 +30,10 @@ impl Position {
 						target_moves.push(Move {
 							colored_piece: king,
 							from_square: from_square,
-							to_square: candidate_square_u,
+							to_square: *attack_square,
 							move_kind: MoveKind::Capture,
 						});
 					}
-
-					continue;
 				}
 			};
 		}
@@ -145,16 +130,6 @@ impl Position {
 
 		Ok(())
 	}
-}
-
-pub(crate) fn get_validated_candidate_square(from_square: Square, direction: i16) -> Result<Square, ChessError> {
-	let candidate_square_i = from_square as i16 + direction;
-
-	if !(0..=63).contains(&candidate_square_i) {
-		return Err(ChessError::NotASquareOnBoard { square: candidate_square_i });
-	}
-
-	Ok(candidate_square_i as u8)
 }
 
 pub(crate) fn get_file_and_rank_difference(from_square: Square, substracting_square: Square) -> (i16, i16) {

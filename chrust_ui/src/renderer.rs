@@ -1,5 +1,5 @@
 use crate::{
-	controller::{apply_ui_event, UiEvent},
+	controller::{UiEvent, apply_ui_event},
 	helper::position_to_square,
 	layout::{BOARD_BLACK_COLOR, BOARD_HIGHLIGHTED_COLOR, BOARD_WHITE_COLOR, PROMOTION_PIECES},
 	state::{GameState, Overlay},
@@ -15,10 +15,7 @@ pub(crate) fn render_board(egui_ctx: &Context, game_state: &mut GameState) {
 		let board_size = board_rect.width().min(board_rect.height());
 		let sq = board_size / 8.0;
 
-		let response = ui.allocate_rect(
-			Rect::from_min_size(board_rect.min, Vec2::splat(board_size)),
-			egui::Sense::click(),
-		);
+		let response = ui.allocate_rect(Rect::from_min_size(board_rect.min, Vec2::splat(board_size)), egui::Sense::click());
 
 		let painter = ui.painter();
 
@@ -32,20 +29,23 @@ pub(crate) fn render_board(egui_ctx: &Context, game_state: &mut GameState) {
 				let is_selected = Some(sq_idx) == game_state.selected;
 				let is_legal = game_state.legal_moves.iter().any(|m| m.to_square == sq_idx);
 
-				let base = if (rank + file) % 2 == 1 { BOARD_WHITE_COLOR } else { BOARD_BLACK_COLOR };
-				let bg = if is_selected { BOARD_HIGHLIGHTED_COLOR } else { base };
+				let base = if (rank + file) % 2 == 1 {
+					BOARD_WHITE_COLOR
+				} else {
+					BOARD_BLACK_COLOR
+				};
+				let bg = if is_selected {
+					BOARD_HIGHLIGHTED_COLOR
+				} else {
+					base
+				};
 
 				painter.rect_filled(sq_rect, 0.0, bg);
 
 				if let Some(assets) = &game_state.assets {
 					if let Some(piece) = game_state.game.position.board[sq_idx as usize] {
 						if let Some(texture) = assets.pieces.get(&(piece.side, piece.piece)) {
-							painter.image(
-								texture.id(),
-								sq_rect,
-								Rect::from_min_max(Pos2::ZERO, Pos2::new(1.0, 1.0)),
-								Color32::WHITE,
-							);
+							painter.image(texture.id(), sq_rect, Rect::from_min_max(Pos2::ZERO, Pos2::new(1.0, 1.0)), Color32::WHITE);
 						}
 					}
 				}
@@ -64,23 +64,13 @@ pub(crate) fn render_board(egui_ctx: &Context, game_state: &mut GameState) {
 			let bg = Rect::from_min_size(Pos2::new(overlay_x, overlay_y), Vec2::new(overlay_w, sq));
 			painter.rect_filled(bg, 4.0, Color32::from_rgb(40, 40, 40));
 
-			let rects: [Rect; 4] = std::array::from_fn(|i| {
-				Rect::from_min_size(
-					Pos2::new(overlay_x + i as f32 * sq, overlay_y),
-					Vec2::splat(sq),
-				)
-			});
+			let rects: [Rect; 4] = std::array::from_fn(|i| Rect::from_min_size(Pos2::new(overlay_x + i as f32 * sq, overlay_y), Vec2::splat(sq)));
 
 			let promoting_side = game_state.game.position.side_to_move;
 			if let Some(assets) = &game_state.assets {
 				for (i, &piece) in PROMOTION_PIECES.iter().enumerate() {
 					if let Some(texture) = assets.pieces.get(&(promoting_side, piece)) {
-						painter.image(
-							texture.id(),
-							rects[i],
-							Rect::from_min_max(Pos2::ZERO, Pos2::new(1.0, 1.0)),
-							Color32::WHITE,
-						);
+						painter.image(texture.id(), rects[i], Rect::from_min_max(Pos2::ZERO, Pos2::new(1.0, 1.0)), Color32::WHITE);
 					}
 				}
 			}
@@ -93,9 +83,7 @@ pub(crate) fn render_board(egui_ctx: &Context, game_state: &mut GameState) {
 		if response.clicked() {
 			if let Some(pos) = response.interact_pointer_pos() {
 				let event = if let Some(rects) = &promotion_rects {
-					rects.iter().enumerate().find_map(|(i, r)| {
-						r.contains(pos).then_some(UiEvent::ClickPromotionSquare(PROMOTION_PIECES[i]))
-					})
+					rects.iter().enumerate().find_map(|(i, r)| r.contains(pos).then_some(UiEvent::ClickPromotionSquare(PROMOTION_PIECES[i])))
 				} else {
 					let (file, rank) = position_to_square(pos, board_rect, sq);
 					if (0.0..8.0).contains(&file) && (0.0..8.0).contains(&rank) {

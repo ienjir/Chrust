@@ -4,5 +4,5 @@
 // const ROOK_VALUE: i32 = 500;
 // const QUEEN_VALUE: i32 = 900;
 //
-// // pub fn evaluate(position: &Position) -> i32 { 
+// // pub fn evaluate(position: &Position) -> i32 {
 // // }
