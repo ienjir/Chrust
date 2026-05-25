@@ -2,7 +2,6 @@ use crate::{
 	ColoredPiece, Square,
 	attack_tables::KNIGHT_TARGETS,
 	errors::ChessError,
-	helper::{file_diff, in_bounds, rank_diff},
 	moves::make_move::{Move, MoveKind},
 	position::Position,
 };

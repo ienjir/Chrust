@@ -2,7 +2,7 @@ use crate::{
 	ColoredPiece, Piece, Side, Square,
 	errors::ChessError,
 	game_status::GameStatus,
-	helper::{is_square_on_board, is_valid_promomotion_piece},
+	helper::{is_right_piece_side, is_square_on_board, is_valid_promomotion_piece},
 	position::{Game, Position, Undo},
 	zobrist::{ZobristTable, piece_index, zobrist},
 };
@@ -48,9 +48,14 @@ impl Game {
 			return Err(ChessError::GameIsFinished);
 		}
 
+		is_square_on_board(mv.from_square)?;
+		is_square_on_board(mv.to_square)?;
+
+		let piece = self.position.get_piece_from_square(mv.from_square)?;
+		is_right_piece_side(piece, self.position.side_to_move)?;  
+
 		let legal_moves = self.position.get_legal_moves(mv.from_square, self.position.side_to_move)?;
 
-		is_square_on_board(mv.to_square)?;
 
 		if !legal_moves.contains(mv) {
 			return Err(ChessError::NotAValidMove);
@@ -198,7 +203,7 @@ impl Position {
 			}
 			MoveKind::Castling { rook_from, rook_to } => {
 				let rook = self.board[rook_to as usize].unwrap(); // rook is currently at rook_to
-				//
+																  //
 				self.zobrist_hash ^= zobrist.pieces[piece_index(rook)][rook_to as usize];
 				self.zobrist_hash ^= zobrist.pieces[piece_index(rook)][rook_from as usize];
 
